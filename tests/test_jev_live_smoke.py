@@ -36,6 +36,8 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
         env = isolated_child_env(parent)
         self.assertEqual(env["TYPESAFE_API_KEY"], "synthetic-not-real")
         self.assertEqual(env["PATH"], "example-path")
+        self.assertEqual(env["JEV_CODE_MAX_RETRIES"], "0")
+        self.assertEqual(env["JEV_CODE_TIMEOUT_MS"], "30000")
         self.assertNotIn("UNRELATED_API_KEY", env)
         self.assertNotIn("HOME", env)
 
