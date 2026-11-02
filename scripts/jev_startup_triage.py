@@ -61,15 +61,17 @@ def stderr_category(data: bytes) -> list[str]:
 def check_node(node: str, env: dict[str, str]) -> dict:
     try:
         run = subprocess.run(
-            [node, "-e", "process.stdout.write('HE_NODE_READY')"],
+            [node, "-e", "process.stdout.write('HE_NODE_READY ' + process.version)"],
             cwd=None, env=env, capture_output=True, timeout=8, check=False,
         )
     except subprocess.TimeoutExpired:
         return {"status": "FAIL", "code": "NODE_TIMEOUT"}
     except OSError:
         return {"status": "FAIL", "code": "NODE_SPAWN_FAILED"}
-    ok = run.returncode == 0 and run.stdout == b"HE_NODE_READY"
+    match = re.fullmatch(rb"HE_NODE_READY (v\d+\.\d+\.\d+)", run.stdout)
+    ok = run.returncode == 0 and match is not None
     return {"status": "PASS" if ok else "FAIL",
+            "node_version": match.group(1).decode("ascii") if match else None,
             "code": "NODE_READY" if ok else "NODE_STARTUP_FAILED",
             "exit_code": run.returncode,
             "stderr_categories": stderr_category(run.stderr)}
