@@ -42,7 +42,7 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
         self.assertNotIn("HOME", env)
 
     def test_missing_key_fails_before_any_call(self):
-        with self.assertRaisesRegex(SmokePreflightError, "absent"):
+        with self.assertRaisesRegex(SmokePreflightError, "No supported provider credential"):
             isolated_child_env({"PATH": "x"})
 
     def test_unpinned_package_refused(self):
@@ -155,7 +155,7 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
         env = isolated_child_env(parent)
         self.assertEqual(env["JEV_CODE_PROVIDER"], "openrouter")
         self.assertEqual(env["OPENROUTER_API_KEY"], "sk-or-v1-synthetic-test-key")
-        self.assertEqual(env["TYPESAFE_API_KEY"], "sk-or-v1-synthetic-test-key")
+        self.assertNotIn("TYPESAFE_API_KEY", env)
         self.assertEqual(env["JEV_CODE_MAX_RETRIES"], "0")
 
     def test_openrouter_key_in_parent_env(self):
@@ -167,15 +167,59 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
     def test_native_typesafe_key_does_not_set_openrouter(self):
         parent = {"TYPESAFE_API_KEY": "ts_live_synthetic_key"}
         env = isolated_child_env(parent)
-        self.assertNotIn("JEV_CODE_PROVIDER", env)
+        self.assertEqual(env["JEV_CODE_PROVIDER"], "typesafe")
         self.assertNotIn("OPENROUTER_API_KEY", env)
         self.assertEqual(env["TYPESAFE_API_KEY"], "ts_live_synthetic_key")
 
     def test_explicit_provider_respected(self):
-        parent = {"TYPESAFE_API_KEY": "sk-or-v1-test", "JEV_CODE_PROVIDER": "typesafe"}
+        parent = {"TYPESAFE_API_KEY": "ts_live_synthetic_key", "JEV_CODE_PROVIDER": "typesafe"}
         env = isolated_child_env(parent)
         self.assertEqual(env["JEV_CODE_PROVIDER"], "typesafe")
         self.assertNotIn("OPENROUTER_API_KEY", env)
+
+    def test_known_mismatched_explicit_provider_fails_closed(self):
+        parent = {"TYPESAFE_API_KEY": "sk-or-v1-synthetic", "JEV_CODE_PROVIDER": "typesafe"}
+        with self.assertRaisesRegex(SmokePreflightError, "disagree"):
+            isolated_child_env(parent)
+
+    def test_conflicting_host_keys_require_explicit_selection(self):
+        parent = {
+            "TYPESAFE_API_KEY": "ts_synthetic",
+            "OPENROUTER_API_KEY": "sk-or-v1-synthetic",
+        }
+        with self.assertRaisesRegex(SmokePreflightError, "Ambiguous"):
+            isolated_child_env(parent)
+
+    def test_explicit_openrouter_uses_own_key_only(self):
+        parent = {
+            "TYPESAFE_API_KEY": "ts_synthetic",
+            "OPENROUTER_API_KEY": "sk-or-v1-synthetic",
+            "JEV_CODE_PROVIDER": "openrouter",
+        }
+        env = isolated_child_env(parent)
+        self.assertEqual(env["OPENROUTER_API_KEY"], "sk-or-v1-synthetic")
+        self.assertNotIn("TYPESAFE_API_KEY", env)
+        self.assertNotIn("AI_GATEWAY_API_KEY", env)
+
+    def test_explicit_vercel_uses_own_key_only(self):
+        parent = {
+            "AI_GATEWAY_API_KEY": "vck_synthetic",
+            "JEV_CODE_PROVIDER": "vercel",
+        }
+        env = isolated_child_env(parent)
+        self.assertEqual(env["AI_GATEWAY_API_KEY"], "vck_synthetic")
+        self.assertNotIn("TYPESAFE_API_KEY", env)
+        self.assertNotIn("OPENROUTER_API_KEY", env)
+
+    def test_unsupported_non_jev_provider_fails_closed(self):
+        parent = {"TYPESAFE_API_KEY": "sk-or-v1-synthetic", "JEV_CODE_PROVIDER": "openai"}
+        with self.assertRaisesRegex(SmokePreflightError, "Unsupported provider"):
+            isolated_child_env(parent)
+
+    def test_explicit_typesafe_requires_matching_key(self):
+        with self.assertRaisesRegex(SmokePreflightError, "disagree"):
+            isolated_child_env({"OPENROUTER_API_KEY": "sk-or-v1-synthetic",
+                                "JEV_CODE_PROVIDER": "typesafe"})
 
     def test_unsupported_provider_raises_preflight(self):
         parent = {"TYPESAFE_API_KEY": "key", "JEV_CODE_PROVIDER": "unsupported_xyz"}
