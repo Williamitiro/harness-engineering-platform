@@ -1,0 +1,34 @@
+{
+  "status": "READY_FOR_LOCAL_G1_PREFLIGHT",
+  "scope": "NATIVE_CODEX_SUPERVISOR_MXC_TASK_TOOLS",
+  "fixture": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-_xz0541n",
+  "paid_calls": 0,
+  "broker_verified": true,
+  "timeout_s": 40,
+  "max_invocations": 1,
+  "retries": 0,
+  "policy_filesystem": {
+    ":root": "deny",
+    ":minimal": "read",
+    "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-_xz0541n\\workspace": "write",
+    "C:\\dev\\harness-engineering": "deny",
+    "C:\\Users\\itiro": "deny",
+    "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-_xz0541n\\protected": "deny",
+    "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-_xz0541n\\workspace\\denied-canary.txt": "deny"
+  },
+  "network_enabled": false,
+  "exit_code": 0,
+  "probes": {
+    "allowed_read": true,
+    "allowed_write": true,
+    "protected_read": "DENIED",
+    "golden_read": "DENIED",
+    "git_read": "DENIED",
+    "workspace_denied_read": "DENIED",
+    "outside_write": "DENIED",
+    "credential_environment_absent": true,
+    "network_external": "DENIED",
+    "network_loopback": "DENIED"
+  },
+  "canaries_passed": true
+}

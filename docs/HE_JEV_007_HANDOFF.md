@@ -2,7 +2,7 @@
 
 ## 1. Estado final
 
-`READY_FOR_LOCAL_G1_PREFLIGHT`. Executor e fronteira nativa implementados e validados offline; preflight gratuito pelo novo caminho nativo ainda PENDING. Nenhum modelo ou benchmark executado nesta sessão.
+`READY_FOR_LOCAL_G1_PREFLIGHT`, com **preflight nativo G1 PASS OBSERVADO pelo operador** na versão `032bf27`. Relatório local consultado pelo agente: exit 0, `broker_verified=true`, `canaries_passed=true`, zero chamadas pagas. Mantido o nome de estado contratual; o resultado detalhado do preflight é PASS. Nenhum modelo ou benchmark executado pelo agente.
 
 Lane: `Williamitiro/harness-engineering-platform`, worktree `C:\dev\harness-engineering`, branch `codex/he-jev-007a`, upstream `origin/codex/he-jev-007a`, PR #4 OPEN/Draft -> main. Entrada limpa em `487e08a243e946b76d72b87c8ab9b3cfd84ce342`. Base main `10de6958b88ee6fbf66a72642a3c24e59ad55f9a`. Uma atualização de referências, sem nova lane/merge/deploy.
 
@@ -15,7 +15,7 @@ Lane: `Williamitiro/harness-engineering-platform`, worktree `C:\dev\harness-engi
 - `scripts/paired_executor.py`: CLI única `preflight`/`pilot`. Reutiliza `build_native_prompt`, `load_tasks`, cliente JEV e seleção de credenciais/pin v0.5.0 existentes. Não instala nem baixa pacotes. A usa Codex nativo; J usa OpenRouter explicitamente, e review/uncertain/limiares insuficientes acionam o mesmo modelo Codex de A. Confiança 0,85 e margem 0,50 preservadas.
 - A conta nativa usada nesta implementação é a identidade ChatGPT já autenticada no Codex, por um alias de provedor com protocolo Responses e endpoint Codex ChatGPT. O alias evita sobrescrever IDs reservados e fixa `request_max_retries=0`, `stream_max_retries=0`, idle timeout 30 s. Não lê/copia auth.json. Compatibilidade/autenticação do primeiro turno real não foi testada com API paga.
 - Limites: até 3 tarefas; até 3 turnos A + 3 JEV + 3 fallbacks, sem retries do executor/provedores configurados. Codex: timeout de classificação 60 s, no máximo 6 turnos nativos no processo; JEV: 30 s por classificação. São limites lógicos, não prova de limite financeiro ou contagem faturada pelo provedor. Custos e tokens indisponíveis permanecem null; uso JEV/fallback fica separado, latência J cobre o pipeline inteiro. Erro aborta sem retry; não há recibo parcial de sucesso se o piloto não completar.
-- `tests/test_paired_executor.py`: testes offline de limiares, fallback para o mesmo modelo, limites, contaminação, segregação de segredo, RPC/perfil e negação de ampliação. Integração nativa gratuita opt-in fica PENDING, sem disparo automático na suíte.
+- `tests/test_paired_executor.py`: testes offline de limiares, fallback para o mesmo modelo, limites, contaminação, segregação de segredo, RPC/perfil e negação de ampliação. Integração nativa gratuita opt-in foi SKIP na suíte; o operador executou separadamente o preflight nativo real com PASS, sem repetição do agente.
 - `scripts/jev_collector.py` e `scripts/jev_evaluator.py`: preservados fail-closed. O novo launcher não altera a aceitação de registros pelo avaliador histórico: resultados pareados OBSERVED não são promovidos a VERIFIED nem aceitos automaticamente pelo loader antigo. Scoring autenticado do avaliador antigo não foi liberado; o piloto mínimo registra decisões e métricas observadas para inspeção do operador, sem recomendação de adoção.
 
 Referência oficial do transporte e dos métodos: [Codex App Server](https://learn.chatgpt.com/docs/app-server). Contrato conferido também no schema gerado pelo Codex 0.166.0 instalado. [Permissions](https://learn.chatgpt.com/docs/permissions) e [MXC](https://learn.chatgpt.com/docs/windows/windows-sandbox) orientam a política existente. Nenhuma mudança global.
@@ -27,7 +27,7 @@ Referência oficial do transporte e dos métodos: [Codex App Server](https://lea
 | PASS OBSERVADO, anterior | `python scripts/mxc_g1_preflight.py --diagnose-startup` pelo operador | `docs/evidence/HE_JEV_007A_MXC_CANARIES.json`: exit 0; controles positivos true; protegido/gabarito/.git/deny interno/escrita externa DENIED; env de credenciais ausente; TCP externo e loopback DENIED. Não repetido nesta sessão. |
 | PASS | `python -m unittest discover -s tests -p test_paired_executor.py -v` | 7 testes, 6 PASS e 1 integração nativa SKIP, 0 falhas. Uma execução. |
 | PASS | `JEV_REAL_INTEGRATION=0`, `HE_NATIVE_G1=0`; `python -W error -m unittest discover -s tests -v` | 93 testes, 2 skips, 0 falhas, 6,037 s. Uma execução, wrapper com limite 20 s. Log `C:\Users\itiro\AppData\Local\Temp\he-jev-007a-offline-t5yxpp_r\suite.log`. |
-| PENDING | `python scripts/paired_executor.py preflight` | Novo caminho `app-server -> command/exec -> MXC` implementado; exige execução local gratuita. Nenhum turno/modelo/JEV é chamado pelo preflight. |
+| PASS OBSERVADO | `python scripts/paired_executor.py preflight`, executado pelo operador | Caminho `app-server -> command/exec -> MXC`, versão `032bf27`, fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-_xz0541n`. Relatório local consultado e preservado em `docs/evidence/HE_JEV_007A_NATIVE_G1.json`: exit 0, controles positivos true, todos os canários negativos DENIED, env de credenciais verificado ausente, `broker_verified=true`, `canaries_passed=true`, `paid_calls=0`. Nenhum turno/modelo/JEV chamado; sem repetição do agente. |
 | PENDING | Piloto de 3 casos | Nenhuma chamada paga nesta sessão. Modelo/conta/provedor reais não exercitados pelo novo executor. |
 | PENDING | CI do push | Consultar Actions do PR #4; sem acompanhamento contínuo nem resultado presumido. |
 
@@ -35,11 +35,11 @@ Gabaritos reais não foram abertos nesta sessão nem disponibilizados ao agente.
 
 ## 4. Bloqueios reais
 
-Não há bloqueio MXC de compatibilidade conhecido. Falta observar o novo preflight gratuito pelo caminho nativo que será usado nas tarefas. O PASS anterior do launcher sandbox direto não é renomeado como PASS desse caminho novo. O piloto é bloqueado pelo código caso o preflight nativo falhe; falha não deve iniciar outra rodada automática. Autenticação e comportamento do primeiro turno real permanecem não exercitados; custos desconhecidos continuam null. Resultados do piloto não contornam o gate de proveniência do avaliador histórico.
+O preflight gratuito nativo passou; não há bloqueio observado dos canários ou da execução de comandos MXC pelo supervisor nativo. Essa evidência cobre os probes e a política testados, não é atestação criptográfica externa nem execução de classificação. Autenticação e comportamento do primeiro turno real permanecem não exercitados; serão observados no piloto limitado. Custos desconhecidos continuam null. Resultados do piloto não contornam o gate de proveniência do avaliador histórico. O piloto continua fail-closed se sua própria prova gratuita falhar.
 
 ## 5. Comando de preflight local
 
-Uma vez, no PowerShell nativo, sem Infisical:
+Comando já executado pelo operador com PASS; não é necessário repeti-lo isoladamente agora:
 
 ```powershell
 python C:\dev\harness-engineering\scripts\paired_executor.py preflight
@@ -59,4 +59,4 @@ O comando repete a prova gratuita em um processo nativo novo e só então despac
 
 ## 7. Próxima decisão
 
-Executar uma vez o preflight gratuito acima. Em PASS, a próxima execução real é o piloto local limitado a três casos, mediante comando do operador. Em FAIL, preservar relatório/diagnóstico e encerrar sem retry. Sem merge/deploy; PR permanece Draft.
+Próxima execução: o piloto local limitado a três casos da seção 6, pelo operador, em fase 007B separada. Não ampliar para 30. Se falhar, preservar relatório/diagnóstico e encerrar sem retry. Nenhum piloto disparado nesta sessão; sem merge/deploy, PR permanece Draft.
