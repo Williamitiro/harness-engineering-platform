@@ -61,5 +61,50 @@ class JevOfflineTests(unittest.TestCase):
         self.assertIsNone(r["automatic_accuracy"])
         self.assertEqual(r["missing_probability_fields"], 1)
 
+    def test_comparative_evaluation(self):
+        rows = [
+            {"id":"1","expected":"a","predicted":"a","confidence":0.95,"margin":0.8,
+             "latency_ms":180,"tokens_in":200,"tokens_out":30,
+             "native_predicted":"a","native_latency_ms":2500,"native_tokens_in":2000,"native_tokens_out":150},
+            {"id":"2","expected":"b","predicted":"b","confidence":0.90,"margin":0.7,
+             "latency_ms":190,"tokens_in":210,"tokens_out":35,
+             "native_predicted":"none","native_latency_ms":2800,"native_tokens_in":2200,"native_tokens_out":180},
+        ]
+        comp = jev.evaluate_comparison(rows, POLICY)
+        self.assertEqual(comp["status"], "COMPARATIVE_EVALUATION_OFFLINE_ONLY")
+        self.assertEqual(comp["sample_size"], 2)
+        self.assertEqual(comp["condition_a_native"]["accuracy"], 0.5)
+        self.assertEqual(comp["condition_a_native"]["error_count"], 1)
+        self.assertEqual(comp["condition_j_advisory"]["total_accuracy"], 1.0)
+        self.assertEqual(comp["condition_j_advisory"]["accepted_count"], 2)
+        self.assertEqual(comp["recommendation"], "INCONCLUSIVE_FOR_PRODUCTION")
+
+    def test_comparative_requires_native_predicted(self):
+        rows = [{"id":"1","expected":"a","predicted":"a","confidence":0.95,"margin":0.8}]
+        with self.assertRaises(jev.ValidationError):
+            jev.evaluate_comparison(rows, POLICY)
+
+    def test_native_predicted_outside_allowlist_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)/"cases.jsonl"
+            path.write_text(json.dumps({"id":"1","expected":"a","predicted":"a",
+                                         "native_predicted":"invalid_label"}))
+            with self.assertRaises(jev.ValidationError):
+                jev.load_rows(path, set(POLICY["allowed_labels"]))
+
+    def test_all_pilot_fixture_files_valid(self):
+        configs_and_fixtures = [
+            ("config/jev_pilot_policy.json", "benchmarks/jev/fixtures_skills.jsonl"),
+            ("config/jev_ci_triage_policy.json", "benchmarks/jev/fixtures_ci_triage.jsonl"),
+            ("config/jev_review_priority_policy.json", "benchmarks/jev/fixtures_code_review.jsonl"),
+            ("config/jev_multi_domain_policy.json", "benchmarks/jev/fixtures_pilot.jsonl"),
+        ]
+        for cfg_rel, fix_rel in configs_and_fixtures:
+            policy = jev.load_policy(ROOT / cfg_rel)
+            rows = jev.load_rows(ROOT / fix_rel, set(policy["allowed_labels"]))
+            self.assertGreaterEqual(len(rows), 10)
+            res = jev.evaluate(rows, policy)
+            self.assertEqual(res["status"], "OFFLINE_SCORE_ONLY_NOT_MODEL_PROOF")
+
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,7 @@
 
 Pure standard library. No model/API/network invocation, no secrets or writes.
 Scores observations; confidence gating is advisory, never authorization.
+Supports comparative benchmark between Condition A (native) and Condition J (advisory).
 """
 from __future__ import annotations
 
@@ -56,6 +57,9 @@ def load_rows(path: Path, labels: set[str]) -> list[dict]:
         seen.add(item)
         if row.get("expected") not in labels or row.get("predicted") not in labels:
             raise ValidationError(f"line {line_number} label outside allowlist")
+        if "native_predicted" in row and row["native_predicted"] is not None:
+            if row["native_predicted"] not in labels:
+                raise ValidationError(f"line {line_number} native_predicted outside allowlist")
         for field in ("confidence", "margin"):
             v = number(row.get(field), field, allow_null=True)
             if v is not None and not 0 <= v <= 1:
@@ -112,18 +116,75 @@ def evaluate(rows: list[dict], policy: dict) -> dict:
                    "Confidence thresholds here do not authorize tool calls"],
     }
 
+def evaluate_comparison(rows: list[dict], policy: dict) -> dict:
+    jev_result = evaluate(rows, policy)
+    has_native = any("native_predicted" in r for r in rows)
+    if not has_native:
+        raise ValidationError("fixtures lack native_predicted for condition comparison")
+
+    n = len(rows)
+    cond_a_evaluated = [r for r in rows if r.get("native_predicted") is not None]
+    if len(cond_a_evaluated) != n:
+        raise ValidationError("inconsistent native_predicted coverage in fixtures")
+
+    cond_a_correct = sum(1 for r in rows if r["expected"] == r["native_predicted"])
+    cond_a_errors = [r["id"] for r in rows if r["expected"] != r["native_predicted"]]
+    cond_a_latencies = [float(r["native_latency_ms"]) for r in rows if r.get("native_latency_ms") is not None]
+    cond_a_in_tokens = [int(r["native_tokens_in"]) for r in rows if r.get("native_tokens_in") is not None]
+    cond_a_out_tokens = [int(r["native_tokens_out"]) for r in rows if r.get("native_tokens_out") is not None]
+
+    jev_in_tokens = [int(r["tokens_in"]) for r in rows if r.get("tokens_in") is not None]
+    jev_out_tokens = [int(r["tokens_out"]) for r in rows if r.get("tokens_out") is not None]
+
+    return {
+        "status": "COMPARATIVE_EVALUATION_OFFLINE_ONLY",
+        "sample_size": n,
+        "condition_a_native": {
+            "accuracy": cond_a_correct / n,
+            "correct_count": cond_a_correct,
+            "error_count": len(cond_a_errors),
+            "error_ids": cond_a_errors,
+            "review_abstentions": 0,
+            "mean_latency_ms": (mean(cond_a_latencies) if cond_a_latencies else None),
+            "mean_tokens_in": (mean(cond_a_in_tokens) if cond_a_in_tokens else None),
+            "mean_tokens_out": (mean(cond_a_out_tokens) if cond_a_out_tokens else None),
+        },
+        "condition_j_advisory": {
+            "total_accuracy": jev_result["total_accuracy"],
+            "automatic_accuracy": jev_result["automatic_accuracy"],
+            "automatic_coverage": jev_result["automatic_coverage"],
+            "accepted_count": jev_result["accepted"],
+            "review_abstentions": jev_result["review_or_missing"],
+            "wrong_high_confidence_ids": jev_result["wrong_high_confidence_ids"],
+            "mean_latency_ms": jev_result["mean_latency_ms_known_only"],
+            "mean_tokens_in": (mean(jev_in_tokens) if jev_in_tokens else None),
+            "mean_tokens_out": (mean(jev_out_tokens) if jev_out_tokens else None),
+        },
+        "recommendation": "INCONCLUSIVE_FOR_PRODUCTION",
+        "justification": [
+            "Synthetic offline benchmark demonstrates safety properties (abstaining on ambiguous/injection cases)",
+            "G1 external isolation gate is not yet homologated; live execution remains BLOCKED_G1",
+            "Production adoption requires external VM/container isolation, live token billing verification, and operator approval"
+        ],
+        "detailed_jev_eval": jev_result,
+    }
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--input", type=Path, required=True)
     p.add_argument("--policy", type=Path, required=True)
+    p.add_argument("--compare", action="store_true", help="Compare Condition A (native) vs Condition J (advisory Jev)")
     args = p.parse_args()
     try:
         policy = load_policy(args.policy)
         rows = load_rows(args.input, set(policy["allowed_labels"]))
-        print(json.dumps(evaluate(rows, policy), indent=2, ensure_ascii=False))
+        if args.compare:
+            print(json.dumps(evaluate_comparison(rows, policy), indent=2, ensure_ascii=False))
+        else:
+            print(json.dumps(evaluate(rows, policy), indent=2, ensure_ascii=False))
         return 0
     except (OSError, ValueError) as exc:
-        print(json.dumps({"status":"BLOCKED", "reason":str(exc)}, ensure_ascii=False))
+        print(json.dumps({"status": "BLOCKED", "reason": str(exc)}, ensure_ascii=False))
         return 2
 
 if __name__ == "__main__":

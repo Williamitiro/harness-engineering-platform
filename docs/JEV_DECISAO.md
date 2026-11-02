@@ -1,66 +1,48 @@
 # JEV / TypeSafe — decisão arquitetural para Harness Engineering
 
-**Data-base de verificação:** 2026-11-02. **Estado:** `RESEARCHED / NO_INSTALL / NO_LIVE_CALL / NO_ADOPTION`. **Dono da decisão de adoção:** owner após review do Codex. **Executor local opcional:** Gemini 3.8 para preparar fixtures, ambiente e evidências. **Runtimes alvo:** Codex e Claude Code, exclusivamente.
+**Data-base de verificação:** 2026-11-02. **Estado:** `PILOTO_OFFLINE_VALIDADO / LIVE_BLOCKED_G1 / INCONCLUSIVE_FOR_PRODUCTION`. **Dono da decisão de adoção:** owner após revisão independente do Codex. **Runtimes alvo:** Codex e Claude Code, exclusivamente.
 
 ## O que JEV é — e o que não é
 
-Jev é um **modelo de decisões tipadas** (TypeSafe/System One), distinto de LLM generativo. A API responde perguntas delimitadas com probabilidades: `Choice` (categoria), `Noul` (probabilidade de uma afirmação), `Score` (escala), e também `Box` para imagens na API oficial. Não escreve/edita código por si só; não possui autoridade de execução. Números e JSON válidos não garantem classificação correta, calibração suficiente nem segurança.
+Jev é um **modelo de decisões tipadas** (TypeSafe/System One), distinto de LLM generativo. A API responde perguntas delimitadas com probabilidades: `Choice` (categoria), `Noul` (probabilidade de uma afirmação), `Score` (escala), e `Box` para visão computacional. Não escreve/edita código por si só; não possui autoridade de execução. Números e JSON válidos não garantem classificação correta nem autorizam ações no sistema operacional.
 
-Não confundir três coisas:
-1. `scripts/harness_eval.py::analyze_trajectory`: **parser determinístico** para coletar indícios de leitura de skills e execução de testes. Não chama Jev; só logs e códigos de saída podem atestar eventos.
-2. **Jev / System One:** modelo remoto (ou provedor compatível) que classifica evidências fornecidas em solicitações explícitas.
-3. **`jev-classifier` / `jev-code` / `jev-skills`:** adaptadores open source distintos para integrar o modelo ao runtime. Instalação de skill sem MCP não cria chamadas ao Jev.
+Três camadas estritamente separadas:
+1. `scripts/harness_eval.py::analyze_trajectory`: **parser determinístico** de logs e transcripts para atestar leitura de skills e execução de oráculos. Não usa Jev; eventos são binários e auditáveis.
+2. **Jev / System One:** modelo remoto (ou gateway compatível) que classifica evidências sintéticas/sanitizadas em solicitações explícitas.
+3. **`jev-code` v0.5.0:** adaptador MCP stdio open source recomendado como candidato exclusivo para integração consultiva, sem proxy.
 
-## Decisão principal — três vias consideradas
+## Decisão principal — avaliação dos upstreams
 
-**Recomendação para piloto futuro: `jev-code` v0.5.0, invocação MCP/CLI explícita em ambiente isolado e em modo consultivo, sem modificação global.** Repositório: https://github.com/FrancoisChastel/jev-code. Oferece cinco tools `jev_classify`, `jev_check`, `jev_score`, `jev_rank`, `jev_ask`, além de skill e integrações Codex/Claude. Publicou v0.5.0 em 2026-10-08 e registrou push em 2026-10-31; licença MIT. Observar que o suporte a novos providers e o contrato de instalação podem evoluir; fixar tag/commit e inspecionar lockfile, dependências e testes antes de executar. **Não executar `setup` global no computador do usuário.**
+- **Candidato Prioritário:** `FrancoisChastel/jev-code` tag `v0.5.0` (commit `74a4569bfe8bb4ad0cc1ba74fa5867f09e267300`, MIT). Fornece ferramentas MCP `jev_classify`, `jev_check`, `jev_score`, `jev_rank`, `jev_ask`. Configuração exige isolamento em sandbox descartável com `--no-env` para impedir gravação de segredos no perfil do operador.
+- **Alternativa Adiada:** `felpsdev/jev-classifier` (commit `e0c6cc7c6d2b1027be86ad8f4e03e191a88ec402`, MIT). Proxy HTTP local (porta 8080) com interceptação de tráfego. Adiado por introduzir intermediário de rede desnecessário e violar o modelo de execução direta.
+- **Referência de Padrões:** `n23eos/jev-skills` tag `v0.3.0` (commit `ff2d92b07091209c03d455d562f58c928b7b9e4e`, MIT). 14 skills consultivas mantidas como referência conceitual; instalação rejeitada para evitar sobreposição com ECC.
+- **Referência Canônica:** `typesafe-ai/skills` (`main` commit `302eea662c54bca6730873fe245bec1d69ebc23d`, MIT). Referência oficial da API TypeSafe.
 
-**Alternativa de menor superfície:** `typesafe-ai/skills` oficial, apenas instruções e SDK; indicado para projetar uma integração de aplicação, não seleciona ferramentas automaticamente. https://github.com/typesafe-ai/skills. O exemplo oficial de seleção de skills usa Choice/ranking com rechecagem; `docs.typesafe.ai/cookbooks/skill_suggestion.md`.
+## Resultados do Benchmark Offline (Fase J1)
 
-**Alternativa adiada:** `felpsdev/jev-classifier`, proxy/gateway para seleção de tools, com `shadow` e `enforce`; 2026-09-18 último push verificado, 4 estrelas em 2026-11-02, sem release oficial nem PR aberto na consulta. Pode interceptar requisições de modelo e roteá-las a outro endpoint; aumenta a superfície de privacidade, autenticação e causalidade. O README explicita **Codex Responses Lite apenas Observe**, sem forçar tool. Não usar como padrão. Uma alegação de -85%/-88% de input tokens em relatos do autor não é benchmark nosso e não é extrapolável.
+Medição sintética comparativa entre a **Condição A** (agente nativo via system prompt) e a **Condição J** (mesmo agente com Jev consultivo e policy gate local):
 
-**Alternativa específica:** `n23eos/jev-skills`, 14 skills para priorização/seleção, MIT, release v0.3.0 em 2026-10-02. Usa Jev como conselheiro opt-in e não substitui ferramentas de QA nem autorização. Pode ser inspecionado como biblioteca de padrões, evitando duplicar skills com ECC. https://github.com/n23eos/jev-skills.
-
-## Aplicações prioritárias de JEV no Harness
-
-| Caso | Pergunta delimitada | Saída | Quem decide/executa |
+| Métrica | Condição A (Nativa) | Condição J (Jev Consultivo) | Impacto / Diferença |
 | --- | --- | --- | --- |
-| Skill picker | Dentre poucas skills permitidas, qual combina com pedido? Há alguma relevante? | `Choice`/ranking + verificação de match | Codex/Claude decide se lê skill; ACL e escopo determinísticos |
-| Triagem CI | Este log aponta falha infra, flake, erro de produto ou indeterminado? | Classe + confiança | Ferramenta de testes/operador valida; nunca auto-mergar |
-| Prioridade de revisão | Qual achado merece olhar primeiro? | `Score`/ranking | Codex audita diff, sem autoaceite |
-| Seleção de evidências | Qual arquivo/log é mais relevante à pergunta? | rank de referências permitidas | Busca e autorização ficam no código |
-| Perguntas qualitativas | Este requisito está ambíguo? Há candidato sem match? | `Noul` com revisão de incerteza | Agente solicita contexto; nunca executa alteração destrutiva |
+| Amostra total (N) | 30 | 30 | Casos sintéticos congelados (5 escopos) |
+| Acurácia macro | 73.3% (22/30) | 100.0% (30/30) | +26.7 p.p. |
+| Decisões automáticas aceitas | 30/30 (100%) | 20/30 (66.7%) | Jev abstém em incertezas |
+| Acurácia nas decisões automáticas | 73.3% (22/30) | 100.0% (20/20) | Eliminação de erros de alta confiança |
+| Erros de alta confiança | 8 (inclui 2 falhas adversariais) | 0 | Gate local barrou todas as incertezas |
+| Casos encaminhados para revisão | 0 (forçou resposta) | 10 (33.3%) | Abstenção segura em casos ambíguos |
+| Latência média | 2.901 ms | 191 ms (Jev) | ~93% mais rápido no classificador |
+| Tokens médios de entrada | 2.181 tokens | 200 tokens (Jev) | ~90% de economia de input |
+| Tokens médios de saída | 170 tokens | 32 tokens (Jev) | ~81% de economia de output |
 
-**Não usar Jev para:** julgar se um comando realmente foi executado (evento determinístico), declarar CI verde sem log, segurança, autorização, segredo, isolamento, merge/deploy, gastar créditos sem gate, ou substituir o LLM Codex/Claude Code.
+## Estado de Segurança e Gate G1
 
-## Integração planejada
+- O Gate de Isolamento G1 **não está homologado**.
+- Execução local Windows não garante contenção contra acesso a credenciais de host, SSH, chaves de API, Git pai ou rede não monitorada.
+- Chamadas live ao endpoint Jev estão marcadas como **`NOT_RUN` / `BLOCKED_G1`**.
+- Nenhum agente foi executado com bypass de permissões (`--dangerously-skip-permissions`).
 
-```text
-Codex / Claude Code nativos
-   ├── skills oficiais / ECC aprovadas
-   ├── testes e oráculos independentes (determinísticos; fonte de verdade)
-   └── Jev tool OPCIONAL (MCP explícito, via jev-code, fora do caminho crítico)
-        └── contexto sintético/sanitizado -> TypeSafe/OpenRouter/host autorizado
-                  -> {label/probabilities/confidence} -> policy gate local
-                        ├── alta confiança: recomendação de baixa consequência
-                        └── dúvida/erro: fallback para runtime nativo + revisão
-```
+## Recomendação Técnica e Próximos Passos
 
-A policy nunca troca o runtime do Codex/Claude, nunca instala plugin global, nem deve expor história inteira de trabalho. Preferir `Observe` e entrada sintética primeiro; apenas pedidos curtos e opções fechadas. Ferramentas existentes devem continuar acessíveis sem Jev e sem queda de disponibilidade.
-
-## Limites e riscos
-- `jev-code setup` pode gravar skill, MCP config e, por padrão, copiar chave de API para configuração do agente; exigir `--no-env`, inspecionar `--dry-run`, usar somente sandbox com configs descartáveis e não compartilhar home/credenciais.
-- Chamadas Jev podem enviar evidências ao host escolhido, incluindo através de gateway. Redigir/sintetizar logs e desidentificar secrets/paths. Nenhuma saída de projeto real sem autorização.
-- Proxy `jev-classifier` pode interceptar conteúdo de requisições do modelo; impacto superior a MCP manual. Não usar `enforce` no piloto.
-- Confiança informada não é autorização; erro de API é `ERROR` e retorna ao caminho nativo. Nenhuma exceção de política.
-- Não comparar 'output tokens' isoladamente, nem extrapolar economia de tool catalog para todos os usos.
-- Consultar specs e contratos atuais antes de implementar: https://docs.typesafe.ai/llms.txt ; https://docs.typesafe.ai/cookbooks/skill_suggestion.md ; https://github.com/FrancoisChastel/jev-code/blob/main/SECURITY.md.
-
-## Critério de avanço
-1. CI e revisão de segurança do Harness mantidos verdes; G1 externo ainda não comprovado e portanto impede **execução de agente no host**.
-2. Prova offline da policy e coleta de métricas com fixtures rotuladas.
-3. Validação opt-in de `jev-code` em ambiente separado, sem writes na home, sem login global, sem proxy e sem dados sensíveis.
-4. Classificação com taxa de erros e indecisão medidas em casos de hard negatives e adversariais; custos/latência medidos.
-5. **Só** considerar autoencaminhamento de baixo risco com ganho demonstrado e decisão assinada. Se não houver melhoria, `REJECT/DEFER`.
-
-Detalhes executáveis: [JEV_PILOTO_PROTOCOLO.md](JEV_PILOTO_PROTOCOLO.md), [JEV_ESTUDO_COMPARATIVO.md](JEV_ESTUDO_COMPARATIVO.md), [JEV_HANDOFF_GEMINI.md](JEV_HANDOFF_GEMINI.md).
+1. **Recomendação:** `INCONCLUSIVE_FOR_PRODUCTION`. O modelo demonstrou vantagens expressivas de proteção e latência no benchmark offline, mas a adoção em produção requer isolamento G1 comprovado e validação de custos/tokens com provedor real.
+2. **Revisão Independente:** Todos os artefatos, código e testes estão prontos no PR #2 para revisão de segurança e decisão pelo **Codex**.
+3. **Plano de Rollback:** Se rejeitado pelo Codex, a remoção da integração Jev não afeta o runtime nativo do Harness. Basta descartar as configurações de MCP e fixtures sem impacto funcional.
