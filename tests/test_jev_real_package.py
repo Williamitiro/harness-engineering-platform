@@ -13,6 +13,7 @@ These tests run against the REAL upstream package, NOT a mock.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import unittest
@@ -32,6 +33,8 @@ class RealJevPackageIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.npx = shutil.which("npx") or shutil.which("npx.cmd")
+        if os.environ.get('JEV_REAL_INTEGRATION') != '1':
+            raise unittest.SkipTest('Opt-in external package integration (JEV_REAL_INTEGRATION=1)')
         if not cls.npx:
             raise unittest.SkipTest("npx not available on PATH")
         try:
@@ -121,10 +124,10 @@ class RealJevPackageIntegrationTests(unittest.TestCase):
         finally:
             proc.terminate()
             try:
-                proc.wait(timeout=3)
+                proc.communicate(timeout=3)
             except subprocess.TimeoutExpired:
                 proc.kill()
-                proc.wait(timeout=3)
+                proc.communicate(timeout=3)
 
     def test_03_real_package_fails_cleanly_without_api_key(self):
         """Test real package reports isError: true when called without an API key."""
