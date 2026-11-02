@@ -100,11 +100,7 @@ class LifecycleTests(unittest.TestCase):
     def test_outside_sandbox_refused(self):
         with self.assertRaises(h.GateError):
             h.check_sandbox(ROOT)
-        # A directory named .poc outside the repo is not a trusted sandbox.
-        other = Path(self.tmp.name) / ".poc"
-        other.mkdir()
-        # still inside the repository .poc; therefore explicitly check the
-        # actual repo boundary by constructing the parent directory instead.
+        # Also reject directories outside the repository-owned sandbox.
         with self.assertRaises(h.GateError):
             h.check_sandbox(ROOT.parent)
 
