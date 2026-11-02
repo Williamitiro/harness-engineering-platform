@@ -7,6 +7,8 @@ import os
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,9 +70,16 @@ class InfisicalVerifierTests(unittest.TestCase):
         self.assertEqual(cfg["project_id"], "24b65ce2-c2c7-45f9-b54b-9a1c345973cc")
 
     def test_cli_installed_detection(self):
-        cli = check_cli_installed()
-        self.assertTrue(cli["installed"])
-        self.assertIsNotNone(cli["version"])
+        """CLI detection must work in CI without requiring a local Infisical login."""
+        with patch("scripts.infisical_verifier.shutil.which", return_value="/mock/infisical"), \
+             patch("scripts.infisical_verifier.subprocess.run",
+                   return_value=SimpleNamespace(stdout="infisical version 0.44.11",
+                                                stderr="", returncode=0)):
+            cli = check_cli_installed()
+            self.assertTrue(cli["installed"])
+            self.assertEqual(cli["version"], "0.44.11")
+        with patch("scripts.infisical_verifier.shutil.which", return_value=None):
+            self.assertFalse(check_cli_installed()["installed"])
 
 
 class CanaryProbesTests(unittest.TestCase):
