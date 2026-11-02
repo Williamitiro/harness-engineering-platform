@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import re
@@ -11,6 +12,30 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def private_diagnostic_directory(fixture: Path, env: dict[str, str]) -> Path:
+    """Restrict only the diagnostic directory, never the tested file canaries.
+
+    Raw errors are local operator data, excluded from stdout and Git. Refuse
+    diagnostic mode if the Windows ACL cannot be applied successfully.
+    """
+    system32 = Path(env['SystemRoot']) / 'System32'
+    identity = subprocess.run(
+        [str(system32 / 'whoami.exe'), '/user', '/fo', 'csv', '/nh'],
+        env=env, capture_output=True, text=True, check=True, timeout=5,
+    )
+    sid = next(csv.reader(identity.stdout.splitlines()))[-1].strip()
+    if not re.fullmatch(r'S-1-\d+(?:-\d+)+', sid):
+        raise ValueError('Unable to resolve operator SID')
+    directory = fixture / 'private-diagnostics'
+    directory.mkdir()
+    subprocess.run(
+        [str(system32 / 'icacls.exe'), str(directory), '/inheritance:r',
+         '/grant:r', f'*{sid}:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F'],
+        env=env, capture_output=True, check=True, timeout=5,
+    )
+    return directory
 
 PROBE = r'''
 $ErrorActionPreference = 'Stop'
@@ -67,6 +92,8 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--codex-exe', type=Path)
+    parser.add_argument('--diagnose-startup', action='store_true',
+                        help='On failure retain stderr locally under an operator/SYSTEM-only ACL; never print it')
     args = parser.parse_args()
     if os.name != 'nt':
         parser.error('Native Windows required')
@@ -125,11 +152,22 @@ def main() -> int:
               'policy_filesystem': fs, 'network_enabled': False}
     # Record only artificial policy and the exact reproducible command, never env values.
     (fixture / 'command.json').write_text(json.dumps(command, indent=2), encoding='utf-8')
+    diagnostic_directory = None
+    if args.diagnose_startup:
+        try:
+            diagnostic_directory = private_diagnostic_directory(fixture, env)
+        except (OSError, ValueError, StopIteration, subprocess.SubprocessError):
+            listener.close()
+            report['error'] = 'PRIVATE_DIAGNOSTIC_ACL_FAILED_NO_MXC_STARTED'
+            (fixture / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+            print(json.dumps(report, indent=2))
+            return 1
     try:
         result = subprocess.run(command, cwd=workspace, env=env, capture_output=True,
                                 text=True, timeout=40)
         report['exit_code'] = result.returncode
-        # Never persist arbitrary runtime stderr or stdout: allow only known probe fields.
+        # Stdout remains a closed schema. Raw stderr is retained only by the
+        # operator's explicit diagnostic option and only under its private ACL.
         try:
             parsed = json.loads(result.stdout.strip())
             expected = {'allowed_read', 'allowed_write', 'outside_write',
@@ -158,6 +196,10 @@ def main() -> int:
             ) if term in result.stderr.lower()]
             report['windows_error_codes'] = re.findall(r'Windows error (\d+)', result.stderr)
             report['stdout_empty'] = not bool(result.stdout.strip())
+            if diagnostic_directory is not None:
+                diagnostic_file = diagnostic_directory / 'startup-stderr.txt'
+                diagnostic_file.write_text(result.stderr, encoding='utf-8')
+                report['private_diagnostic_file'] = str(diagnostic_file)
     except subprocess.TimeoutExpired:
         report['error'] = 'MXC_TIMEOUT_NO_RETRY'
     finally:

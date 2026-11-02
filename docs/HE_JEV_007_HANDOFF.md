@@ -14,6 +14,7 @@ Worktree única: `C:\dev\harness-engineering`; branch `codex/he-jev-007a`, upstr
 - Ambiente do subprocesso limitado a variáveis operacionais Windows, sem herdar chaves/tokens. Probe verifica somente presença/ausência de nomes associados a credenciais; nunca imprime valores. Conexões TCP limitadas a `1.1.1.1:443` e listener loopback artificial do supervisor, timeout de 750 ms cada; timeout/recusa não são promovidos a prova de isolamento. Listener fechado ao fim, sem serviço persistente.
 - `scripts/{jev_adapter,jev_live_smoke,native_baseline,jev_collector,prepare_blind_sandbox,canary_probes,jev_evaluator}.py` e políticas existentes preservados. Gabaritos reais não abertos. JEV/OpenRouter/Infisical e limiares 0,85/0,50 inalterados; live continua bloqueado.
 - `docs/HE_JEV_007_HANDOFF.md`: atualizado com resultado Windows, substituindo a exigência anterior de runtime Linux.
+- Retomada de diagnóstico: `--diagnose-startup` preserva somente stderr de falha em diretório local com ACL para o SID do operador e SYSTEM. A ACL é aplicada antes de iniciar MXC, com duas operações auxiliares limitadas a 5 s cada; falha da ACL aborta sem iniciar MXC. Não altera ACL dos canários, política G1, configurações globais ou saída sanitizada. O arquivo privado não é impresso, publicado nem gravado no checkout.
 
 Referências oficiais consultadas: [Windows sandbox](https://learn.chatgpt.com/docs/windows/windows-sandbox) e [Permissions](https://learn.chatgpt.com/docs/permissions). A política usa negação por padrão e exceções específicas. Nada foi homologado apenas por configuração declarada.
 
@@ -26,12 +27,14 @@ Referências oficiais consultadas: [Windows sandbox](https://learn.chatgpt.com/d
 | DIAGNÓSTICO | `codex sandbox --help` | CLI documenta perfil nomeado e `--include-managed-config`. A tentativa `codex sandbox windows --help` não é subcomando nesta versão; tentou iniciar `windows` e falhou com Windows error 2. Não testou G1 nem MXC explícito. |
 | FAIL | `python scripts/mxc_g1_preflight.py` (rodada direcionada) | Exit 1, `MXC_START_OR_PROBE_FAILED`, nenhuma saída JSON dos probes. Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-h9u_0hox`. |
 | FAIL | Mesmo comando, após única correção de diagnóstico sanitizado | Exit 1, stdout vazio, `NO_VALID_PROBE_REPORT`; termos permitidos detectados no stderr: `mxc`, `failed`; nenhum `Windows error N` reconhecido. Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-uxhp8lvc`. |
+| FAIL REPORTADO | Execução externa do operador com o mesmo comando | Mesmo erro/exit 1, stdout vazio. Fixture reportada `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-l_zn0nfh`. Não reproduzida novamente pelo agente. |
+| PENDING | Novo modo `--diagnose-startup` e ACL privada | Implementado após o retorno externo; não executado nesta retomada. Sem nova rodada de testes ou tentativa MXC pelo agente. |
 | PENDING | Canários filesystem/rede/ambiente | Sem relatório válido: nenhuma negação comprovada. Não confundir falha de inicialização com contenção. |
 | PENDING | Suíte offline completa | Não executada após falha persistente da rodada direcionada; regra de parada aplicada. |
 | PENDING | Fronteira broker/Codex avaliado | Não implementada/validada nesta etapa; `broker_verified=false`. Mesmo canários aprovados isoladamente não liberariam benchmark. |
 | PENDING | CI do push | Sem resultado presumido; [Actions](https://github.com/Williamitiro/harness-engineering-platform/actions), sem acompanhamento contínuo. |
 
-Cada fixture retém `command.json` (argumentos exatos sem segredos) e `report.json` (relatório sanitizado). Não foram gravados stderr/stdout brutos; o diagnóstico usa vocabulário fechado. A correção melhorou observabilidade, não corrigiu a causa de inicialização. Não há evidência suficiente para atribuir a falha a uma limitação intrínseca do MXC ou do perfil. Nenhum teste adicional autorizado executado após a repetição.
+Cada fixture retém `command.json` (argumentos exatos sem segredos) e `report.json` (relatório sanitizado). As tentativas anteriores descartaram stderr/stdout brutos; o vocabulário fechado foi insuficiente para explicar a falha. O novo modo opt-in guarda stderr de falha apenas no diretório privado local e retorna seu caminho no campo `private_diagnostic_file`. Isto corrige a perda do diagnóstico, não a causa de inicialização. Não há evidência suficiente para atribuir a falha a uma limitação intrínseca do MXC ou do perfil.
 
 ## 4. Bloqueio real
 
@@ -42,10 +45,10 @@ O launcher com política restrita não produziu relatório dos canários no cont
 Executar uma vez em PowerShell nativo externo à sessão de agente, a partir do repositório, sem Infisical e sem injetar credenciais:
 
 ```powershell
-Set-Location -LiteralPath 'C:\dev\harness-engineering'; python .\scripts\mxc_g1_preflight.py
+Set-Location -LiteralPath 'C:\dev\harness-engineering'; python .\scripts\mxc_g1_preflight.py --diagnose-startup
 ```
 
-O comando é gratuito, limitado a 40 s, não usa background e imprime o caminho da fixture. Não repetir automaticamente. Se falhar, preservar o `report.json` sanitizado e encerrar; não enviar logs brutos ou segredos ao chat/GitHub.
+O comando é gratuito, limita MXC a 40 s (mais até 10 s para preparar a ACL), não usa background e imprime o caminho da fixture. Não repetir automaticamente. Se falhar, informar somente o campo `private_diagnostic_file` do relatório; não colar o conteúdo do arquivo privado no chat/GitHub. O agente poderá examinar localmente o erro de inicialização e devolver somente uma conclusão sanitizada, sem outra execução MXC. Se a preparação da ACL falhar, reportar `PRIVATE_DIAGNOSTIC_ACL_FAILED_NO_MXC_STARTED` e parar.
 
 ## 6. Piloto
 
