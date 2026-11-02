@@ -41,6 +41,27 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
         self.assertNotIn("UNRELATED_API_KEY", env)
         self.assertNotIn("HOME", env)
 
+    def test_nonsecret_windows_essentials_are_forwarded_only_when_explicit(self):
+        parent = {
+            "TYPESAFE_API_KEY": "sk-or-v1-artificial",
+            "ComSpec": r"C:\\Windows\\System32\\cmd.exe",
+            "NUMBER_OF_PROCESSORS": "8",
+            "SystemDrive": "C:",
+            "OS": "Windows_NT",
+            "PROCESSOR_ARCHITECTURE": "AMD64",
+            "SECRET_CUSTOM_CONFIG": "do-not-copy",
+            "NODE_OPTIONS": "--require sensitive-code",
+            "INFISICAL_TOKEN": "do-not-copy",
+        }
+        env = isolated_child_env(parent)
+        for name in ("ComSpec", "NUMBER_OF_PROCESSORS", "SystemDrive",
+                     "OS", "PROCESSOR_ARCHITECTURE"):
+            self.assertEqual(env[name], parent[name])
+        self.assertEqual(env["OPENROUTER_API_KEY"], "sk-or-v1-artificial")
+        self.assertNotIn("TYPESAFE_API_KEY", env)
+        for forbidden in ("SECRET_CUSTOM_CONFIG", "NODE_OPTIONS", "INFISICAL_TOKEN"):
+            self.assertNotIn(forbidden, env)
+
     def test_missing_key_fails_before_any_call(self):
         with self.assertRaisesRegex(SmokePreflightError, "No supported provider credential"):
             isolated_child_env({"PATH": "x"})
