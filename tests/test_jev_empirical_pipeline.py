@@ -102,6 +102,16 @@ class JevEmpiricalPipelineTests(unittest.TestCase):
             collector.run_collection(tasks=tasks, condition="CONDITION_J_ADVISORY", mode="live", run_id="live_test")
         self.assertIn("BLOCKED_G1", str(ctx.exception))
 
+    def test_collector_refuses_live_even_when_flags_are_self_asserted(self):
+        tasks = [{"task_id": "t1", "domain": "skills", "input_text": "x",
+                  "candidate_labels": ["a", "b"]}]
+        with self.assertRaisesRegex(collector.CollectorError, "BLOCKED_G1"):
+            collector.run_collection(
+                tasks, condition="CONDITION_J_ADVISORY", mode="live",
+                run_id="spoofed", isolation_verified=True,
+                api_key_authorized=True,
+            )
+
     def test_evaluator_marks_synthetic_as_simulation_only(self):
         """Evaluator must refuse to grant empirical validity to synthetic simulation data."""
         records = [{

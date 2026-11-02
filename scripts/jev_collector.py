@@ -7,7 +7,7 @@ Enforces evidence categorization:
   - OBSERVED: captured directly from live provider execution with MCP adapter.
   - VERIFIED: captured in verified container with negative canaries checked.
 
-Refuses live execution unless Gate G1 isolation and API credentials are verified.
+Live execution is always blocked until external G1 and provider evidence exist.
 """
 from __future__ import annotations
 
@@ -182,97 +182,15 @@ def run_collection(
     mcp_command: list[str] | None = None,
 ) -> list[dict]:
     if mode == "live":
-        # No live calls before real independent OS isolation AND trusted
-        # external provider evidence. CLI flags are claims, not proofs.
+        # The adapter is available for offline protocol tests only. Neither a
+        # boolean CLI flag nor a self-produced SHA-256 authenticates isolation,
+        # provider execution, tokens or billing.
         raise CollectorError(
-            "BLOCKED_G1: trusted isolation and provider attestation are "
-            "NOT_IMPLEMENTED; --isolation-verified and API key flags cannot "
-            "authorize live calls"
+            "BLOCKED_G1: live execution requires an independently attested "
+            "isolation gate and trusted provider receipts; NOT_IMPLEMENTED"
         )
-        if not isolation_verified:
-            raise CollectorError("BLOCKED_G1: Cannot run live collection without verified container/VM isolation.")
-        if not api_key_authorized:
-            raise CollectorError("BLOCKED_AUTH: Cannot run live collection without explicit operator API key authorization.")
-        
-        api_key = os.environ.get("TYPESAFE_API_KEY")
-        if not api_key:
-            raise CollectorError("BLOCKED_AUTH: TYPESAFE_API_KEY environment variable is missing for live collection.")
-            
-        if JevMcpClient is None or generate_attestation is None:
-            raise CollectorError("Jev adapter module could not be loaded for live collection.")
-            
-        now_iso = datetime.now(timezone.utc).isoformat()
-        records = []
-        
-        if condition == "CONDITION_J_ADVISORY":
-            client = JevMcpClient(command=mcp_command)
-            client.start()
-            try:
-                for task in tasks:
-                    raw_input_str = json.dumps({
-                        "task_id": task["task_id"],
-                        "domain": task["domain"],
-                        "input_text": task["input_text"],
-                        "candidate_labels": task["candidate_labels"],
-                    }, sort_keys=True, ensure_ascii=False)
-                    raw_input_sha = compute_sha256(raw_input_str)
-                    
-                    res = client.classify(question=task["input_text"], choices=task["candidate_labels"])
-                    raw_output_sha = compute_sha256(res["raw_output"])
-                    
-                    attestation = generate_attestation(
-                        task_id=task["task_id"],
-                        raw_input=raw_input_str,
-                        raw_output=res["raw_output"],
-                        adapter_name="JevMcpClient",
-                        provider=res["provider"],
-                        model=res["model"],
-                    )
-                    
-                    record = {
-                        "evidence_kind": "OBSERVED",
-                        "is_synthetic": False,
-                        "run_id": run_id,
-                        "condition": condition,
-                        "task_id": task["task_id"],
-                        "domain": task["domain"],
-                        "timestamp_iso": now_iso,
-                        "provider": res["provider"],
-                        "model": res["model"],
-                        "raw_input": raw_input_str,
-                        "raw_input_sha256": raw_input_sha,
-                        "raw_output": res["raw_output"],
-                        "raw_output_sha256": raw_output_sha,
-                        "adapter_attestation": attestation,
-                        "parsed_decision": {
-                            "label": res["label"],
-                            "confidence": res["confidence"],
-                            "margin": res["margin"],
-                            "probabilities": res["probabilities"],
-                        },
-                        "observed_metrics": {
-                            "latency_ms": res["latency_ms"],
-                            "tokens_in": res["tokens_in"],
-                            "tokens_out": res["tokens_out"],
-                            "cost_usd": res["cost_usd"],
-                        },
-                        "execution_status": res["execution_status"],
-                        "provenance": {
-                            "collector_version": "1.0.0",
-                            "mode": "live",
-                            "environment_isolated": isolation_verified,
-                            "canary_check_passed": isolation_verified,
-                            "transport": "mcp_stdio_jsonrpc",
-                        },
-                    }
-                    records.append(record)
-            finally:
-                client.close()
-        elif condition == "CONDITION_A_NATIVE":
-            raise CollectorError("Native agent live runner requires authenticated Codex/Claude session.")
-        else:
-            raise CollectorError(f"Unsupported condition: {condition}")
-        return records
+    if mode != "simulation":
+        raise CollectorError("Unsupported collection mode")
 
     # Simulation mode
     records = []
