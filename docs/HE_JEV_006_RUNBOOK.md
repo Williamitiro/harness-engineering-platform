@@ -26,7 +26,7 @@ Execute em PowerShell confiável, dentro de `C:\dev\harness-engineering`, **apó
 ```powershell
 git switch codex/harness-foundation-v1
 git pull --ff-only
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_jev_live_smoke.ps1
+pwsh -NoProfile -File .\scripts\run_jev_live_smoke.ps1
 ```
 
 O script imprime exclusivamente os metadados resumidos do resultado ou uma mensagem de falha sem corpo do provedor. **Não publicar saídas de erro brutas de npm ou logs de processos com a chave.**
