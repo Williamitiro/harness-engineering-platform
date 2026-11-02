@@ -157,7 +157,7 @@ def score_pairs(result):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=('preflight', 'pilot'))
+    parser.add_argument('mode', choices=('preflight', 'diagnose-jev', 'pilot'))
     parser.add_argument('--max-tasks', type=int, choices=(1, 2, 3), default=3)
     parser.add_argument('--model')
     parser.add_argument('--package-entry', type=Path,
@@ -167,6 +167,39 @@ def main():
     if args.mode == 'preflight':
         # Explicitly does not instantiate JEV, inject Infisical, or start a model turn.
         return mxc_g1_preflight.main(['--native-broker', '--diagnose-startup'])
+    if args.mode == 'diagnose-jev':
+        # Operator-only startup reproduction. It creates no model turn and
+        # sends NO tools/call to Jev (its upstream API client is lazy).
+        if not args.model:
+            parser.error('diagnose-jev requires --model')
+        parent = dict(os.environ)
+        parent['JEV_CODE_PROVIDER'] = 'openrouter'
+        try:
+            jev_env = isolated_child_env(parent)
+            entry = verify_package(args.package_entry)
+            node = shutil.which('node', path=jev_env.get('PATH'))
+            if node is None:
+                raise RuntimeError('NODE_MISSING')
+        except (RuntimeError, ValueError, OSError, KeyError) as exc:
+            print(json.dumps({'status': 'ABORTED', 'stage': 'local_startup_prerequisites',
+                              'code': error_code(exc), 'paid_calls': 0}))
+            return 1
+
+        def probe(report, native):
+            client = None
+            try:
+                native.prepare(args.model)  # Creates thread metadata, no inference.
+                client = JevMcpClient([node, str(entry), 'mcp'], jev_env, entry.parent.parent)
+                with client:
+                    report['jev_startup'] = {'status': 'MCP_INITIALIZED', 'diagnostic': client.startup_diagnostic()}
+                report['paid_calls'] = 0
+            except (RuntimeError, ValueError, OSError, KeyError) as exc:
+                report['jev_startup'] = {'status': 'ABORTED', 'code': error_code(exc),
+                                         'diagnostic': client.startup_diagnostic() if client else None}
+                report['pilot_status'] = 'ABORTED'
+                report['paid_calls'] = 0
+
+        return mxc_g1_preflight.main(['--native-broker', '--diagnose-startup'], probe)
     if not args.model or not args.output:
         parser.error('pilot requires explicit --model and a new --output file')
     output = args.output.absolute()
@@ -198,14 +231,18 @@ def main():
         initial.update(phase='native_session_prepare', g1_fixture=report['fixture'])
         save_receipt(output, initial)
         result = initial
+        jev = None
         try:
             native.prepare(args.model)  # free: no turn/start, no inference
             initial['phase'] = 'jev_initialize'
             save_receipt(output, initial)
-            with JevMcpClient([node, str(entry), 'mcp'], jev_env, entry.parent.parent) as jev:
+            jev = JevMcpClient([node, str(entry), 'mcp'], jev_env, entry.parent.parent)
+            with jev:
                 result = run_pairs(tasks, native, jev, args.model, lambda data: save_receipt(output, data))
         except (RuntimeError, ValueError, OSError, KeyError) as exc:
             result.update(status='ABORTED', error={'stage': initial['phase'], 'code': error_code(exc)})
+            if initial['phase'] == 'jev_initialize' and jev is not None:
+                result['jev_startup_diagnostic'] = jev.startup_diagnostic()
         result.update(scope='CLASSIFICATION_ONLY_NOT_CODE_QUALITY', g1_fixture=report['fixture'])
         if native.diagnostic_file is not None:
             result['private_native_diagnostic_directory'] = str(native.diagnostic_file.parent)
