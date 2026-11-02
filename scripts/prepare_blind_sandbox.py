@@ -16,6 +16,7 @@ import hashlib
 import json
 import os
 import shutil
+import tempfile
 import sys
 from pathlib import Path
 from typing import Any
@@ -56,19 +57,28 @@ def prepare_blind_sandbox(
     include_runner: bool = True,
     clean_target: bool = False,
 ) -> dict[str, Any]:
+    if clean_target:
+        raise SandboxError("--clean disabled: destructive sandbox cleanup is not permitted")
     if not tasks_source.exists():
         raise SandboxError(f"Tasks source not found: {tasks_source}")
-    
-    # Target safety checks
-    target_dir = target_dir.resolve()
-    if target_dir == ROOT:
-        raise SandboxError("Target directory cannot be the root repository itself")
-    
-    if clean_target and target_dir.exists():
-        shutil.rmtree(target_dir)
-        
+    if tasks_source.is_symlink():
+        raise SandboxError("Symlink task source refused")
+    # Temporary output must be OUTSIDE the Git checkout, within the OS temp
+    # directory; never copy material into an agent-accessible repo descendant.
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    requested = target_dir.absolute()
+    for ancestor in (requested, *requested.parents):
+        if ancestor.is_symlink():
+            raise SandboxError("Symlink in destination path refused")
+    target_dir = requested.resolve(strict=False)
+    if target_dir == temp_root or temp_root not in target_dir.parents:
+        raise SandboxError("Output must be a child of the OS temporary directory")
+    if target_dir == ROOT or ROOT in target_dir.parents or target_dir in ROOT.parents:
+        raise SandboxError("Output cannot be in or above this Git checkout")
+    if target_dir.exists() and (not target_dir.is_dir() or any(target_dir.iterdir())):
+        raise SandboxError("Output directory must be absent or empty; never overwrite existing files")
     target_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # 1. Copy tasks
     target_tasks_dir = target_dir / "tasks"
     target_tasks_dir.mkdir(parents=True, exist_ok=True)
@@ -82,6 +92,8 @@ def prepare_blind_sandbox(
         copied_files.append(dest)
     elif tasks_source.is_dir():
         for task_file in sorted(tasks_source.glob("*.jsonl")):
+            if task_file.is_symlink():
+                raise SandboxError("Symlink task input refused")
             if "golden" in task_file.name or "truth" in task_file.name:
                 continue # Skip any ground truth accidentally in folder
             verify_file_is_blind(task_file)
@@ -145,6 +157,9 @@ def prepare_blind_sandbox(
         "blindness_verified": True,
         "ground_truth_excluded": True,
         "git_history_excluded": True,
+        "environment_isolated": False,
+        "G1_verified": False,
+        "warning": "File scan only; not a sandbox or proof of host access restrictions",
         "files": manifest_items,
     }
     manifest_path.write_text(json.dumps(manifest_doc, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -183,20 +198,14 @@ def prepare_blind_sandbox(
     run_script_path = target_dir / "run_isolated_podman.sh"
     run_script_path.write_text(
         "#!/bin/sh\n"
-        "# Execução isolada em container rootless com Podman ou Docker\n"
-        "set -e\n"
-        'if [ -z "$TYPESAFE_API_KEY" ]; then\n'
-        '  echo "ERROR: TYPESAFE_API_KEY is not set in memory" >&2\n'
-        "  exit 1\n"
-        "fi\n"
-        "podman run --rm -it \\\n"
-        "  --network slirp4netns \\\n"
-        "  --cap-drop=ALL \\\n"
-        "  --security-opt no-new-privileges \\\n"
-        '  -v "$(pwd)":/workspace:rw \\\n'
-        '  -e TYPESAFE_API_KEY="$TYPESAFE_API_KEY" \\\n'
-        "  node:20-alpine \\\n"
-        '  python3 /workspace/scripts/jev_collector.py "$@"\n',
+        "# Offline container preflight ONLY. Does not validate G1 by itself.\n"
+        "set -eu\n"
+        'cd "$(dirname "$0")"\n'
+        'podman build --network=none --pull=never -t harness-jev-preflight .\n'
+        "podman run --rm --network none --read-only --cap-drop=ALL \\\n"
+        "  --security-opt=no-new-privileges \\\n"
+        "  --entrypoint /bin/sh harness-jev-preflight \\\n"
+        "  /workspace/verify_negative_canaries.sh\n",
         encoding="utf-8"
     )
 

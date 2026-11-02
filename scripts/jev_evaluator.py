@@ -124,26 +124,11 @@ def load_and_verify_run(path: Path) -> list[dict]:
                     f"Run line {line_no} UNVERIFIED_PROVENANCE: SYNTHETIC records must have is_synthetic=true"
                 )
         elif kind in ("OBSERVED", "VERIFIED"):
-            if rec.get("is_synthetic") is True:
-                raise EvaluatorError(
-                    f"Run line {line_no} UNVERIFIED_PROVENANCE: {kind} records cannot have is_synthetic=true"
-                )
-            if verify_attestation is None:
-                raise EvaluatorError(
-                    f"Run line {line_no} UNVERIFIED_PROVENANCE: attestation verifier not available"
-                )
-            try:
-                verify_attestation(rec)
-            except (AttestationError, ValueError) as att_exc:
-                raise EvaluatorError(
-                    f"Run line {line_no} UNVERIFIED_PROVENANCE: invalid or missing adapter attestation: {att_exc}"
-                ) from att_exc
-            if kind == "VERIFIED":
-                prov = rec.get("provenance", {})
-                if not prov.get("environment_isolated") or not prov.get("canary_check_passed"):
-                    raise EvaluatorError(
-                        f"Run line {line_no} UNVERIFIED_PROVENANCE: VERIFIED record missing verified container isolation"
-                    )
+            raise EvaluatorError(
+                "UNVERIFIED_PROVENANCE: locally recomputable digests and "
+                "self-declared isolation cannot authenticate a model response; "
+                "trusted external collection is NOT_IMPLEMENTED"
+            )
         else:
             raise EvaluatorError(
                 f"Run line {line_no} UNVERIFIED_PROVENANCE: only SYNTHETIC, OBSERVED, or VERIFIED records accepted"
@@ -266,41 +251,11 @@ def evaluate_run(records: list[dict], ground_truths: dict[str, dict], policy: di
         model_quality_proven = False
         recommendation = "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"
         status = "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY"
-    elif first_kind == "OBSERVED":
-        if any(r.get("is_synthetic") is True for r in records):
-            raise EvaluatorError("UNVERIFIED_PROVENANCE: OBSERVED run cannot have is_synthetic=true")
-        for r in records:
-            if verify_attestation is None:
-                raise EvaluatorError("UNVERIFIED_PROVENANCE: attestation verifier not available")
-            try:
-                verify_attestation(r)
-            except (AttestationError, ValueError) as att_exc:
-                raise EvaluatorError(
-                    f"UNVERIFIED_PROVENANCE: invalid or missing adapter attestation: {att_exc}"
-                ) from att_exc
-        evidence_level = "OBSERVED_REAL_EXECUTION"
-        model_quality_proven = False
-        recommendation = "EVALUATE_ISOLATED_G1_PILOT"
-        status = "OBSERVED_EXECUTION_EVALUATED"
-    elif first_kind == "VERIFIED":
-        if any(r.get("is_synthetic") is True for r in records):
-            raise EvaluatorError("UNVERIFIED_PROVENANCE: VERIFIED run cannot have is_synthetic=true")
-        for r in records:
-            if verify_attestation is None:
-                raise EvaluatorError("UNVERIFIED_PROVENANCE: attestation verifier not available")
-            try:
-                verify_attestation(r)
-            except (AttestationError, ValueError) as att_exc:
-                raise EvaluatorError(
-                    f"UNVERIFIED_PROVENANCE: invalid or missing adapter attestation: {att_exc}"
-                ) from att_exc
-            prov = r.get("provenance", {})
-            if not prov.get("environment_isolated") or not prov.get("canary_check_passed"):
-                raise EvaluatorError("UNVERIFIED_PROVENANCE: VERIFIED run missing verified container isolation")
-        evidence_level = "VERIFIED_ISOLATED_BENCHMARK"
-        model_quality_proven = True
-        recommendation = "EMPIRICAL_EVIDENCE_VALIDATED"
-        status = "VERIFIED_BENCHMARK_COMPLETE"
+    elif first_kind in ("OBSERVED", "VERIFIED"):
+        raise EvaluatorError(
+            "UNVERIFIED_PROVENANCE: trusted independent proof of provider execution "
+            "and OS isolation has NOT been implemented"
+        )
     else:
         raise EvaluatorError(f"UNVERIFIED_PROVENANCE: unsupported evidence kind '{first_kind}'")
 

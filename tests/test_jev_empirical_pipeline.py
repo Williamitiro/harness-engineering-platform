@@ -272,12 +272,10 @@ class JevEmpiricalPipelineTests(unittest.TestCase):
         }
         
         ground_truth = {task_id: {"task_id": task_id, "domain": "skills", "expected_label": "tdd-workflow"}}
-        res = evaluator.evaluate_run([rec], ground_truth, POLICY)
-        
-        self.assertEqual(res["evidence_level"], "OBSERVED_REAL_EXECUTION")
-        self.assertFalse(res["model_quality_proven"]) # Quality not proven until paired comparison in isolated G1
-        self.assertEqual(res["status"], "OBSERVED_EXECUTION_EVALUATED")
-        self.assertEqual(res["overall"]["micro_accuracy"], 1.0)
+        # The digest was created by this very test and authenticates nothing.
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "UNVERIFIED_PROVENANCE"):
+            evaluator.evaluate_run([rec], ground_truth, POLICY)
+
 
     def test_prepare_blind_sandbox_excludes_git_and_ground_truth(self):
         """prepare_blind_sandbox must generate an isolated workspace free from ground truth or git history."""
@@ -315,36 +313,103 @@ class JevEmpiricalPipelineTests(unittest.TestCase):
             self.assertTrue((target / "run_isolated_podman.sh").is_file())
 
     def test_mcp_client_mock_protocol_and_classification(self):
-        """JevMcpClient must speak JSON-RPC 2.0 stdio protocol correctly with an MCP server."""
-        mock_server_code = (
-            "import sys, json\n"
-            "for line in sys.stdin:\n"
-            "    line = line.strip()\n"
-            "    if not line: continue\n"
-            "    msg = json.loads(line)\n"
-            "    if msg.get('method') == 'initialize':\n"
-            "        resp = {'jsonrpc': '2.0', 'id': msg['id'], 'result': {'serverInfo': {'name': 'mock-jev', 'version': '0.5.0'}, 'capabilities': {'tools': {}}}}\n"
-            "        sys.stdout.write(json.dumps(resp) + '\\n'); sys.stdout.flush()\n"
-            "    elif msg.get('method') == 'notifications/initialized':\n"
-            "        continue\n"
-            "    elif msg.get('method') == 'tools/call':\n"
-            "        args = msg['params']['arguments']\n"
-            "        choice = args['choice'][0]\n"
-            "        content = json.dumps({'choice': choice, 'confidence': 0.95, 'margin': 0.85, 'probabilities': {choice: 0.95}})\n"
-            "        resp = {'jsonrpc': '2.0', 'id': msg['id'], 'result': {'content': [{'type': 'text', 'text': content}]}}\n"
-            "        sys.stdout.write(json.dumps(resp) + '\\n'); sys.stdout.flush()\n"
-        )
-        
-        cmd = [sys.executable, "-u", "-c", mock_server_code]
-        client = adapter.JevMcpClient(command=cmd)
-        with client:
-            res = client.classify(question="Write unit test for auth", choices=["tdd-workflow", "none"])
-            self.assertEqual(res["execution_status"], "SUCCESS")
-            self.assertEqual(res["label"], "tdd-workflow")
-            self.assertEqual(res["confidence"], 0.95)
-            self.assertEqual(res["margin"], 0.85)
-            self.assertIn("tdd-workflow", res["probabilities"])
-            self.assertGreater(res["latency_ms"], 0)
+        """Use upstream v0.5.0 items/classes/results[], not invented choice shape."""
+        mock_server_code = r"""
+import sys, json
+for line in sys.stdin:
+    msg = json.loads(line)
+    if msg.get("method") == "initialize":
+        resp = {"jsonrpc":"2.0", "id":msg["id"],
+                "result":{"serverInfo":{"name":"mock-jev","version":"0.5.0"},
+                          "capabilities":{"tools":{}}}}
+        sys.stdout.write(json.dumps(resp) + '\n'); sys.stdout.flush()
+    elif msg.get("method") == "tools/call":
+        args = msg["params"]["arguments"]
+        assert set(("items","classes","instructions")).issubset(args)
+        assert args["items"][0]["id"] == "task"
+        assert "question" not in args and "choice" not in args
+        label = next(iter(args["classes"]))
+        result = {"results":[{"id":"task","label":label,"probability":0.95,
+                              "confidence":0.89,"margin":0.85,"decision":"auto",
+                              "probabilities":{label:0.95}}],
+                  "model":"jev-latest", "usage":{"input_tokens":84,"output_tokens":9}}
+        resp = {"jsonrpc":"2.0","id":msg["id"],
+                "result":{"content":[{"type":"text","text":json.dumps(result)}]}}
+        sys.stdout.write(json.dumps(resp) + '\n'); sys.stdout.flush()
+"""
+        with adapter.JevMcpClient(command=[sys.executable, "-u", "-c", mock_server_code]) as client:
+            res = client.classify("Write unit test for auth", ["tdd-workflow", "none"])
+        self.assertEqual(res["execution_status"], "SUCCESS")
+        self.assertEqual(res["label"], "tdd-workflow")
+        self.assertEqual(res["confidence"], 0.95)
+        self.assertEqual(res["model_confidence"], 0.89)
+        self.assertEqual(res["margin"], 0.85)
+        self.assertEqual(res["tokens_in"], 84)
+        self.assertEqual(res["tokens_out"], 9)
+        self.assertIsNone(res["cost_usd"])
+        self.assertEqual(res["model"], "jev-latest")
+
+    def test_mcp_timeout_on_silent_server(self):
+        server_code = r"""
+import sys, json, time
+for line in sys.stdin:
+    m = json.loads(line)
+    if m.get("method") == "initialize":
+        print(json.dumps({"jsonrpc":"2.0", "id":m["id"],
+                          "result":{"capabilities":{"tools":{}}}}), flush=True)
+    elif m.get("method") == "tools/call":
+        time.sleep(5)
+"""
+        with adapter.JevMcpClient(command=[sys.executable, "-u", "-c", server_code]) as client:
+            started = __import__("time").monotonic()
+            with self.assertRaisesRegex(adapter.JevAdapterError, "timed out"):
+                client.classify("classify issue", ["a", "b"], timeout_s=0.20)
+            self.assertLess(__import__("time").monotonic() - started, 2.0)
+
+    def test_mcp_rejects_tool_error_and_wrong_response_id(self):
+        server_code = r"""
+import sys, json
+for line in sys.stdin:
+    m=json.loads(line)
+    if m.get("method") == "initialize":
+        print(json.dumps({"jsonrpc":"2.0","id":m["id"],"result":{"capabilities":{"tools":{}}}}), flush=True)
+    elif m.get("method") == "tools/call":
+        print(json.dumps({"jsonrpc":"2.0","id":9000,"result":{"content":[]}}), flush=True)
+        print(json.dumps({"jsonrpc":"2.0","id":m["id"],
+                          "result":{"isError":True,"content":[{"type":"text","text":"failure"}]}}),flush=True)
+"""
+        with adapter.JevMcpClient(command=[sys.executable, "-u", "-c", server_code]) as client:
+            with self.assertRaisesRegex(adapter.JevAdapterError, "tool reported an error"):
+                client.classify("classify", ["a", "b"])
+
+    def test_clean_flag_does_not_delete_existing_directory(self):
+        with tempfile.TemporaryDirectory() as base:
+            target = Path(base) / "keep"
+            target.mkdir()
+            marker = target / "precious.txt"
+            marker.write_text("preserve")
+            with self.assertRaisesRegex(sandbox.SandboxError, "disabled"):
+                sandbox.prepare_blind_sandbox(
+                    ROOT / "benchmarks" / "jev" / "tasks", target, clean_target=True
+                )
+            self.assertEqual(marker.read_text(), "preserve")
+
+    def test_forged_verification_flags_and_recomputed_digest_rejected(self):
+        raw_in, raw_out = "some task", "fabricated Jev response"
+        att = adapter.generate_attestation("fake", raw_in, raw_out, "adapter", "jev", "jev")
+        record = {
+            "task_id": "fake", "domain": "skills", "evidence_kind": "VERIFIED",
+            "is_synthetic": False, "raw_input": raw_in, "raw_output": raw_out,
+            "raw_input_sha256": adapter.compute_sha256(raw_in),
+            "raw_output_sha256": adapter.compute_sha256(raw_out),
+            "adapter_attestation": att,
+            "provenance": {"environment_isolated": True, "canary_check_passed": True},
+        }
+        with tempfile.TemporaryDirectory() as base:
+            path = Path(base) / "forged.jsonl"
+            path.write_text(json.dumps(record))
+            with self.assertRaisesRegex(evaluator.EvaluatorError, "UNVERIFIED_PROVENANCE"):
+                evaluator.load_and_verify_run(path)
 
 if __name__ == "__main__":
     unittest.main()

@@ -182,6 +182,13 @@ def run_collection(
     mcp_command: list[str] | None = None,
 ) -> list[dict]:
     if mode == "live":
+        # No live calls before real independent OS isolation AND trusted
+        # external provider evidence. CLI flags are claims, not proofs.
+        raise CollectorError(
+            "BLOCKED_G1: trusted isolation and provider attestation are "
+            "NOT_IMPLEMENTED; --isolation-verified and API key flags cannot "
+            "authorize live calls"
+        )
         if not isolation_verified:
             raise CollectorError("BLOCKED_G1: Cannot run live collection without verified container/VM isolation.")
         if not api_key_authorized:
