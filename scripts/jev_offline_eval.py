@@ -80,7 +80,8 @@ def evaluate(rows: list[dict], policy: dict) -> dict:
         matrix[truth][predicted] += 1
         correct_total += int(truth == predicted)
         confidence, margin = row.get("confidence"), row.get("margin")
-        automatic = (confidence is not None and margin is not None
+        automatic = (predicted != "uncertain"
+                     and confidence is not None and margin is not None
                      and confidence >= policy["auto_accept_confidence"]
                      and margin >= policy["minimum_margin"])
         if automatic:

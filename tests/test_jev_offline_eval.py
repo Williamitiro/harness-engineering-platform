@@ -31,6 +31,13 @@ class JevOfflineTests(unittest.TestCase):
                            "confidence":0.99,"margin":0.9,"latency_ms":10}], POLICY)
         self.assertEqual(r["wrong_high_confidence_ids"], ["wrong"])
 
+    def test_uncertain_never_autorouted_even_if_confident(self):
+        policy = {**POLICY, "allowed_labels": ["a", "b", "none", "uncertain"]}
+        result = jev.evaluate([{"id":"u","expected":"uncertain","predicted":"uncertain",
+                                "confidence":1.0,"margin":1.0,"latency_ms":1}], policy)
+        self.assertEqual(result["accepted"], 0)
+        self.assertEqual(result["review_or_missing"], 1)
+
     def test_invalid_and_duplicate_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)/"cases.jsonl"
