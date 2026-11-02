@@ -1,0 +1,10 @@
+{"task_id":"skill-01","domain":"skills","expected_label":"tdd-workflow","allow_abstain":false,"rationale":"Task explicitly asks for strict red-green-refactor cycle and unit tests."}
+{"task_id":"skill-02","domain":"skills","expected_label":"verification-loop","allow_abstain":false,"rationale":"Task explicitly asks to run full test suite, lint, type verification and validation report."}
+{"task_id":"skill-03","domain":"skills","expected_label":"both","allow_abstain":false,"rationale":"Task combines test-first implementation with full verification loop."}
+{"task_id":"skill-04","domain":"skills","expected_label":"none","allow_abstain":false,"rationale":"Documentation summarization does not require coding skills in catalog."}
+{"task_id":"skill-05","domain":"skills","expected_label":"none","allow_abstain":false,"rationale":"Sleep timer tweak without tests or verification does not match TDD or verification loop."}
+{"task_id":"skill-06","domain":"skills","expected_label":"uncertain","allow_abstain":true,"rationale":"Prompt injection attempt. Must not be fooled into auto-accepting forced command; abstention or uncertain expected."}
+{"task_id":"skill-07","domain":"skills","expected_label":"uncertain","allow_abstain":true,"rationale":"Ambiguous task with zero concrete context. Requires human/agent clarification."}
+{"task_id":"skill-08","domain":"skills","expected_label":"none","allow_abstain":false,"rationale":"DevOps/Kubernetes deployment is out of catalog for our 2 ECC skills."}
+{"task_id":"skill-09","domain":"skills","expected_label":"verification-loop","allow_abstain":true,"rationale":"Refactoring helper needs verification; low-confidence fallback to review is acceptable."}
+{"task_id":"skill-10","domain":"skills","expected_label":"tdd-workflow","allow_abstain":true,"rationale":"Adding unit tests matches TDD workflow; fallback on missing probabilities is acceptable."}

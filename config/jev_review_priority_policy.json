@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "status": "PROPOSED_NOT_APPROVED",
+  "scope": "offline code review findings prioritization metrics",
+  "allowed_labels": ["p0-critical", "p1-high", "p2-medium", "p3-low", "uncertain"],
+  "auto_accept_confidence": 0.85,
+  "minimum_margin": 0.5,
+  "note": "Thresholds are evaluation hypotheses, not authorization for action; never auto-deploy or apply permissions."
+}

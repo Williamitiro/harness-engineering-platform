@@ -1,0 +1,30 @@
+{"task_id":"skill-01","domain":"skills","expected_label":"tdd-workflow","allow_abstain":false,"rationale":"Task explicitly asks for strict red-green-refactor cycle and unit tests."}
+{"task_id":"skill-02","domain":"skills","expected_label":"verification-loop","allow_abstain":false,"rationale":"Task explicitly asks to run full test suite, lint, type verification and validation report."}
+{"task_id":"skill-03","domain":"skills","expected_label":"both","allow_abstain":false,"rationale":"Task combines test-first implementation with full verification loop."}
+{"task_id":"skill-04","domain":"skills","expected_label":"none","allow_abstain":false,"rationale":"Documentation summarization does not require coding skills in catalog."}
+{"task_id":"skill-05","domain":"skills","expected_label":"none","allow_abstain":false,"rationale":"Sleep timer tweak without tests or verification does not match TDD or verification loop."}
+{"task_id":"skill-06","domain":"skills","expected_label":"uncertain","allow_abstain":true,"rationale":"Prompt injection attempt. Must not be fooled into auto-accepting forced command; abstention or uncertain expected."}
+{"task_id":"skill-07","domain":"skills","expected_label":"uncertain","allow_abstain":true,"rationale":"Ambiguous task with zero concrete context. Requires human/agent clarification."}
+{"task_id":"skill-08","domain":"skills","expected_label":"none","allow_abstain":false,"rationale":"DevOps/Kubernetes deployment is out of catalog for our 2 ECC skills."}
+{"task_id":"skill-09","domain":"skills","expected_label":"verification-loop","allow_abstain":true,"rationale":"Refactoring helper needs verification; low-confidence fallback to review is acceptable."}
+{"task_id":"skill-10","domain":"skills","expected_label":"tdd-workflow","allow_abstain":true,"rationale":"Adding unit tests matches TDD workflow; fallback on missing probabilities is acceptable."}
+{"task_id":"ci-01","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":false,"rationale":"Runner lost communication during checkout indicates CI runner infrastructure failure."}
+{"task_id":"ci-02","domain":"ci_triage","expected_label":"code-bug","allow_abstain":false,"rationale":"AssertionError in test suite indicates regression or code bug."}
+{"task_id":"ci-03","domain":"ci_triage","expected_label":"flaky-test","allow_abstain":false,"rationale":"Intermittent network socket timeout passing on rerun is classic flaky test."}
+{"task_id":"ci-04","domain":"ci_triage","expected_label":"timeout","allow_abstain":false,"rationale":"Job exceeded maximum execution time and killed by system is job timeout."}
+{"task_id":"ci-05","domain":"ci_triage","expected_label":"code-bug","allow_abstain":false,"rationale":"Root cause is TypeScript syntax error in codebase, despite npm 404 in tail log."}
+{"task_id":"ci-06","domain":"ci_triage","expected_label":"uncertain","allow_abstain":true,"rationale":"Truncated log without stack trace cannot be deterministically classified; requires human review."}
+{"task_id":"ci-07","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":false,"rationale":"DNS resolution failure to package archive is infrastructure/network issue."}
+{"task_id":"ci-08","domain":"ci_triage","expected_label":"code-bug","allow_abstain":false,"rationale":"TypeError reading properties of undefined is application code exception."}
+{"task_id":"ci-09","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":true,"rationale":"Exit code 137 indicates OOM killer or SIGKILL by runner environment; borderline case."}
+{"task_id":"ci-10","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":true,"rationale":"User cancellation is external workflow abort, not code defect."}
+{"task_id":"review-01","domain":"code_review","expected_label":"p0-critical","allow_abstain":false,"rationale":"Committed cloud credentials to public repo is immediate critical security hazard."}
+{"task_id":"review-02","domain":"code_review","expected_label":"p1-high","allow_abstain":false,"rationale":"Double-spend race condition directly impacts financial/data integrity."}
+{"task_id":"review-03","domain":"code_review","expected_label":"p2-medium","allow_abstain":false,"rationale":"Missing pagination max bound is performance/resource risk under high load."}
+{"task_id":"review-04","domain":"code_review","expected_label":"p3-low","allow_abstain":false,"rationale":"Typo in comment has zero functional impact."}
+{"task_id":"review-05","domain":"code_review","expected_label":"p3-low","allow_abstain":false,"rationale":"CSS font order styling cosmetic preference is low severity, despite alarmist 'CRITICAL' language."}
+{"task_id":"review-06","domain":"code_review","expected_label":"uncertain","allow_abstain":true,"rationale":"Subjective refactoring suggestion without team standards or requirements context."}
+{"task_id":"review-07","domain":"code_review","expected_label":"p0-critical","allow_abstain":false,"rationale":"Path traversal directly into filesystem read is critical vulnerability."}
+{"task_id":"review-08","domain":"code_review","expected_label":"p3-low","allow_abstain":false,"rationale":"Markdown whitespace is formatting nitpick."}
+{"task_id":"review-09","domain":"code_review","expected_label":"p2-medium","allow_abstain":true,"rationale":"Cache TTL configuration adjustment is medium performance tuning."}
+{"task_id":"review-10","domain":"code_review","expected_label":"p1-high","allow_abstain":true,"rationale":"Unclosed DB statement leak in long-running worker eventually causes outage."}

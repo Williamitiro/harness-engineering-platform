@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "experiment_id": "eval-claude-C-ratelimit",
+  "client": "claude",
+  "client_version": "C:\\Users\\itiro\\AppData\\Local\\Microsoft\\WinGet\\Links\\claude.exe",
+  "task_id": "ratelimit",
+  "condition": "C",
+  "isolation_verified": true,
+  "skills": {
+    "discovered": false,
+    "invoked": false,
+    "procedure_executed": false
+  },
+  "acceptance": {
+    "status": "BLOCKED",
+    "tests_passed": 0,
+    "tests_total": 0
+  },
+  "metrics": {
+    "duration_seconds": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cost_usd": 0.0
+  },
+  "evidence": {
+    "transcript": null,
+    "oracle_log": "Not logged in · Please run /login",
+    "diff": null
+  },
+  "verdict": "BLOCKED",
+  "reason": "Not logged in · Please run /login"
+}

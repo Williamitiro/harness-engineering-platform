@@ -1,0 +1,50 @@
+name: Harness Foundation - stdlib checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, "codex/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python runtime
+        run: python3 --version
+      - name: Compile tools
+        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py scripts/harness_eval.py scripts/jev_offline_eval.py scripts/jev_collector.py scripts/jev_evaluator.py scripts/canary_probes.py scripts/infisical_verifier.py scripts/native_baseline.py scripts/jev_live_smoke.py
+      - name: Offline isolated unit tests (no external package downloads)
+        env:
+          JEV_REAL_INTEGRATION: "0"
+        run: python3 -W error -m unittest discover -s tests -v
+      - name: Real upstream MCP protocol integration (no paid API)
+        env:
+          JEV_REAL_INTEGRATION: "1"
+          TYPESAFE_API_KEY: ""
+        run: python3 -m unittest discover -s tests -p test_jev_real_package.py -v
+      - name: Audit historical CSV arithmetic without changing evidence
+        run: |
+          python3 scripts/audit_legacy.py docs/evidence/HE_AG_001_RESULTADOS.csv --expected-input 419019 > /tmp/legacy-audit.json
+          python3 -c 'import json; x=json.load(open("/tmp/legacy-audit.json")); assert x["run_count"] == 9; assert x["aggregates"]["input_tokens"] == 438919; assert x["aggregates"]["total_tokens"] == 467124; assert x["by_condition"]["C"]["skills_executed"] == 0'
+      - name: Evaluate synthetic Jev fixture offline without API calls
+        run: |
+          python3 scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_example.jsonl --policy config/jev_pilot_policy.json > /tmp/jev-offline.json
+          python3 -c 'import json; x=json.load(open("/tmp/jev-offline.json")); assert x["status"] == "OFFLINE_SCORE_ONLY_NOT_MODEL_PROOF"; assert x["count"] == 5; assert x["accepted"] == 2; assert x["wrong_high_confidence_ids"] == []'
+      - name: Refuse empirical claims from synthetic comparison fixtures
+        run: |
+          python3 scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_pilot.jsonl --policy config/jev_multi_domain_policy.json --compare > /tmp/jev-comparison.json
+          python3 -c 'import json; x=json.load(open("/tmp/jev-comparison.json")); assert x["status"] == "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY"; assert x["recommendation"] == "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"; assert not x["provenance"]["jev_model_called"]; assert not x["provenance"]["runtime_metrics_observed"]'
+      - name: Verify collector simulation mode and independent evaluator offline
+        run: |
+          python3 scripts/jev_collector.py --tasks benchmarks/jev/tasks/tasks_skills.jsonl --condition CONDITION_J_ADVISORY --mode simulation --output /tmp/run_sim_j.jsonl
+          python3 scripts/jev_evaluator.py --run /tmp/run_sim_j.jsonl --ground-truth benchmarks/jev/ground_truth/golden_skills.jsonl --policy config/jev_pilot_policy.json > /tmp/eval_sim_j.json
+          python3 -c 'import json; x=json.load(open("/tmp/eval_sim_j.json")); assert x["evidence_level"] == "SYNTHETIC_SIMULATION_ONLY"; assert not x["model_quality_proven"]; assert x["recommendation"] == "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"'
+      - name: Ensure dry-run evaluation succeeds offline
+        run: python3 scripts/harness_eval.py --client codex --condition A --dry-run
+      - name: Ensure no live runtime LLM benchmark was executed in CI
+        run: echo "CI validates tool code, offline dry-run and historic CSV arithmetic only. Live runtime LLM = NOT_RUN in CI."

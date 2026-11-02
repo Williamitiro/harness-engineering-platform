@@ -1,0 +1,10 @@
+{"task_id":"ci-01","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":false,"rationale":"Runner lost communication during checkout indicates CI runner infrastructure failure."}
+{"task_id":"ci-02","domain":"ci_triage","expected_label":"code-bug","allow_abstain":false,"rationale":"AssertionError in test suite indicates regression or code bug."}
+{"task_id":"ci-03","domain":"ci_triage","expected_label":"flaky-test","allow_abstain":false,"rationale":"Intermittent network socket timeout passing on rerun is classic flaky test."}
+{"task_id":"ci-04","domain":"ci_triage","expected_label":"timeout","allow_abstain":false,"rationale":"Job exceeded maximum execution time and killed by system is job timeout."}
+{"task_id":"ci-05","domain":"ci_triage","expected_label":"code-bug","allow_abstain":false,"rationale":"Root cause is TypeScript syntax error in codebase, despite npm 404 in tail log."}
+{"task_id":"ci-06","domain":"ci_triage","expected_label":"uncertain","allow_abstain":true,"rationale":"Truncated log without stack trace cannot be deterministically classified; requires human review."}
+{"task_id":"ci-07","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":false,"rationale":"DNS resolution failure to package archive is infrastructure/network issue."}
+{"task_id":"ci-08","domain":"ci_triage","expected_label":"code-bug","allow_abstain":false,"rationale":"TypeError reading properties of undefined is application code exception."}
+{"task_id":"ci-09","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":true,"rationale":"Exit code 137 indicates OOM killer or SIGKILL by runner environment; borderline case."}
+{"task_id":"ci-10","domain":"ci_triage","expected_label":"infra-environment","allow_abstain":true,"rationale":"User cancellation is external workflow abort, not code defect."}
