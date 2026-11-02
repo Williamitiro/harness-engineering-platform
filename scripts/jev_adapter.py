@@ -112,9 +112,9 @@ class JevMcpClient:
     ) -> None:
         npx_bin = shutil.which("npx") or shutil.which("npx.cmd") or "npx"
         self.command = command or [npx_bin, "-y", "@french-castle/jev-code@0.5.0", "mcp"]
-        self.env = dict(os.environ)
-        if env:
-            self.env.update(env)
+        # An explicit environment is an exact allowlist, never an overlay on
+        # the parent's credentials (which could contain unrelated secrets).
+        self.env = dict(os.environ) if env is None else dict(env)
         self.cwd = cwd
         self.process: subprocess.Popen[bytes] | None = None
         self._next_id = 1
