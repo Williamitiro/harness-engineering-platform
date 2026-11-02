@@ -22,11 +22,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.jev_adapter import JevAdapterError, JevMcpClient
-from scripts.jev_live_smoke import verify_package
+from scripts.jev_live_smoke import verify_package, WINDOWS_NODE_OPERATING_ENV
 
 NODE_MINIMAL_KEYS = ("PATH", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR")
-NODE_WINDOWS_KEYS = ("SystemDrive", "USERPROFILE", "APPDATA", "LOCALAPPDATA",
-                     "HOMEDRIVE", "HOMEPATH", "PROGRAMDATA", "ProgramFiles")
+NODE_WINDOWS_KEYS = WINDOWS_NODE_OPERATING_ENV
 JEV_ENTRY = (Path(tempfile.gettempdir()) / "harness-jev-smoke-050"
              / "node_modules" / "@french-castle" / "jev-code" / "dist" / "cli.js")
 
@@ -61,14 +60,14 @@ def stderr_category(data: bytes) -> list[str]:
 def check_node(node: str, env: dict[str, str]) -> dict:
     try:
         run = subprocess.run(
-            [node, "-e", "process.stdout.write('HE_NODE_READY ' + process.version)"],
+            [node, "-e", "console.log(process.version)"],
             cwd=None, env=env, capture_output=True, timeout=8, check=False,
         )
     except subprocess.TimeoutExpired:
         return {"status": "FAIL", "code": "NODE_TIMEOUT"}
     except OSError:
         return {"status": "FAIL", "code": "NODE_SPAWN_FAILED"}
-    match = re.fullmatch(rb"HE_NODE_READY (v\d+\.\d+\.\d+)", run.stdout)
+    match = re.fullmatch(rb"(v\d+\.\d+\.\d+)\r?\n", run.stdout)
     ok = run.returncode == 0 and match is not None
     return {"status": "PASS" if ok else "FAIL",
             "node_version": match.group(1).decode("ascii") if match else None,
