@@ -74,3 +74,20 @@ O usuário autorizou agora executar e produzir resultado do piloto. Uma única e
 Artefatos desta tentativa: `C:\Users\itiro\AppData\Local\Temp\he-jev-pilot-once-20261102-final\pilot.json`, `pilot.md`, `pilot.invocation.json`, `launch.json`, `stdout.log`, `stderr.log`. O Markdown final é gerado automaticamente ao encerrar, inclusive em falha, com acertos/latências quando houver pares completos, resultados parciais e erro por etapa. Custos desconhecidos continuam null e adoção permanece INCONCLUSIVA com N=3. Resultado live PENDING no momento deste checkpoint; não confundir testes offline com benchmark aprovado.
 
 Resultado observado do piloto: ABORTED em jev_initialize (JEV_ERROR), 0 chamadas lógicas A/J/fallback, sem resultados de classificação. Evidências sanitizadas preservadas em docs/evidence/HE_JEV_007B_PILOT.json e docs/evidence/HE_JEV_007B_PILOT.md; causa específica não identificada. Sem nova execução nesta atualização documental.
+
+## HE-JEV-007B — diagnóstico de inicialização MCP sem chamadas faturáveis
+
+**Análise independente do erro observado:** o piloto de 3 casos foi abortado em `jev_initialize` com `JEV_ERROR` e contadores A/J/fallback iguais a zero. Não houve `tools/call`. A leitura do código upstream `FrancoisChastel/jev-code@v0.5.0` (`src/mcp/server.ts`) confirma que o `JevClient` é construído sob demanda, na primeira ferramenta executada; `initialize` não testa a chave OpenRouter. Logo, o erro original **não demonstra falha de autenticação, cotas ou classificação**.
+
+No código anterior, `JevMcpClient.start` podia transformar falha de spawn, EOF, timeout, resposta inválida ou rejeição no mesmo `JEV_ERROR`. A correção atual atribui códigos de diagnóstico fixos, preserva somente estado do subprocesso/código de saída/categorias de stderr (jamais seu conteúdo), e registra a informação no recibo sem expor segredos. Além disso, o novo comando `diagnose-jev` reproduz a sequência **MXC -> sessão Codex sem turn/start -> initialize MCP Jev**, sem `tools/call` e sem qualquer benchmark.
+
+**Executar UMA ÚNICA vez em PowerShell confiável**, após atualizar a branch do PR #4:
+
+```powershell
+git pull --ff-only
+infisical run --env=dev -- python scripts/paired_executor.py diagnose-jev --model gpt-6.1-sol
+```
+
+O comando **não realiza classificação, não chama o modelo em turn/start e não executa requisições pagas à OpenRouter**. O servidor upstream atual carrega credenciais sob demanda somente em `tools/call`. O resultado esperado é `jev_startup.status=MCP_INITIALIZED`; em falha, verificar somente `jev_startup.code`, `jev_startup.diagnostic.stderr_categories`, `exit_code`, `process_started`, `process_exited` e `non_json_stdout_lines`. Não publicar stderr bruto, credenciais, config do Infisical ou arquivos privados. Caso `MCP_INITIALIZED` seja confirmado, o erro anterior não estará reproduzido e o próximo passo será revisar as diferenças de execução/env sem realizar outro piloto completo imediatamente.
+
+**Limite:** no máximo esta execução local gratuita. Se permanecer bloqueado, entregar o JSON sanitizado para diagnóstico e NÃO repetir N=3/N=30. CI comprova testes e contrato MCP em Linux, mas não reproduz o ambiente Windows/Infisical/Node deste processo; a causa específica do erro anterior continua **PENDENTE** até executar esta reprodução.
