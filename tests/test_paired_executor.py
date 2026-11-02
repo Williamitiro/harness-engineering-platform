@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from scripts.codex_native_broker import NativeBroker, BrokerError
+from scripts.jev_adapter import JevMcpClient, JevAdapterError
 from scripts.paired_executor import auto_accept, run_pairs, valid_task, save_receipt
 from scripts import mxc_g1_preflight
 
@@ -18,6 +19,39 @@ TASK = {'task_id': 'artificial', 'domain': 'test', 'input_text': 'ARTIFICIAL',
 
 
 class PairedExecutorTests(unittest.TestCase):
+    def test_jev_spawn_failure_is_a_specific_safe_code(self):
+        with patch('scripts.jev_adapter.subprocess.Popen', side_effect=FileNotFoundError('private-path')):
+            client = JevMcpClient(command=['artificial-command'], env={'PATH': 'artificial'})
+            with self.assertRaises(JevAdapterError) as raised:
+                client.start()
+        self.assertEqual(raised.exception.diagnostic_code, 'MCP_SPAWN_FAILED')
+        self.assertNotIn('private-path', str(raised.exception))
+        self.assertFalse(client.startup_diagnostic()['process_started'])
+
+    def test_jev_eof_and_timeout_provide_distinct_safe_codes(self):
+        import queue
+        for sentinel, code in ((True, 'MCP_STDOUT_CLOSED'), (False, 'MCP_RESPONSE_TIMEOUT')):
+            client = JevMcpClient(command=['never-run'], env={})
+            client.process = Mock()
+            if sentinel:
+                client._messages.put(None)
+            else:
+                client._messages.get = Mock(side_effect=queue.Empty)
+            with self.assertRaises(JevAdapterError) as raised:
+                client._send_and_receive({'id': 1, 'jsonrpc': '2.0', 'method': 'initialize'}, timeout_s=.1)
+            self.assertEqual(raised.exception.diagnostic_code, code)
+
+    def test_jev_diagnostic_is_closed_schema_without_raw_stderr(self):
+        client = JevMcpClient(command=['never-run'], env={'OPENROUTER_API_KEY': 'artificial-secret'})
+        client._started_once = True
+        client._last_exit_code = 12
+        client._stderr_tail.append('stderr available (redacted)')
+        client._stderr_categories.add('NODE_MODULE_MISSING')
+        result = client.startup_diagnostic()
+        self.assertEqual(result['exit_code'], 12)
+        self.assertEqual(result['stderr_categories'], ['NODE_MODULE_MISSING'])
+        self.assertNotIn('artificial-secret', json.dumps(result))
+
     def test_native_final_response_and_observed_usage(self):
         native = NativeBroker(Path('codex.exe'), [], {}, Path.cwd())
         native.prepare = Mock(return_value='artificial-thread')
