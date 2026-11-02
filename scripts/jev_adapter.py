@@ -156,23 +156,24 @@ class JevMcpClient:
         self._stderr_tail: list[str] = []
         self._stderr_categories: set[str] = set()
         self._invalid_stdout_lines = 0
+        self._started_once = False
+        self._last_exit_code: int | None = None
 
     def startup_diagnostic(self) -> dict[str, Any]:
         """Sanitized, bounded startup evidence: never expose stderr or environment."""
-        exit_code = self.process.poll() if self.process is not None else None
+        exit_code = self.process.poll() if self.process is not None else self._last_exit_code
         return {
-            "process_started": self.process is not None,
-            "process_exited": exit_code is not None if self.process is not None else None,
+            "process_started": self._started_once,
+            "process_exited": exit_code is not None if self._started_once else None,
             "exit_code": exit_code if isinstance(exit_code, int) and -999 <= exit_code <= 999 else None,
             "stderr_categories": sorted(self._stderr_categories),
             "stderr_present": bool(self._stderr_tail),
             "non_json_stdout_lines": min(self._invalid_stdout_lines, 10),
         }
 
-    def _stdout_reader(self) -> None:
-        assert self.process is not None and self.process.stdout is not None
+    def _stdout_reader(self, stream) -> None:
         try:
-            for raw in self.process.stdout:
+            for raw in stream:
                 try:
                     msg = json.loads(raw.decode("utf-8"))
                     if isinstance(msg, dict):
@@ -183,9 +184,8 @@ class JevMcpClient:
         finally:
             self._messages.put(None)
 
-    def _stderr_reader(self) -> None:
-        assert self.process is not None and self.process.stderr is not None
-        for raw in self.process.stderr:
+    def _stderr_reader(self, stream) -> None:
+        for raw in stream:
             # Categorize only known Node startup faults in memory; never keep raw text.
             lower = raw.lower()[:4096]
             if b"err_module_not_found" in lower or b"cannot find module" in lower:
@@ -212,8 +212,9 @@ class JevMcpClient:
             )
         except OSError as exc:
             raise JevAdapterError("MCP server could not start", diagnostic_code="MCP_SPAWN_FAILED") from exc
-        threading.Thread(target=self._stdout_reader, daemon=True).start()
-        threading.Thread(target=self._stderr_reader, daemon=True).start()
+        self._started_once = True
+        threading.Thread(target=self._stdout_reader, args=(self.process.stdout,), daemon=True).start()
+        threading.Thread(target=self._stderr_reader, args=(self.process.stderr,), daemon=True).start()
         try:
             response = self._send_and_receive({
                 "jsonrpc": "2.0", "id": self._get_next_id(),
@@ -403,6 +404,7 @@ class JevMcpClient:
                     process.kill()
                     process.wait(timeout=2)
         finally:
+            self._last_exit_code = process.poll()
             for stream in (process.stdout, process.stderr):
                 if stream is not None:
                     stream.close()
