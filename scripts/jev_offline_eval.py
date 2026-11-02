@@ -67,6 +67,15 @@ def load_rows(path: Path, labels: set[str]) -> list[dict]:
         latency = number(row.get("latency_ms"), "latency_ms", allow_null=True)
         if latency is not None and latency < 0:
             raise ValidationError(f"line {line_number} negative latency")
+        native_latency = number(row.get("native_latency_ms"), "native_latency_ms", allow_null=True)
+        if native_latency is not None and native_latency < 0:
+            raise ValidationError(f"line {line_number} negative native_latency_ms")
+        for field in ("tokens_in", "tokens_out", "native_tokens_in", "native_tokens_out"):
+            value = row.get(field)
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int) or value < 0
+            ):
+                raise ValidationError(f"line {line_number} {field} must be a nonnegative integer")
         rows.append(row)
     if not rows:
         raise ValidationError("empty decision set")
@@ -99,6 +108,8 @@ def evaluate(rows: list[dict], policy: dict) -> dict:
     n = len(rows)
     return {
         "status": "OFFLINE_SCORE_ONLY_NOT_MODEL_PROOF",
+        "provenance": {"source_kind": "PREPOPULATED_INPUT", "model_called": False,
+                       "observed_model_performance": False},
         "policy_status": policy.get("status", "UNKNOWN"),
         "count": n,
         "total_accuracy": correct_total / n,
@@ -136,8 +147,17 @@ def evaluate_comparison(rows: list[dict], policy: dict) -> dict:
     jev_in_tokens = [int(r["tokens_in"]) for r in rows if r.get("tokens_in") is not None]
     jev_out_tokens = [int(r["tokens_out"]) for r in rows if r.get("tokens_out") is not None]
 
+    # This function never calls either provider. All labels, runtimes, token
+    # counts and latencies were supplied as input and cannot prove model quality.
     return {
-        "status": "COMPARATIVE_EVALUATION_OFFLINE_ONLY",
+        "status": "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY",
+        "provenance": {
+            "source_kind": "HAND_AUTHORED_FIXTURE",
+            "codex_or_other_native_model_called": False,
+            "jev_model_called": False,
+            "runtime_metrics_observed": False,
+            "empirical_effect_or_savings_estimated": False,
+        },
         "sample_size": n,
         "condition_a_native": {
             "accuracy": cond_a_correct / n,
@@ -160,11 +180,11 @@ def evaluate_comparison(rows: list[dict], policy: dict) -> dict:
             "mean_tokens_in": (mean(jev_in_tokens) if jev_in_tokens else None),
             "mean_tokens_out": (mean(jev_out_tokens) if jev_out_tokens else None),
         },
-        "recommendation": "INCONCLUSIVE_FOR_PRODUCTION",
+        "recommendation": "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION",
         "justification": [
-            "Synthetic offline benchmark demonstrates safety properties (abstaining on ambiguous/injection cases)",
+            "Hand-authored synthetic labels only demonstrate scorecard arithmetic and local abstention logic; NO model was tested",
             "G1 external isolation gate is not yet homologated; live execution remains BLOCKED_G1",
-            "Production adoption requires external VM/container isolation, live token billing verification, and operator approval"
+            "No observed latency, token, accuracy, or prompt-injection result; real comparison requires provenance and controlled provider runs"
         ],
         "detailed_jev_eval": jev_result,
     }

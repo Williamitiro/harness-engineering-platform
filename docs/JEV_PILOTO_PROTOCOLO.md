@@ -1,5 +1,8 @@
 # JEV — piloto de classificação controlada (não é implantação)
 
+> **ERRATA DE AUDITORIA 02/11/2026 — PREVALECE SOBRE AFIRMAÇÕES ABAIXO:** Este documento contém percentuais calculados a partir de campos **manualmente pré-preenchidos** em fixtures sintéticas (`native_predicted`, `predicted`, latência e tokens). **Nenhum modelo nativo nem JEV foi chamado nessa comparação.** As alegações de superioridade, economia ou defesa contra prompt injection NÃO foram comprovadas. O estágio atual é `SIMULATION_ONLY / NO_EMPIRICAL_EVIDENCE`. Leia [AUDITORIA_HE_JEV_001_2026-11-02.md](AUDITORIA_HE_JEV_001_2026-11-02.md) antes de utilizar estas tabelas.
+
+
 ## Objetivos claros e perguntas
 **P1:** um classificador consultivo melhora escolha de skills adequadas quando há várias opções? **P2:** acelera triagem de erros CI sem sacrificar falso-negativos importantes? **P3:** custo, latência, privacidade e falha de provider são aceitáveis?
 

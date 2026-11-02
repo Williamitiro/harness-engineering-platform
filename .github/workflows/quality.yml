@@ -28,6 +28,10 @@ jobs:
         run: |
           python3 scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_example.jsonl --policy config/jev_pilot_policy.json > /tmp/jev-offline.json
           python3 -c 'import json; x=json.load(open("/tmp/jev-offline.json")); assert x["status"] == "OFFLINE_SCORE_ONLY_NOT_MODEL_PROOF"; assert x["count"] == 5; assert x["accepted"] == 2; assert x["wrong_high_confidence_ids"] == []'
+      - name: Refuse empirical claims from synthetic comparison fixtures
+        run: |
+          python3 scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_pilot.jsonl --policy config/jev_multi_domain_policy.json --compare > /tmp/jev-comparison.json
+          python3 -c 'import json; x=json.load(open("/tmp/jev-comparison.json")); assert x["status"] == "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY"; assert x["recommendation"] == "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"; assert not x["provenance"]["jev_model_called"]; assert not x["provenance"]["runtime_metrics_observed"]'
       - name: Ensure dry-run evaluation succeeds offline
         run: python3 scripts/harness_eval.py --client codex --condition A --dry-run
       - name: Ensure no live runtime LLM benchmark was executed in CI

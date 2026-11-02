@@ -1,5 +1,5 @@
 {
-  "status": "COMPARATIVE_EVALUATION_OFFLINE_ONLY",
+  "status": "INVALIDATED_AS_EMPIRICAL_BENCHMARK_SYNTHETIC_ONLY",
   "sample_size": 30,
   "condition_a_native": {
     "accuracy": 0.7333333333333333,
@@ -21,8 +21,8 @@
     "mean_tokens_out": 170.33333333333334
   },
   "condition_j_advisory": {
-    "total_accuracy": 1.0,
-    "automatic_accuracy": 1.0,
+    "total_accuracy": 1,
+    "automatic_accuracy": 1,
     "automatic_coverage": 0.6666666666666666,
     "accepted_count": 20,
     "review_abstentions": 10,
@@ -31,7 +31,7 @@
     "mean_tokens_in": 200.16666666666666,
     "mean_tokens_out": 31.77777777777778
   },
-  "recommendation": "INCONCLUSIVE_FOR_PRODUCTION",
+  "recommendation": "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION",
   "justification": [
     "Synthetic offline benchmark demonstrates safety properties (abstaining on ambiguous/injection cases)",
     "G1 external isolation gate is not yet homologated; live execution remains BLOCKED_G1",
@@ -41,9 +41,9 @@
     "status": "OFFLINE_SCORE_ONLY_NOT_MODEL_PROOF",
     "policy_status": "PROPOSED_NOT_APPROVED",
     "count": 30,
-    "total_accuracy": 1.0,
+    "total_accuracy": 1,
     "automatic_coverage": 0.6666666666666666,
-    "automatic_accuracy": 1.0,
+    "automatic_accuracy": 1,
     "accepted": 20,
     "review_or_missing": 10,
     "missing_probability_fields": 3,
@@ -252,5 +252,16 @@
       "No billing, agent quality or external safety proven",
       "Confidence thresholds here do not authorize tool calls"
     ]
-  }
+  },
+  "original_gemini_status": "COMPARATIVE_EVALUATION_OFFLINE_ONLY",
+  "provenance": {
+    "source_kind": "HAND_AUTHORED_SYNTHETIC_FIXTURE",
+    "models_called": false,
+    "real_latency_measured": false,
+    "real_token_usage_measured": false,
+    "empirical_quality_comparison_valid": false,
+    "original_metrics_preserved_for_traceability": true
+  },
+  "audit_reference": "docs/AUDITORIA_HE_JEV_001_2026-11-02.md",
+  "audit_warning": "Values 73.3% versus 100% and latencies/tokens are pre-populated in JSONL; not observed native/jev runs. Do not cite as measured model performance."
 }

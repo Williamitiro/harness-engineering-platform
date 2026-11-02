@@ -1,5 +1,7 @@
 # JEV / TypeSafe — decisão arquitetural para Harness Engineering
 
+> **Revisão independente:** o comparativo 73,3% vs. 100% publicado pelo Gemini é simulação com dados pré-preenchidos, **não resultado de chamadas Jev ou Codex**. Ver [AUDITORIA_HE_JEV_001_2026-11-02.md](AUDITORIA_HE_JEV_001_2026-11-02.md). Não autoriza adoção.
+
 **Data-base de verificação:** 2026-11-02. **Estado:** `PILOTO_OFFLINE_VALIDADO / LIVE_BLOCKED_G1 / INCONCLUSIVE_FOR_PRODUCTION`. **Dono da decisão de adoção:** owner após revisão independente do Codex. **Runtimes alvo:** Codex e Claude Code, exclusivamente.
 
 ## O que JEV é — e o que não é

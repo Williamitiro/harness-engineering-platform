@@ -71,13 +71,15 @@ class JevOfflineTests(unittest.TestCase):
              "native_predicted":"none","native_latency_ms":2800,"native_tokens_in":2200,"native_tokens_out":180},
         ]
         comp = jev.evaluate_comparison(rows, POLICY)
-        self.assertEqual(comp["status"], "COMPARATIVE_EVALUATION_OFFLINE_ONLY")
+        self.assertEqual(comp["status"], "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY")
+        self.assertFalse(comp["provenance"]["jev_model_called"])
+        self.assertFalse(comp["provenance"]["runtime_metrics_observed"])
         self.assertEqual(comp["sample_size"], 2)
         self.assertEqual(comp["condition_a_native"]["accuracy"], 0.5)
         self.assertEqual(comp["condition_a_native"]["error_count"], 1)
         self.assertEqual(comp["condition_j_advisory"]["total_accuracy"], 1.0)
         self.assertEqual(comp["condition_j_advisory"]["accepted_count"], 2)
-        self.assertEqual(comp["recommendation"], "INCONCLUSIVE_FOR_PRODUCTION")
+        self.assertEqual(comp["recommendation"], "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION")
 
     def test_comparative_requires_native_predicted(self):
         rows = [{"id":"1","expected":"a","predicted":"a","confidence":0.95,"margin":0.8}]
@@ -91,6 +93,30 @@ class JevOfflineTests(unittest.TestCase):
                                          "native_predicted":"invalid_label"}))
             with self.assertRaises(jev.ValidationError):
                 jev.load_rows(path, set(POLICY["allowed_labels"]))
+
+    def test_nonfinite_and_negative_native_metrics_rejected(self):
+        bad_cases = [
+            {"native_latency_ms": float("inf")},
+            {"native_tokens_in": -1},
+            {"tokens_out": True},
+            {"tokens_in": "200"},
+        ]
+        with tempfile.TemporaryDirectory() as d:
+            for i, fields in enumerate(bad_cases):
+                path = Path(d)/f"bad_{i}.jsonl"
+                row = {"id": str(i), "expected": "a", "predicted": "a", **fields}
+                path.write_text(json.dumps(row))
+                with self.assertRaises(jev.ValidationError):
+                    jev.load_rows(path, set(POLICY["allowed_labels"]))
+
+    def test_comparison_never_claims_real_model_accuracy(self):
+        row = {"id":"sim","expected":"a","predicted":"a","native_predicted":"a",
+               "confidence":1.0,"margin":1.0,"latency_ms":1.0,
+               "native_latency_ms":2000,"native_tokens_in":1000,"tokens_in":1}
+        r = jev.evaluate_comparison([row], POLICY)
+        self.assertEqual(r["provenance"]["source_kind"], "HAND_AUTHORED_FIXTURE")
+        self.assertFalse(r["provenance"]["empirical_effect_or_savings_estimated"])
+        self.assertEqual(r["recommendation"], "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION")
 
     def test_all_pilot_fixture_files_valid(self):
         configs_and_fixtures = [

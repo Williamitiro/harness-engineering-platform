@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [FrancoisChastel/jev-code](https://github.com/FrancoisChastel/jev-code) | `v0.5.0` | `74a4569bfe8bb4ad0cc1ba74fa5867f09e267300` | 2026-10-08 (push 31/10) | MIT | MCP stdio + CLI + skill; 5 tools (`jev_classify`, `jev_check`, `jev_score`, `jev_rank`, `jev_ask`) | Gravação em config do usuário pelo instalador; envio de payload a endpoint externo | **Candidato prioritário (MCP consultivo opt-in)** |
 | [felpsdev/jev-classifier](https://github.com/felpsdev/jev-classifier) | `master` (sem releases) | `e0c6cc7c6d2b1027be86ad8f4e03e191a88ec402` | 2026-09-18 | MIT | Proxy HTTP local (porta 8080) com modos Observe/Enforce; log de decisões | Interceptação de tráfego de modelo; suporte a Codex apenas em Observe (Responses Lite) | **Adiar (risco de proxy desnecessário)** |
-| [n23eos/jev-skills](https://github.com/n23eos/jev-skills) | `v0.3.0` | `ff2d92b07091209c03d455d562f58c928b7b9e4e` | 2026-10-02 | MIT | 14 skills consultivas para Codex e Claude Code | Sobreposição com biblioteca ECC; sem comprovação de ROI econômico | **Referência de padrões** |
+| [n23eos/jev-skills](https://github.com/n23eos/jev-skills) | `v0.3.0` | `4cb8ab4ec3c7fa3821dbd2b398b490a083b1b034` | 2026-10-02 | MIT | 14 skills consultivas para Codex e Claude Code | Sobreposição com biblioteca ECC; sem comprovação de ROI econômico | **Referência de padrões** |
 | [typesafe-ai/skills](https://github.com/typesafe-ai/skills) | `main` | `302eea662c54bca6730873fe245bec1d69ebc23d` | 2026-10-15 | MIT | Skill canônica TypeSafe (`skills/typesafe-ai/SKILL.md`) | Instruções de design; não executa chamadas automaticamente | **Referência canônica de API** |
 | [vinilana/jev-eval-agent](https://github.com/vinilana/jev-eval-agent) | `main` | `b34a12f...` | 2026-09-17 | MIT | Benchmark com 100 ferramentas sintéticas | Conjunto mock sem verificação de tarefas de engenharia de software | Apenas inspiração de método |
 | [themsquared/jev-benchmark](https://github.com/themsquared/jev-benchmark) | `main` | `f8190c1...` | 2026-09-24 | Apache-2.0 | 60 casos sintéticos rotulados | Classificação one-shot sem harness de validação | Referência metodológica |
@@ -39,6 +39,9 @@
 ### Fontes primárias auditadas
 - https://github.com/FrancoisChastel/jev-code (tag `v0.5.0`, commit `74a4569bfe8bb4ad0cc1ba74fa5867f09e267300`)
 - https://github.com/felpsdev/jev-classifier (commit `e0c6cc7c6d2b1027be86ad8f4e03e191a88ec402`)
-- https://github.com/n23eos/jev-skills (tag `v0.3.0`, commit `ff2d92b07091209c03d455d562f58c928b7b9e4e`)
+- https://github.com/n23eos/jev-skills (tag `v0.3.0`, commit `4cb8ab4ec3c7fa3821dbd2b398b490a083b1b034`)
 - https://github.com/typesafe-ai/skills (commit `302eea662c54bca6730873fe245bec1d69ebc23d`)
 - https://docs.typesafe.ai/llms.txt e https://docs.typesafe.ai/introduction/coding-agents.md
+
+
+> **Verificação de tag em 02/11/2026:** `n23eos/jev-skills@v0.3.0` é tag anotada `0c3a83ac32c6b120345f7b236f73f3433db0e301` apontando ao commit `4cb8ab4ec3c7fa3821dbd2b398b490a083b1b034`. O SHA `ff2d92...` descrito em relatório anterior é outro commit, não o da tag.

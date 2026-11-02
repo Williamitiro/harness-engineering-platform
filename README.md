@@ -1,5 +1,7 @@
 # Harness Engineering — integração seletiva, verificável e reutilizável
 
+> **Estado revisado HE-JEV-001:** implementação offline e CI são reais; o suposto ganho Jev 100% vs. 73,3% foi calculado sobre previsões inventadas em fixtures sintéticas, sem chamadas a modelos. Não é benchmark comparativo. Ver [auditoria independente](docs/AUDITORIA_HE_JEV_001_2026-11-02.md).
+
 > **Segurança e decisão atual (02/11/2026):** resultado A/C antigo é CONTAMINADO (baseline leu solução anterior do Git pai); o runner original NÃO isolava o sistema. Corrigida a execução offline e introduzido bloqueio por padrão de chamadas live sem ambiente previamente isolado. Veja [errata](docs/AUDITORIA_CORRECOES_2026-11-02.md) e [JEV](docs/JEV_DECISAO.md). CI verde será requisito do HEAD novo. Não adotar skills em projeto real apenas com esses dados.
 
 
