@@ -97,6 +97,23 @@ def check_client_auth(client: str, binary: str) -> tuple[bool, str]:
     return False, f"Unknown client {client}"
 
 
+def assert_eval_target(target: Path) -> None:
+    """Refuse deletion, traversal, symlinks and non-disposable workspaces.
+
+    This is filesystem hygiene, NOT a security sandbox for executing an LLM.
+    """
+    base = (ROOT / ".poc").resolve()
+    candidate = target.absolute()
+    harnessctl.assert_no_symlink(candidate)
+    resolved = candidate.resolve(strict=False)
+    if resolved == base or base not in resolved.parents:
+        raise EvalError("target must be a child of this repository's .poc directory")
+    if candidate.exists() and not candidate.is_dir():
+        raise EvalError("target is not a directory")
+    if candidate.exists() and any(candidate.iterdir()):
+        raise EvalError("target is not empty; manual review/cleanup required")
+
+
 def setup_sandbox(
     target: Path,
     task_dir: Path,
@@ -105,25 +122,22 @@ def setup_sandbox(
     source: Path | None,
     manifest: dict,
 ) -> dict:
-    if target.exists():
-        shutil.rmtree(target)
-    target.mkdir(parents=True)
+    # No rmtree: never erase experiments or files without a separate review.
+    assert_eval_target(target)
+    target.mkdir(parents=True, exist_ok=True)
     harnessctl.check_sandbox(target)
 
-    # 1. Copy Task specification
     task_spec = task_dir / "specification.md"
     if not task_spec.is_file():
         raise EvalError(f"Task specification not found: {task_spec}")
     shutil.copy2(task_spec, target / "TASK.md")
 
-    # 2. Setup project contract for Conditions B and C
     contract_file = ROOT / "templates" / ("AGENTS.md" if client == "codex" else "CLAUDE.md")
     if condition in ("B", "C"):
         if not contract_file.is_file():
             raise EvalError(f"Contract template missing: {contract_file}")
         shutil.copy2(contract_file, target / contract_file.name)
 
-    # 3. Setup ECC skills for Condition C
     skills_meta = {"installed": False, "verified": False}
     if condition == "C":
         if source is None or not source.is_dir():
@@ -137,7 +151,6 @@ def setup_sandbox(
             "adapter": rec["adapter"],
             "ecc_commit": rec["ecc_commit"],
         }
-
     return skills_meta
 
 
@@ -173,59 +186,67 @@ def run_oracle(oracle_path: Path, target: Path) -> dict:
 
 
 def analyze_trajectory(events: list[dict], client: str) -> dict:
-    discovered = False
-    invoked = False
-    procedure_executed = False
+    """Conservative evidence classifier, never a tool router or an LLM judge.
 
-    raw_text_blobs: list[str] = []
-    commands_executed: list[str] = []
+    Count only completed command executions with exit codes. A skill name in an
+    agent response, failed command or generic test run is not invocation/TDD.
+    """
+    import re
 
+    records = []
     for item in events:
-        t = item.get("type", "")
-        # Codex JSONL event types
-        if t == "item.completed":
-            it = item.get("item", {})
-            itype = it.get("type", "")
-            if itype == "agent_message":
-                raw_text_blobs.append(it.get("text", ""))
-            elif itype == "command_execution":
-                cmd = it.get("command", "")
-                out = it.get("aggregated_output", "")
-                commands_executed.append(cmd)
-                raw_text_blobs.append(f"{cmd}\n{out}")
-        elif t == "agent_message":
-            raw_text_blobs.append(item.get("text", ""))
-        elif t == "command_execution":
-            commands_executed.append(item.get("command", ""))
+        if item.get("type") != "item.completed":
+            continue
+        cmd = item.get("item", {})
+        if cmd.get("type") != "command_execution" or cmd.get("status") != "completed":
+            continue
+        exit_code = cmd.get("exit_code")
+        if type(exit_code) is not int:
+            continue
+        records.append({
+            "command": str(cmd.get("command", "")),
+            "output": str(cmd.get("aggregated_output", "")),
+            "exit_code": exit_code,
+        })
 
-    combined = "\n".join(raw_text_blobs)
+    successful = [r for r in records if r["exit_code"] == 0]
+    successful_reads = set()
+    for r in successful:
+        cmd = r["command"].replace("\\", "/").lower()
+        output = r["output"].lower()
+        if not re.search(r"get-content|\\bcat\\b|\\btype\\b|\\bsed\\b", cmd):
+            continue
+        for skill in harnessctl.ALLOWED:
+            if f"{skill}/skill.md" in cmd and (
+                f"name: {skill}" in output or f"# {skill}" in output
+            ):
+                successful_reads.add(skill)
 
-    # Level 2 (DISCOVERED): skills directory checked or skill names listed
-    for skill_name in harnessctl.ALLOWED:
-        if skill_name in combined or (f"skills/{skill_name}" in combined.replace("\\", "/")):
-            discovered = True
-            break
-    if ".agents/skills" in combined.replace("\\", "/") or ".claude/skills" in combined.replace("\\", "/"):
-        discovered = True
-
-    # Level 3 (INVOKED): reading skill definition or explicitly following skill workflow
-    for skill_name in harnessctl.ALLOWED:
-        needle = f"{skill_name}/SKILL.md"
-        if needle in combined.replace("\\", "/"):
-            invoked = True
-            break
-
-    # Level 4 (BEHAVIOR_OBSERVED): TDD cycle (test command run, failure/success, verification loop)
-    test_runs = [c for c in commands_executed if "unittest" in c or "pytest" in c or "test" in c]
-    if len(test_runs) >= 1 or "verification-loop" in combined or "tdd-workflow" in combined:
-        procedure_executed = True
-
+    test_pattern = re.compile(r"(?:python(?:3)?\\s+-m\\s+)?(?:pytest|unittest)\\b", re.I)
+    tests = [(i, r) for i, r in enumerate(records) if test_pattern.search(r["command"])]
+    red_green = any(
+        first["exit_code"] != 0 and second["exit_code"] == 0 and i < j
+        for i, first in tests for j, second in tests
+    )
+    # Require separate commands with successful exit codes. Shell statements
+    # chained in one command cannot establish every sub-step succeeded.
+    verified_names = (
+        "mypy", "ruff", "coverage",
+    )
+    verified = all(
+        any(k in r["command"].lower() and r["exit_code"] == 0 for r in records)
+        for k in verified_names
+    )
     return {
-        "discovered": discovered,
-        "invoked": invoked,
-        "procedure_executed": procedure_executed,
-        "commands_count": len(commands_executed),
-        "commands": commands_executed,
+        "discovered": bool(successful_reads),
+        "invoked": len(successful_reads) == len(harnessctl.ALLOWED),
+        "procedure_executed": len(successful_reads) == len(harnessctl.ALLOWED)
+                              and red_green and verified,
+        "red_green_observed": red_green,
+        "verification_commands_observed": verified,
+        "skill_bodies_read": sorted(successful_reads),
+        "commands_count": len(records),
+        "commands": [r["command"] for r in records],
     }
 
 
@@ -238,9 +259,25 @@ def execute_eval(
     manifest: dict,
     dry_run: bool = False,
     timeout_seconds: int = 180,
+    live_authorized: bool = False,
 ) -> dict:
     experiment_id = f"eval-{client}-{condition}-{task_dir.name}"
     start_time = time.monotonic()
+
+    if not dry_run and not live_authorized:
+        return {
+            "schema_version": 1,
+            "experiment_id": experiment_id,
+            "client": client,
+            "task_id": task_dir.name,
+            "condition": condition,
+            "isolation_verified": False,
+            "acceptance": {"status": "NOT_RUN", "tests_passed": None, "tests_total": None},
+            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
+            "metrics": {"duration_seconds": 0, "input_tokens": None, "output_tokens": None, "cost_usd": None},
+            "verdict": "BLOCKED",
+            "reason": "Live execution disabled by default. Requires external OS isolation and --live-in-preisolated-environment.",
+        }
 
     # Gate G1: Setup external canary
     poc_root = ROOT / ".poc"
@@ -251,61 +288,48 @@ def execute_eval(
 
     skills_meta = setup_sandbox(target, task_dir, client, condition, source, manifest)
 
-    binary = find_codex_binary() if client == "codex" else find_claude_binary()
-    if not binary:
-        return {
-            "schema_version": 1,
-            "experiment_id": experiment_id,
-            "client": client,
-            "client_version": "NOT_INSTALLED",
-            "task_id": task_dir.name,
-            "condition": condition,
-            "isolation_verified": False,
-            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
-            "acceptance": {"status": "BLOCKED", "tests_passed": 0, "tests_total": 0},
-            "metrics": {"duration_seconds": 0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0},
-            "evidence": {"transcript": None, "oracle_log": "Client CLI binary not found", "diff": None},
-            "verdict": "BLOCKED",
-            "reason": f"Binary for {client} not found on system PATH",
-        }
-
-    auth_ok, auth_msg = check_client_auth(client, binary)
-    if not auth_ok and not dry_run:
-        return {
-            "schema_version": 1,
-            "experiment_id": experiment_id,
-            "client": client,
-            "client_version": binary,
-            "task_id": task_dir.name,
-            "condition": condition,
-            "isolation_verified": True,
-            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
-            "acceptance": {"status": "BLOCKED", "tests_passed": 0, "tests_total": 0},
-            "metrics": {"duration_seconds": 0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0},
-            "evidence": {"transcript": None, "oracle_log": auth_msg, "diff": None},
-            "verdict": "BLOCKED",
-            "reason": auth_msg,
-        }
-
+    # Offline dry-run must not require installation, login or model API access.
     if dry_run:
-        # Pre-execution validation check only
         oracle_res = run_oracle(task_dir / "oracle.py", target)
         elapsed = round(time.monotonic() - start_time, 3)
         return {
-            "schema_version": 1,
-            "experiment_id": experiment_id,
-            "client": client,
-            "client_version": binary,
-            "task_id": task_dir.name,
-            "condition": condition,
-            "isolation_verified": canary.read_text(encoding="utf-8") == canary_token,
+            "schema_version": 1, "experiment_id": experiment_id, "client": client,
+            "client_version": "NOT_PROBED_OFFLINE", "task_id": task_dir.name,
+            "condition": condition, "isolation_verified": False,
+            "canary_intact": canary.read_text(encoding="utf-8") == canary_token,
             "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
             "acceptance": {"status": oracle_res["status"], "tests_passed": oracle_res["tests_passed"],
                            "tests_total": oracle_res["tests_total"]},
-            "metrics": {"duration_seconds": elapsed, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0},
-            "evidence": {"transcript": "DRY_RUN", "oracle_log": oracle_res["output"], "diff": None},
-            "verdict": "PREPARED",
-            "skills_meta": skills_meta,
+            "metrics": {"duration_seconds": elapsed, "input_tokens": None,
+                        "output_tokens": None, "cost_usd": None},
+            "evidence": {"transcript": None, "oracle_log": oracle_res["output"], "diff": None},
+            "verdict": "PREPARED", "skills_meta": skills_meta,
+            "note": "No model called; canary intact does NOT prove OS/network isolation",
+        }
+
+    binary = find_codex_binary() if client == "codex" else find_claude_binary()
+    if not binary:
+        return {
+            "schema_version": 1, "experiment_id": experiment_id, "client": client,
+            "client_version": "NOT_INSTALLED", "task_id": task_dir.name,
+            "condition": condition, "isolation_verified": False,
+            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
+            "acceptance": {"status": "BLOCKED", "tests_passed": 0, "tests_total": 0},
+            "metrics": {"duration_seconds": 0, "input_tokens": None,
+                        "output_tokens": None, "cost_usd": None},
+            "verdict": "BLOCKED", "reason": f"Binary for {client} not found on system PATH",
+        }
+    auth_ok, auth_msg = check_client_auth(client, binary)
+    if not auth_ok:
+        return {
+            "schema_version": 1, "experiment_id": experiment_id, "client": client,
+            "client_version": binary, "task_id": task_dir.name,
+            "condition": condition, "isolation_verified": False,
+            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
+            "acceptance": {"status": "BLOCKED", "tests_passed": 0, "tests_total": 0},
+            "metrics": {"duration_seconds": 0, "input_tokens": None,
+                        "output_tokens": None, "cost_usd": None},
+            "verdict": "BLOCKED", "reason": auth_msg,
         }
 
     # Live execution with native runtime
@@ -361,7 +385,6 @@ def execute_eval(
             binary,
             "-p", prompt,
             "--output-format", "json",
-            "--dangerously-skip-permissions",
         ]
         try:
             res = subprocess.run(
@@ -404,7 +427,8 @@ def execute_eval(
     for file_path in target.rglob("*.py"):
         diff_output += f"--- {file_path.name} ---\n{file_path.read_text(encoding='utf-8', errors='ignore')}\n\n"
 
-    verdict = "PASS" if oracle_res["status"] == "PASS" and canary_intact else "FAIL"
+    # An externally granted live exception is not itself evidence of isolation.
+    verdict = "PROVISIONAL" if oracle_res["status"] == "PASS" and canary_intact else "FAIL"
 
     return {
         "schema_version": 1,
@@ -413,7 +437,8 @@ def execute_eval(
         "client_version": binary,
         "task_id": task_dir.name,
         "condition": condition,
-        "isolation_verified": canary_intact,
+        "isolation_verified": False,
+        "canary_intact": canary_intact,
         "skills": skill_eval,
         "acceptance": {
             "status": oracle_res["status"],
@@ -424,7 +449,7 @@ def execute_eval(
             "duration_seconds": elapsed,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
-            "cost_usd": 0.0,
+            "cost_usd": None,
         },
         "evidence": {
             "transcript": proc_stdout[:4000],
@@ -447,6 +472,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", type=Path,
                         default=ROOT / "config" / "approved_skills.json")
     parser.add_argument("--dry-run", action="store_true", help="dry-run without calling native LLM")
+    parser.add_argument("--live-in-preisolated-environment", action="store_true",
+                        help="explicit opt-in after OS/container isolation is independently proven; never marks G1 PASS")
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args(argv)
@@ -466,6 +493,7 @@ def main(argv: list[str] | None = None) -> int:
         manifest=manifest,
         dry_run=args.dry_run,
         timeout_seconds=args.timeout,
+        live_authorized=args.live_in_preisolated_environment,
     )
 
     out_json = json.dumps(result, indent=2, ensure_ascii=False)

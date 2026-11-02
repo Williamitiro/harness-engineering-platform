@@ -1,5 +1,8 @@
 # Harness Engineering — integração seletiva, verificável e reutilizável
 
+> **Segurança e decisão atual (02/11/2026):** resultado A/C antigo é CONTAMINADO (baseline leu solução anterior do Git pai); o runner original NÃO isolava o sistema. Corrigida a execução offline e introduzido bloqueio por padrão de chamadas live sem ambiente previamente isolado. Veja [errata](docs/AUDITORIA_CORRECOES_2026-11-02.md) e [JEV](docs/JEV_DECISAO.md). CI verde será requisito do HEAD novo. Não adotar skills em projeto real apenas com esses dados.
+
+
 **Status:** Homologação A1 executada. Os únicos executores de código autorizados são **Codex** e **Claude Code**; o repositório NÃO é um runtime próprio de agentes. Codex atingiu Níveis 1 a 5 de maturidade de skills com oráculo externo aprovado (100%); Claude Code está integrado, com runner preparado e status fatual registrado como BLOCKED (autenticação local pendente). O experimento histórico Gemini/Antigravity permanece como arquivo legado.
 
 ## Comece aqui

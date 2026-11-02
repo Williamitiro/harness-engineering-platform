@@ -1,4 +1,6 @@
 # Relatório de Homologação A1 — Codex e Claude Code
+> **ERRATA DE AUDITORIA (02/11/2026):** o CI do commit 847835f falhou (2/21); o baseline A copiou ratelimit.py/test_ratelimit.py de um commit anterior via git show, portanto a comparação A/C está contaminada. O G1 'PASS' anterior era apenas um canário intacto, não isolamento de processo/SO. O classificador original superdeclarava observação de skills. **Não usar os resultados antigos para adoção ou segurança.** Ver [AUDITORIA_CORRECOES_2026-11-02.md](AUDITORIA_CORRECOES_2026-11-02.md). Até reexecutar controles corretos, A1/B/G1 = NÃO HOMOLOGADOS.
+
 
 **Data:** 2026-11-02  
 **Branch:** `codex/harness-foundation-v1` (PR #2)  
