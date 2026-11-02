@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import Mock, patch
 
 from scripts.codex_native_broker import NativeBroker, BrokerError
-from scripts.paired_executor import auto_accept, run_pairs, valid_task
+from scripts.paired_executor import auto_accept, run_pairs, valid_task, save_receipt
 from scripts import mxc_g1_preflight
 
 TASK = {'task_id': 'artificial', 'domain': 'test', 'input_text': 'ARTIFICIAL',
@@ -17,6 +18,79 @@ TASK = {'task_id': 'artificial', 'domain': 'test', 'input_text': 'ARTIFICIAL',
 
 
 class PairedExecutorTests(unittest.TestCase):
+    def test_native_final_response_and_observed_usage(self):
+        native = NativeBroker(Path('codex.exe'), [], {}, Path.cwd())
+        native.prepare = Mock(return_value='artificial-thread')
+        def reply(method, params, timeout_s):
+            native.notifications.extend([
+                {'method': 'item/completed', 'params': {'threadId': 'artificial-thread',
+                    'item': {'type': 'agentMessage', 'text': '{"label":"a","reasoning":"artificial"}'}}},
+                {'method': 'thread/tokenUsage/updated', 'params': {'threadId': 'artificial-thread',
+                    'tokenUsage': {'last': {'inputTokens': 8, 'outputTokens': 4}}}},
+                {'method': 'turn/completed', 'params': {'threadId': 'artificial-thread',
+                    'turn': {'status': 'completed'}}},
+            ])
+            return {}
+        native.rpc = Mock(side_effect=reply)
+        result = native.classify(TASK, 'model')
+        self.assertEqual((result['label'], result['tokens_in'], result['tokens_out']), ('a', 8, 4))
+        self.assertIsNone(result['cost_usd'])
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows supervisor')
+    def test_supervisor_timeout_kills_only_its_child_tree_and_reports_failure(self):
+        from scripts import run_pilot_once
+        process = Mock(pid=12345, returncode=-9)
+        process.communicate.side_effect = [subprocess.TimeoutExpired('artificial', 180), (b'', b'')]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'result.json'
+            with patch.object(sys, 'argv', ['run_pilot_once.py', '--output', str(path)]), \
+                 patch.object(run_pilot_once.shutil, 'which', return_value='infisical.exe'), \
+                 patch.object(run_pilot_once.subprocess, 'Popen', return_value=process), \
+                 patch.object(run_pilot_once.subprocess, 'run') as kill, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(run_pilot_once.main(), 1)
+            self.assertEqual(json.loads(path.read_text())['error']['code'], 'WALL_TIMEOUT_180S')
+            self.assertIn('12345', kill.call_args.args[0])
+            self.assertNotIn('/IM', kill.call_args.args[0])
+    def test_native_bootstrap_accepts_only_exact_standing_policy(self):
+        native = NativeBroker(Path('codex.exe'), [], {}, Path.cwd())
+        native.rpc = Mock(return_value={'thread': {'id': 'artificial'},
+            'instructionSources': [str(Path.home() / '.codex' / 'AGENTS.md')]})
+        self.assertEqual(native.prepare('model'), 'artificial')
+        self.assertEqual(native.turns, 0)
+        native.rpc.return_value = {'thread': {'id': 'artificial'},
+            'instructionSources': [str(Path.home() / '.codex' / 'auth.json')]}
+        with self.assertRaisesRegex(BrokerError, 'UNEXPECTED_INSTRUCTIONS'):
+            native.prepare('model')
+
+    def test_error_preserves_completed_A_and_aborts_without_retry(self):
+        native, jev = Mock(), Mock()
+        native.classify.return_value = {'label': 'a', 'latency_ms': 12, 'tokens_in': 42}
+        jev.classify.side_effect = BrokerError('ARTIFICIAL_FAILURE')
+        checkpoint = Mock()
+        result = run_pairs([TASK] * 3, native, jev, 'model', checkpoint)
+        self.assertEqual(result['status'], 'ABORTED')
+        self.assertEqual(result['logical_calls'], {'A': 1, 'J': 1, 'fallback': 0})
+        self.assertEqual(result['records'][0]['A']['tokens_in'], 42)
+        self.assertEqual(result['error'], {'stage': 'J', 'code': 'ARTIFICIAL_FAILURE'})
+        self.assertEqual(native.classify.call_count, 1)
+        self.assertTrue(checkpoint.called)
+
+    def test_receipt_includes_error_and_partial_results_without_raw_provider_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'result.json'
+            save_receipt(path, {'status': 'ABORTED', 'records': [],
+                               'error': {'stage': 'A', 'code': 'ARTIFICIAL_FAILURE'}})
+            self.assertEqual(json.loads(path.read_text())['status'], 'ABORTED')
+            self.assertIn('ARTIFICIAL_FAILURE', path.with_suffix('.md').read_text())
+
+    def test_native_shutdown_never_closes_pipe_owned_by_reader(self):
+        native = NativeBroker(Path('codex.exe'), [], {}, Path.cwd())
+        process = native.process = Mock()
+        native.close()
+        process.stdout.close.assert_not_called()
+        process.stderr.close.assert_not_called()
+        self.assertIsNone(native.process)
     def test_policy_edges_and_invalid_confidence_fail_closed(self):
         base = {'label': 'a', 'execution_status': 'SUCCESS', 'confidence': .85, 'margin': .5}
         self.assertTrue(auto_accept(base, ['a', 'b']))

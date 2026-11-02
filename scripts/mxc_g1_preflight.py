@@ -242,7 +242,7 @@ def main(argv=None, on_pass=None) -> int:
     output = fixture / 'report.json'
     output.write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
-    return 0 if report.get('canaries_passed') else 1
+    return 0 if report.get('canaries_passed') and report.get('pilot_status') != 'ABORTED' else 1
 
 
 if __name__ == '__main__':

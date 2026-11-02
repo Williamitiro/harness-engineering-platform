@@ -60,3 +60,15 @@ O comando repete a prova gratuita em um processo nativo novo e só então despac
 ## 7. Próxima decisão
 
 Próxima execução: o piloto local limitado a três casos da seção 6, pelo operador, em fase 007B separada. Não ampliar para 30. Se falhar, preservar relatório/diagnóstico e encerrar sem retry. Nenhum piloto disparado nesta sessão; sem merge/deploy, PR permanece Draft.
+
+## Atualização — retomada do piloto autorizada pelo operador
+
+O piloto anterior abortou antes de gerar recibo. A preparação nativa gratuita reproduziu a causa: `thread/start` informa o arquivo global `.codex/AGENTS.md`, que o cliente anterior recusava antes de `turn/start`. Esse caminho não despachou inferência. O código agora permite somente esse arquivo de política conhecido, além da fixture; não permite auth.json, outros arquivos do home ou gabaritos como fontes. Permissões MXC das ferramentas não foram ampliadas.
+
+Também foi corrigido encerramento potencialmente bloqueante dos pipes, adicionados checkpoints antes/depois de cada etapa e relatório Markdown/JSON inclusive em erro. O avaliador aritmético existente roda no supervisor após a coleta; gabaritos não entram em prompts, ambiente ou workspace de agentes. Erro preserva A/J/fallback já observados e aborta sem retry.
+
+Validação desta correção: uma execução direcionada, 13 testes (12 PASS, 1 SKIP); uma suíte completa offline, 99 testes, zero falhas, 2 skips, 5,279 s. Log: `C:\Users\itiro\AppData\Local\Temp\he-jev-pilot-fix-offline-zd01jnrh\suite.log`. Diagnóstico gratuito de preparação sem turno confirmou a fonte global; nenhum smoke JEV pago foi repetido.
+
+O usuário autorizou agora executar e produzir resultado do piloto. Uma única execução será disparada por `scripts/run_pilot_once.py`, supervisor confiável Windows fora do MXC, com limite total de 180 s, no máximo três casos e zero retries. Timeout encerra somente a árvore PID filha criada pelo supervisor. Sem N=30. Como é demorado, o disparo é a última operação da sessão; sem polling/monitoramento posterior.
+
+Artefatos desta tentativa: `C:\Users\itiro\AppData\Local\Temp\he-jev-pilot-once-20261102-final\pilot.json`, `pilot.md`, `pilot.invocation.json`, `launch.json`, `stdout.log`, `stderr.log`. O Markdown final é gerado automaticamente ao encerrar, inclusive em falha, com acertos/latências quando houver pares completos, resultados parciais e erro por etapa. Custos desconhecidos continuam null e adoção permanece INCONCLUSIVA com N=3. Resultado live PENDING no momento deste checkpoint; não confundir testes offline com benchmark aprovado.
