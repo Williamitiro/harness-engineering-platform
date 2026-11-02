@@ -1,0 +1,16 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.7.0 -- C:\Users\itiro\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\dev\harness-engineering\.poc\antigravity-flash-001
+collecting ... collected 7 items
+
+..\..\oracle\test_t2_acceptance.py::test_acceptance_closed_success PASSED [ 14%]
+..\..\oracle\test_t2_acceptance.py::test_acceptance_closed_failures_below_threshold PASSED [ 28%]
+..\..\oracle\test_t2_acceptance.py::test_acceptance_trip_to_open_on_threshold PASSED [ 42%]
+..\..\oracle\test_t2_acceptance.py::test_acceptance_open_rejects_immediately PASSED [ 57%]
+..\..\oracle\test_t2_acceptance.py::test_acceptance_recovery_cycle_success PASSED [ 71%]
+..\..\oracle\test_t2_acceptance.py::test_acceptance_recovery_cycle_failure_returns_to_open PASSED [ 85%]
+..\..\oracle\test_t2_acceptance.py::test_acceptance_manual_reset PASSED  [100%]
+
+============================== 7 passed in 0.01s ==============================
+

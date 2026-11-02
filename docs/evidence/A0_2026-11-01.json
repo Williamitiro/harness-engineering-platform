@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-11-01T16:48:30.979244+00:00",
+  "ecc_commit": "b38be6a7f6350964d59328b52f0624e1d1d552d1",
+  "scope": "A0 file lifecycle only",
+  "source_files": [
+    {
+      "path": "skills/tdd-workflow/SKILL.md",
+      "sha256": "b6a8dd3e5215641cd9c33a46eae1d2b87508a07bc451e2c2fe25591f33a6b519",
+      "bytes": 22502
+    },
+    {
+      "path": "skills/verification-loop/SKILL.md",
+      "sha256": "9ee288d426660b0c785f534a003a4960fb4d8083a21302d8a4fd9b035b2edbb1",
+      "bytes": 3972
+    },
+    {
+      "path": "scripts/setup-package-manager.js",
+      "sha256": "499f38ef03b3f7f9896ad97229b8213df215544bb3c6bd6343e3889f023f6bda",
+      "bytes": 5961
+    },
+    {
+      "path": "scripts/lib/package-manager.js",
+      "sha256": "636f8bc8379ae0c26be1f7c5b61555cf2a274698a4f9fbd34e9eced9eacb3662",
+      "bytes": 12261
+    },
+    {
+      "path": "scripts/lib/utils.js",
+      "sha256": "9cd46ca7d5695a9f8be5afc8da618c29b58e65f4be1411531a64485684592710",
+      "bytes": 22174
+    },
+    {
+      "path": "scripts/lib/agent-data-home.js",
+      "sha256": "afc7d0ebe7b747345063f716c18816d6351e94cc1641303a4568fe70858e5710",
+      "bytes": 8298
+    },
+    {
+      "path": "scripts/lib/path-safety.js",
+      "sha256": "542126cf47247161dd26713a1f33d34af2881db46435ac8ecef76a8be31c062c",
+      "bytes": 2985
+    },
+    {
+      "path": "manifests/install-assets/commonjs-scripts-package.json",
+      "sha256": "8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a",
+      "bytes": 25
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+      "bytes": 1071
+    }
+  ],
+  "protected_before": {
+    "user_settings": "94ded4624808782d42eeee31fbe4383a05c7c2dcca748ca5ef6ab118b9168450",
+    "user_instructions": "764b597db4f5a245e42b5fb90bd24f6147e909118d236d4374d4e543bb1d7d7a",
+    "user_state": "36e8c49b769a71e2d3fd20973d158ccd638cfe9c1a58ac63fc71941c962ab1ac",
+    "user_plugins": "2ca3d86989cee6f89d8e8ec5f528fc799cc6e76165347110d02cd238e8164e74"
+  },
+  "protected_after": {
+    "user_settings": "94ded4624808782d42eeee31fbe4383a05c7c2dcca748ca5ef6ab118b9168450",
+    "user_instructions": "764b597db4f5a245e42b5fb90bd24f6147e909118d236d4374d4e543bb1d7d7a",
+    "user_state": "36e8c49b769a71e2d3fd20973d158ccd638cfe9c1a58ac63fc71941c962ab1ac",
+    "user_plugins": "2ca3d86989cee6f89d8e8ec5f528fc799cc6e76165347110d02cd238e8164e74"
+  },
+  "phases": {
+    "initial": {
+      ".claude/settings.json": "d37b8b6ad28230afb5ffaf210c62d87ad5ec3c74be9490f45731e9f0b0cc2d70",
+      ".claude/skills/preexisting/SKILL.md": "8f8bdbda2850517230781ab927974cba4978da0ab69cab1ef47743b6e9b5ddbf",
+      "sentinel.txt": "fbd1bb6bedd17336bee1ecaa32a2534dd3b4b81dfe81e910feeb4ff5950d99f3"
+    },
+    "installed": {
+      ".claude/settings.json": "d37b8b6ad28230afb5ffaf210c62d87ad5ec3c74be9490f45731e9f0b0cc2d70",
+      ".claude/skills/preexisting/SKILL.md": "8f8bdbda2850517230781ab927974cba4978da0ab69cab1ef47743b6e9b5ddbf",
+      ".claude/skills/tdd-workflow/SKILL.md": "b6a8dd3e5215641cd9c33a46eae1d2b87508a07bc451e2c2fe25591f33a6b519",
+      ".claude/skills/verification-loop/SKILL.md": "9ee288d426660b0c785f534a003a4960fb4d8083a21302d8a4fd9b035b2edbb1",
+      "sentinel.txt": "fbd1bb6bedd17336bee1ecaa32a2534dd3b4b81dfe81e910feeb4ff5950d99f3"
+    },
+    "support": {
+      "LICENSE": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+      "scripts/lib/agent-data-home.js": "afc7d0ebe7b747345063f716c18816d6351e94cc1641303a4568fe70858e5710",
+      "scripts/lib/package-manager.js": "636f8bc8379ae0c26be1f7c5b61555cf2a274698a4f9fbd34e9eced9eacb3662",
+      "scripts/lib/path-safety.js": "542126cf47247161dd26713a1f33d34af2881db46435ac8ecef76a8be31c062c",
+      "scripts/lib/utils.js": "9cd46ca7d5695a9f8be5afc8da618c29b58e65f4be1411531a64485684592710",
+      "scripts/package.json": "8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a",
+      "scripts/setup-package-manager.js": "499f38ef03b3f7f9896ad97229b8213df215544bb3c6bd6343e3889f023f6bda"
+    },
+    "disabled": {
+      ".claude/settings.json": "d37b8b6ad28230afb5ffaf210c62d87ad5ec3c74be9490f45731e9f0b0cc2d70",
+      ".claude/skills/preexisting/SKILL.md": "8f8bdbda2850517230781ab927974cba4978da0ab69cab1ef47743b6e9b5ddbf",
+      "sentinel.txt": "fbd1bb6bedd17336bee1ecaa32a2534dd3b4b81dfe81e910feeb4ff5950d99f3"
+    },
+    "removed": {
+      ".claude/settings.json": "d37b8b6ad28230afb5ffaf210c62d87ad5ec3c74be9490f45731e9f0b0cc2d70",
+      ".claude/skills/preexisting/SKILL.md": "8f8bdbda2850517230781ab927974cba4978da0ab69cab1ef47743b6e9b5ddbf",
+      "sentinel.txt": "fbd1bb6bedd17336bee1ecaa32a2534dd3b4b81dfe81e910feeb4ff5950d99f3"
+    },
+    "restored": {
+      ".claude/settings.json": "d37b8b6ad28230afb5ffaf210c62d87ad5ec3c74be9490f45731e9f0b0cc2d70",
+      ".claude/skills/preexisting/SKILL.md": "8f8bdbda2850517230781ab927974cba4978da0ab69cab1ef47743b6e9b5ddbf",
+      "sentinel.txt": "fbd1bb6bedd17336bee1ecaa32a2534dd3b4b81dfe81e910feeb4ff5950d99f3"
+    }
+  },
+  "checks": [
+    {
+      "criterion": "upstream_identity:skills/tdd-workflow/SKILL.md",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:skills/verification-loop/SKILL.md",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:scripts/setup-package-manager.js",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:scripts/lib/package-manager.js",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:scripts/lib/utils.js",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:scripts/lib/agent-data-home.js",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:scripts/lib/path-safety.js",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:manifests/install-assets/commonjs-scripts-package.json",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "upstream_identity:LICENSE",
+      "status": "PASS",
+      "detail": "Local bytes equal pinned upstream bytes"
+    },
+    {
+      "criterion": "backup",
+      "status": "PASS",
+      "detail": "Full byte inventory matches controlled preexisting fixture"
+    },
+    {
+      "criterion": "selective_install",
+      "status": "PASS",
+      "detail": "Only two selected SKILL.md files added"
+    },
+    {
+      "criterion": "preserve_preexisting",
+      "status": "PASS",
+      "detail": "Sentinel and preexisting settings unchanged"
+    },
+    {
+      "criterion": "installed_hash:tdd-workflow",
+      "status": "PASS",
+      "detail": "Original source unchanged"
+    },
+    {
+      "criterion": "installed_hash:verification-loop",
+      "status": "PASS",
+      "detail": "Original source unchanged"
+    },
+    {
+      "criterion": "collision_refused",
+      "status": "PASS",
+      "detail": "Standard copy refuses existing target without overwrite"
+    },
+    {
+      "criterion": "dependency_closure_staged",
+      "status": "PASS",
+      "detail": "Five original JS files, CommonJS boundary and license; no upstream JS executed"
+    },
+    {
+      "criterion": "update_stage_same_release",
+      "status": "PASS",
+      "detail": "Offline staging/reinstall only; cross-version update NOT TESTED"
+    },
+    {
+      "criterion": "deactivate_paths",
+      "status": "PASS",
+      "detail": "Selected skills absent from discovery directories; runtime unload NOT TESTED"
+    },
+    {
+      "criterion": "reactivate_hashes",
+      "status": "PASS",
+      "detail": "Restored selected bytes; runtime activation NOT TESTED"
+    },
+    {
+      "criterion": "remove_preserve_preexisting",
+      "status": "PASS",
+      "detail": "Only experiment-owned paths moved to quarantine"
+    },
+    {
+      "criterion": "rollback_reinstall",
+      "status": "PASS",
+      "detail": "Reinstallation from preserved bytes exactly matches installed inventory"
+    },
+    {
+      "criterion": "restore_initial",
+      "status": "PASS",
+      "detail": "Exact initial file inventory restored; no recursive deletion"
+    },
+    {
+      "criterion": "no_git_metadata",
+      "status": "PASS",
+      "detail": "Future agent sees standalone exported sources; publisher metadata remains outside sandbox"
+    },
+    {
+      "criterion": "no_ancestor_git_in_offline_probe",
+      "status": "PASS",
+      "detail": "Probe with ceiling rejects ancestor repository discovery; this env is NOT an OS sandbox"
+    },
+    {
+      "criterion": "personal_configuration_preserved",
+      "status": "PASS",
+      "detail": "Four protected files match before/after SHA-256"
+    }
+  ],
+  "not_tested": [
+    "Claude runtime discovery/invocation",
+    "Cross-release update",
+    "Helper runtime execution",
+    "OS sandbox enforcement",
+    "Authentication",
+    "Harbor execution",
+    "LLM billing or financial cutoff"
+  ],
+  "paid_calls": 0,
+  "upstream_installers_executed": 0,
+  "upstream_helpers_executed": 0,
+  "final_state": "Controlled project restored to initial files; selected bytes retained outside discovery folders"
+}

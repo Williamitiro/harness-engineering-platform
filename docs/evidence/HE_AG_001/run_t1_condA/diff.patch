@@ -1,0 +1,49 @@
+diff --git "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t1_condA\\src/__pycache__/semver_parser.cpython-312.pyc" "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t1_condA\\src/__pycache__/semver_parser.cpython-312.pyc"
+new file mode 100644
+index 0000000..d80f999
+Binary files /dev/null and "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t1_condA\\src/__pycache__/semver_parser.cpython-312.pyc" differ
+diff --git "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\tasks_template\\T1\\src/semver_parser.py" "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t1_condA\\src/semver_parser.py"
+index 3767767..c0f4c90 100644
+--- "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\tasks_template\\T1\\src/semver_parser.py"
++++ "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t1_condA\\src/semver_parser.py"
+@@ -33,14 +33,35 @@ class SemVer:
+         if (self.major, self.minor, self.patch) != (other.major, other.minor, other.patch):
+             return (self.major, self.minor, self.patch) < (other.major, other.minor, other.patch)
+ 
+-        # BUGGY CODE: Prerelease precedence logic is inverted and handles comparison incorrectly
++        # SemVer 2.0.0 specification for prerelease precedence:
++        # A normal version with no prerelease has higher precedence than a prerelease version.
+         if self.prerelease and not other.prerelease:
+-            return False  # BUG: 1.0.0-alpha should be < 1.0.0, so this should return True!
++            return True
+         if not self.prerelease and other.prerelease:
+-            return True   # BUG: 1.0.0 should NOT be < 1.0.0-alpha, so this should return False!
++            return False
++
++        # If both have prerelease, compare identifier by identifier from left to right.
++        for p1, p2 in zip(self.prerelease, other.prerelease):
++            if p1 == p2:
++                continue
++            # Identifiers consisting of only digits are compared numerically.
++            # Identifiers with letters or hyphens are compared lexically in ASCII sort order.
++            # Numeric identifiers always have lower precedence than non-numeric identifiers.
++            is_p1_int = isinstance(p1, int)
++            is_p2_int = isinstance(p2, int)
++
++            if is_p1_int and is_p2_int:
++                return p1 < p2
++            elif is_p1_int and not is_p2_int:
++                return True
++            elif not is_p1_int and is_p2_int:
++                return False
++            else:
++                return str(p1) < str(p2)
+ 
+-        # BUG: comparing whole prerelease as string instead of identifier by identifier
+-        return str(self.prerelease) < str(other.prerelease)
++        # A larger set of pre-release fields has a higher precedence than a smaller set,
++        # if all of the preceding identifiers are equal.
++        return len(self.prerelease) < len(other.prerelease)
+ 
+     def __le__(self, other):
+         return self == other or self < other
