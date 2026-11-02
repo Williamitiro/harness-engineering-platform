@@ -8,9 +8,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.jev_adapter import JevMcpClient
+from scripts.jev_adapter import JevAdapterError, JevMcpClient, classify_upstream_error
 from scripts.jev_live_smoke import (
-    SmokePreflightError, isolated_child_env, run_one_call, verify_package,
+    SmokePreflightError, isolated_child_env, run_one_call, safe_failure_code, verify_package,
 )
 
 
@@ -109,6 +109,44 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
             )
             self.assertNotIn("PARENT_TOKEN", client.env)
             self.assertEqual(client.env["TYPESAFE_API_KEY"], "synthetic-key")
+
+
+    def test_provider_error_codes_do_not_repeat_upstream_text(self):
+        samples = {
+            "HTTP 401 Unauthorized; key=DO_NOT_ECHO": "AUTH_REJECTED",
+            "HTTP 402 Payment Required; key=DO_NOT_ECHO": "BILLING_OR_CREDITS",
+            "HTTP 403 Forbidden; key=DO_NOT_ECHO": "PERMISSION_DENIED",
+            "HTTP 429 Too Many Requests; key=DO_NOT_ECHO": "RATE_LIMITED",
+            "HTTP 503 Service Unavailable; key=DO_NOT_ECHO": "PROVIDER_UNAVAILABLE",
+            "HTTP 400 Bad Request; key=DO_NOT_ECHO": "REQUEST_REJECTED",
+            "TypeError: fetch failed; key=DO_NOT_ECHO": "NETWORK_OR_TLS",
+            "an arbitrary upstream body: key=DO_NOT_ECHO": "UPSTREAM_ERROR_UNCLASSIFIED",
+        }
+        for msg, code in samples.items():
+            with self.subTest(code=code):
+                self.assertEqual(classify_upstream_error(msg), code)
+                self.assertNotIn("DO_NOT_ECHO", classify_upstream_error(msg))
+
+    def test_mcp_tool_error_mapped_to_safe_code(self):
+        client = JevMcpClient(command=["never-execute"], env={})
+        client.process = object()  # Avoid process spawning with mocked RPC response
+        response = {
+            "jsonrpc": "2.0", "id": 1,
+            "result": {"isError": True, "content": [
+                {"type": "text", "text": "jev_classify failed: HTTP 401 -- sensitive-body"},
+            ]},
+        }
+        with patch.object(client, "_send_and_receive", return_value=response):
+            with self.assertRaises(JevAdapterError) as ctx:
+                client.classify("test", ["yes", "no"])
+        self.assertEqual(safe_failure_code(ctx.exception), "AUTH_REJECTED")
+        self.assertNotIn("sensitive-body", str(ctx.exception))
+
+    def test_local_transport_diagnostics_are_sanitized(self):
+        self.assertEqual(safe_failure_code(JevAdapterError("MCP response timed out")), "MCP_TIMEOUT")
+        self.assertEqual(safe_failure_code(JevAdapterError("MCP server closed stdout before responding")), "MCP_PROCESS_EXITED")
+        self.assertEqual(safe_failure_code(JevAdapterError("MCP initialize rejected")), "MCP_INITIALIZE_FAILED")
+        self.assertEqual(safe_failure_code(ValueError("malicious-secret")), "LOCAL_RUNTIME_ERROR")
 
 
 if __name__ == "__main__":
