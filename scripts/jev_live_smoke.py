@@ -62,7 +62,14 @@ def isolated_child_env(parent: dict[str, str]) -> dict[str, str]:
     key = parent.get("TYPESAFE_API_KEY", "")
     if not key.strip():
         raise SmokePreflightError("TYPESAFE_API_KEY absent from this process; no call attempted")
-    env = {"TYPESAFE_API_KEY": key, "NODE_ENV": "production"}
+    env = {
+        "TYPESAFE_API_KEY": key,
+        "NODE_ENV": "production",
+        # Upstream defaults to retries on transient failures; a one-shot
+        # smoke must not silently multiply billable provider attempts.
+        "JEV_CODE_MAX_RETRIES": "0",
+        "JEV_CODE_TIMEOUT_MS": "30000",
+    }
     for name in ("PATH", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR"):
         if name in parent:
             env[name] = parent[name]
