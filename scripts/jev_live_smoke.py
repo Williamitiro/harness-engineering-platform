@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -80,6 +81,10 @@ def run_one_call(entry: Path, parent_env: dict[str, str] | None = None) -> dict[
     # is run in this secret-bearing process.  Do not print the MCP raw output.
     with JevMcpClient(command=[node, str(cli), "mcp"], env=env, cwd=cli.parent.parent) as client:
         result = client.classify(SAMPLE_QUESTION, SAMPLE_CLASSES, timeout_s=30.0)
+    # Provider-controlled strings are never copied verbatim into logs.
+    model = result.get("model")
+    if not isinstance(model, str) or not re.fullmatch(r"[A-Za-z0-9_.:/@-]{1,120}", model):
+        model = "REDACTED"
     return {
         "status": "PROVIDER_RESPONSE_OBSERVED",
         "scope": "ONE_CALL_SMOKE_ONLY_NOT_A_BENCHMARK",
@@ -88,7 +93,7 @@ def run_one_call(entry: Path, parent_env: dict[str, str] | None = None) -> dict[
         "task_kind": "fixed_public_prompt",
         "label": result.get("label"),
         "decision_status": result.get("execution_status"),
-        "model": result.get("model"),
+        "model": model,
         "latency_ms": result.get("latency_ms"),
         "tokens_in": result.get("tokens_in"),
         "tokens_out": result.get("tokens_out"),
