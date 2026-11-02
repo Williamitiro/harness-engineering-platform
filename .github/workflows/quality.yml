@@ -17,7 +17,7 @@ jobs:
       - name: Python runtime
         run: python3 --version
       - name: Compile tools
-        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py scripts/harness_eval.py scripts/jev_offline_eval.py
+        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py scripts/harness_eval.py scripts/jev_offline_eval.py scripts/jev_collector.py scripts/jev_evaluator.py
       - name: Offline isolated unit tests
         run: python3 -m unittest discover -s tests -v
       - name: Audit historical CSV arithmetic without changing evidence
@@ -32,6 +32,11 @@ jobs:
         run: |
           python3 scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_pilot.jsonl --policy config/jev_multi_domain_policy.json --compare > /tmp/jev-comparison.json
           python3 -c 'import json; x=json.load(open("/tmp/jev-comparison.json")); assert x["status"] == "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY"; assert x["recommendation"] == "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"; assert not x["provenance"]["jev_model_called"]; assert not x["provenance"]["runtime_metrics_observed"]'
+      - name: Verify collector simulation mode and independent evaluator offline
+        run: |
+          python3 scripts/jev_collector.py --tasks benchmarks/jev/tasks/tasks_skills.jsonl --condition CONDITION_J_ADVISORY --mode simulation --output /tmp/run_sim_j.jsonl
+          python3 scripts/jev_evaluator.py --run /tmp/run_sim_j.jsonl --ground-truth benchmarks/jev/ground_truth/golden_skills.jsonl --policy config/jev_pilot_policy.json > /tmp/eval_sim_j.json
+          python3 -c 'import json; x=json.load(open("/tmp/eval_sim_j.json")); assert x["evidence_level"] == "SYNTHETIC_SIMULATION_ONLY"; assert not x["model_quality_proven"]; assert x["recommendation"] == "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"'
       - name: Ensure dry-run evaluation succeeds offline
         run: python3 scripts/harness_eval.py --client codex --condition A --dry-run
       - name: Ensure no live runtime LLM benchmark was executed in CI

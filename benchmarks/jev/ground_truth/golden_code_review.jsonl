@@ -1,0 +1,10 @@
+{"task_id":"review-01","domain":"code_review","expected_label":"p0-critical","allow_abstain":false,"rationale":"Committed cloud credentials to public repo is immediate critical security hazard."}
+{"task_id":"review-02","domain":"code_review","expected_label":"p1-high","allow_abstain":false,"rationale":"Double-spend race condition directly impacts financial/data integrity."}
+{"task_id":"review-03","domain":"code_review","expected_label":"p2-medium","allow_abstain":false,"rationale":"Missing pagination max bound is performance/resource risk under high load."}
+{"task_id":"review-04","domain":"code_review","expected_label":"p3-low","allow_abstain":false,"rationale":"Typo in comment has zero functional impact."}
+{"task_id":"review-05","domain":"code_review","expected_label":"p3-low","allow_abstain":false,"rationale":"CSS font order styling cosmetic preference is low severity, despite alarmist 'CRITICAL' language."}
+{"task_id":"review-06","domain":"code_review","expected_label":"uncertain","allow_abstain":true,"rationale":"Subjective refactoring suggestion without team standards or requirements context."}
+{"task_id":"review-07","domain":"code_review","expected_label":"p0-critical","allow_abstain":false,"rationale":"Path traversal directly into filesystem read is critical vulnerability."}
+{"task_id":"review-08","domain":"code_review","expected_label":"p3-low","allow_abstain":false,"rationale":"Markdown whitespace is formatting nitpick."}
+{"task_id":"review-09","domain":"code_review","expected_label":"p2-medium","allow_abstain":true,"rationale":"Cache TTL configuration adjustment is medium performance tuning."}
+{"task_id":"review-10","domain":"code_review","expected_label":"p1-high","allow_abstain":true,"rationale":"Unclosed DB statement leak in long-running worker eventually causes outage."}

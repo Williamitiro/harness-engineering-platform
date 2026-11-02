@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Template para registro MCP consultivo do jev-code em ambiente descartável isolado (sem escrita global).",
+  "upstream": {
+    "repository": "https://github.com/FrancoisChastel/jev-code",
+    "version": "v0.5.0",
+    "commit_sha": "74a4569bfe8bb4ad0cc1ba74fa5867f09e267300",
+    "license": "MIT"
+  },
+  "mcpServers": {
+    "jev": {
+      "command": "npx",
+      "args": ["-y", "@french-castle/jev-code@0.5.0", "mcp"],
+      "env": {
+        "TYPESAFE_API_KEY": "${TYPESAFE_API_KEY}"
+      }
+    }
+  },
+  "safety_rules": [
+    "Nunca executar 'jev-code setup' sem flags --project e --no-env.",
+    "Nunca gravar chaves de API em arquivos de configuração no perfil do usuário.",
+    "Não utilizar proxy intermediário nem reescrever tool_choice.",
+    "Chamadas MCP devem ser consultivas; a decisão final e execução de código permanecem exclusivas do agente nativo."
+  ]
+}

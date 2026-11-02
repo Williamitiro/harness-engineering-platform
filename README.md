@@ -7,19 +7,24 @@
 
 **Status:** Homologação A1 executada. Os únicos executores de código autorizados são **Codex** e **Claude Code**; o repositório NÃO é um runtime próprio de agentes. Codex atingiu Níveis 1 a 5 de maturidade de skills com oráculo externo aprovado (100%); Claude Code está integrado, com runner preparado e status fatual registrado como BLOCKED (autenticação local pendente). O experimento histórico Gemini/Antigravity permanece como arquivo legado.
 
-## Jev / TypeSafe — pesquisa e piloto offline (02/11/2026)
+## Jev / TypeSafe — infraestrutura de benchmark empírico (HE-JEV-002)
 
-A classificação semântica **Jev** é candidata complementar ao Harness, não substituta de Codex, Claude Code, QA determinístico ou política de segurança. A comparação de projetos upstream priorizou `jev-code` (MCP/CLI, release v0.5.0) sobre o proxy `jev-classifier` para um primeiro piloto **consultivo**, sem interceptar o tráfego do modelo.
+A classificação semântica **Jev** é candidata complementar ao Harness, não substituta de Codex, Claude Code, QA determinístico ou política de segurança. Para evitar confusão entre simulação e dados reais, a infraestrutura separa estritamente entradas cegas de gabaritos independentes:
 
-- [Decisão arquitetural](docs/JEV_DECISAO.md) · [Pesquisa comparativa e atividade upstream](docs/JEV_ESTUDO_COMPARATIVO.md)
-- [Protocolo de avaliação e segurança](docs/JEV_PILOTO_PROTOCOLO.md) · [Handoff de trabalho local para Gemini](docs/JEV_HANDOFF_GEMINI.md)
-- Avaliador offline `scripts/jev_offline_eval.py` + política proposta em `config/jev_pilot_policy.json` e fixture **sintética**, sem chamadas ao modelo.
+- [Pré-registro do experimento](docs/JEV_PRE_REGISTRO_EXPERIMENTO.md) · [Auditoria independente HE-JEV-001](docs/AUDITORIA_HE_JEV_001_2026-11-02.md)
+- [Relatório de isolamento Gate G1](docs/ISOLAMENTO_G1_RELATORIO.md) · [Runbook operacional de benchmark](docs/RUNBOOK_BENCHMARK_EMPIRICO.md)
+- [Integração MCP oficial jev-code v0.5.0](docs/JEV_MCP_INTEGRACAO.md) · [Decisão arquitetural](docs/JEV_DECISAO.md)
+- Tarefas cegas (`benchmarks/jev/tasks/`) e gabarito holdout (`benchmarks/jev/ground_truth/`).
+- Coletor com hash SHA-256 e cronometragem: `scripts/jev_collector.py`.
+- Verificador independente com cálculo de Macro-F1 por domínio: `scripts/jev_evaluator.py`.
 
 ```powershell
-python scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_example.jsonl --policy config/jev_pilot_policy.json
+# Execução simulada (100% offline, stdlib)
+python scripts/jev_collector.py --tasks benchmarks/jev/tasks/tasks_all.jsonl --condition CONDITION_J_ADVISORY --mode simulation --output docs/evidence/runs/run_sim_j.jsonl
+python scripts/jev_evaluator.py --run docs/evidence/runs/run_sim_j.jsonl --ground-truth benchmarks/jev/ground_truth/golden_all.jsonl --policy config/jev_multi_domain_policy.json
 ```
 
-**Aviso:** executar o script offline não significa que Jev foi instalado, chamado, qualificado ou que houve ganho real. Nenhum proxy, API key ou configuração global foi ativado por esta entrega.
+**Aviso de evidência:** resultados de simulação são categorizados compulsoriamente como `SYNTHETIC_SIMULATION_ONLY`. Chamadas reais live permanecem `BLOCKED_G1` até a homologação de container isolado e aprovação de faturamento pelo operador.
 
 ## Comece aqui
 
@@ -50,7 +55,7 @@ python scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_example.jsonl
    - [`templates/AGENTS.md`](templates/AGENTS.md): Contrato para agentes Codex.
    - [`templates/CLAUDE.md`](templates/CLAUDE.md): Contrato para agentes Claude Code.
 4. **Testes Unitários e CI Offline:**
-   - 21 testes unitários em `tests/` cobrindo lifecycle, reversão, proteção contra adulteração, symlinks, checkout sujo e avaliação.
+   - 42 testes unitários em `tests/` cobrindo lifecycle, reversão, proteção contra adulteração, pipeline empírico do Jev e avaliação.
    - Execução em CI GitHub Actions (`.github/workflows/quality.yml`) 100% offline, sem LLM e sem credenciais.
 
 ```powershell
