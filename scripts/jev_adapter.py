@@ -267,7 +267,7 @@ class JevMcpClient:
             try:
                 response = self._messages.get(timeout=remaining)
             except queue.Empty as exc:
-                raise JevAdapterError("MCP response timed out") from exc
+                raise JevAdapterError("MCP response timed out", diagnostic_code="MCP_RESPONSE_TIMEOUT") from exc
             if response is None:
                 raise JevAdapterError("MCP server closed stdout before responding",
                                       diagnostic_code="MCP_STDOUT_CLOSED")
