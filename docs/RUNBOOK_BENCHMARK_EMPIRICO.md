@@ -1,20 +1,20 @@
 # Runbook Operacional — Execução do Benchmark Empírico Jev vs. Nativo
 
-> **AUDITORIA DE SEGURANÇA 02/11/2026:** A versão HE-JEV-002 continha um bug crítico de proveniência: `jev_evaluator.py` tratava qualquer JSONL com `evidence_kind: VERIFIED` (campo controlado pelo autor do JSONL) e hashes presentes no mesmo registro como prova de execução real. Isso não autentica provedor, ambiente nem sessão. Foi corrigido: o avaliador **aceita apenas evidência SYNTHETIC** até existir adaptador live com atestação/verificação externa. Os comandos de coleta live listados abaixo permanecem **não implementados e bloqueados**, mesmo com flags declarativas. O gabarito no mesmo repositório Git **não é blindado operacionalmente**; é necessário montar somente tarefas no workspace do executor e manter gabaritos em volume/ambiente separado, inacessível. Ver `docs/AUDITORIA_HE_JEV_002_2026-11-02.md`.
-
-
-Este runbook documenta os procedimentos e comandos para executar o benchmark comparativo entre a classificação nativa de modelos e o classificador consultivo Jev com o gate local de políticas.
+> **AUDITORIA DE SEGURANÇA 02/11/2026 (HE-JEV-003):** 
+> 1. O avaliador rejeita qualquer registro sem proveniência criptográfica verificada (`adapter_attestation`). Falsificar hashes locais não permite upgrade para `OBSERVED` ou `VERIFIED`.
+> 2. O gabarito no mesmo repositório Git **não é blindado operacionalmente**. É obrigatório utilizar `scripts/prepare_blind_sandbox.py` para exportar SOMENTE as tarefas para um workspace isolado sem `.git` e sem `golden_*`.
+> 3. Chamadas live permanecem **bloqueadas no host Windows (`BLOCKED_G1`)** até execução em container/VM descartável com autorização expressa de API.
 
 ---
 
 ## 1. Estrutura de Arquivos e Componentes
 
-- **Tarefas (Entradas Cegas):**
+- **Tarefas (Entradas Cegas — Sem Respostas):**
   - `benchmarks/jev/tasks/tasks_skills.jsonl` (Domínio Skills)
   - `benchmarks/jev/tasks/tasks_ci_triage.jsonl` (Domínio CI Triage)
   - `benchmarks/jev/tasks/tasks_code_review.jsonl` (Domínio Code Review)
   - `benchmarks/jev/tasks/tasks_all.jsonl` (Conjunto Unificado N=30)
-- **Gabarito Independente (Holdout Ground Truth):**
+- **Gabarito Independente (Holdout Ground Truth — Restrito ao Avaliador):**
   - `benchmarks/jev/ground_truth/golden_skills.jsonl`
   - `benchmarks/jev/ground_truth/golden_ci_triage.jsonl`
   - `benchmarks/jev/ground_truth/golden_code_review.jsonl`
@@ -24,7 +24,13 @@ Este runbook documenta os procedimentos e comandos para executar o benchmark com
   - `config/jev_ci_triage_policy.json` (CI Triage)
   - `config/jev_review_priority_policy.json` (Code Review)
   - `config/jev_multi_domain_policy.json` (Multi-domínio)
+- **Configurações Nativas de MCP:**
+  - `config/mcp/codex_mcp.json` (Codex CLI)
+  - `config/mcp/claude_mcp.json` (Claude Code)
+  - `config/mcp/jev_code_mcp_template.json` (Template canônico upstream)
 - **Scripts:**
+  - `scripts/prepare_blind_sandbox.py`: Prepara workspace cego sem `.git` nem gabaritos.
+  - `scripts/jev_adapter.py`: Cliente stdio MCP JSON-RPC 2.0 e gerador de atestação criptográfica.
   - `scripts/jev_collector.py`: Coleta de execuções com hash SHA-256 e cronometragem.
   - `scripts/jev_evaluator.py`: Verificador independente que computa métricas, Macro-F1 e separa evidências.
 
@@ -65,35 +71,60 @@ python scripts/jev_evaluator.py `
 
 ---
 
-## 3. Execução em Modo Live (Após Homologação do Gate G1)
+## 3. Preparação do Sandbox Cego (Eliminação de Contaminação)
+
+Para garantir que o agente não acesse gabaritos nem histórico Git:
+
+```powershell
+python scripts/prepare_blind_sandbox.py `
+  --tasks benchmarks/jev/tasks/tasks_all.jsonl `
+  --target-dir /tmp/blind_eval_workspace `
+  --clean
+```
+
+O diretório de destino `/tmp/blind_eval_workspace` conterá:
+- `tasks/tasks_all.jsonl` (sem gabaritos)
+- `scripts/jev_collector.py` e `scripts/jev_adapter.py`
+- `config/` (políticas e configurações MCP)
+- `Containerfile` e scripts de canários negativos
+- `sandbox_manifest.json` com os hashes SHA-256 de todos os arquivos exportados.
+
+---
+
+## 4. Execução em Modo Live (Após Homologação do Gate G1)
 
 Esta etapa é **BLOQUEADA** até que o operador forneça um container isolado e autorize faturamento de API.
 
-### 3.1 Pré-Requisitos no Container
-1. Container descartável ativo (sem montagem de chaves pessoais do host).
-2. Variáveis de ambiente configuradas em memória:
-   ```bash
-   export TYPESAFE_API_KEY="sua-chave-temporaria"
-   ```
-3. Teste de isolamento de canários negativos aprovado.
+### 4.1 Verificação de Canários Negativos no Container
+Antes de executar qualquer coleta live:
+```bash
+sh verify_negative_canaries.sh
+```
+O script deve confirmar que `/root/.ssh`, `~/.aws` e `/mnt/c` são estritamente inacessíveis.
 
-### 3.2 Comando de Coleta Live
+### 4.2 Injeção Volátil de Credenciais em Memória
+```bash
+export TYPESAFE_API_KEY="chave-temporaria-do-operador"
+```
+
+### 4.3 Comando de Coleta Live (Jev Consultivo via MCP)
 ```bash
 python3 scripts/jev_collector.py \
-  --tasks benchmarks/jev/tasks/tasks_all.jsonl \
+  --tasks tasks/tasks_all.jsonl \
   --condition CONDITION_J_ADVISORY \
   --mode live \
   --isolation-verified \
   --api-key-authorized \
-  --output docs/evidence/runs/run_live_cond_j_all.jsonl
+  --output /workspace/evidence/run_live_cond_j_all.jsonl
 ```
 
-### 3.3 Verificação da Evidência Coletada
+### 4.4 Avaliação Independente Fora do Sandbox
+Após extrair `run_live_cond_j_all.jsonl` do container para o ambiente do avaliador:
 ```bash
 python3 scripts/jev_evaluator.py \
-  --run docs/evidence/runs/run_live_cond_j_all.jsonl \
+  --run evidence/run_live_cond_j_all.jsonl \
   --ground-truth benchmarks/jev/ground_truth/golden_all.jsonl \
   --policy config/jev_multi_domain_policy.json
 ```
 
-Apenas quando todas as amostras forem coletadas ao vivo sem simulação, o avaliador emitirá o status `evidence_level: OBSERVED_REAL_EXECUTION` (ou `VERIFIED_ISOLATED_BENCHMARK`).
+Apenas quando a coleta for realizada com atestação de adaptador e provas de contenção aprovadas, o avaliador emitirá `OBSERVED_REAL_EXECUTION` ou `VERIFIED_ISOLATED_BENCHMARK`.

@@ -1,6 +1,9 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -15,6 +18,16 @@ spec_collector.loader.exec_module(collector)
 spec_evaluator = importlib.util.spec_from_file_location("jev_evaluator", ROOT / "scripts" / "jev_evaluator.py")
 evaluator = importlib.util.module_from_spec(spec_evaluator)
 spec_evaluator.loader.exec_module(evaluator)
+
+# Import adapter
+spec_adapter = importlib.util.spec_from_file_location("jev_adapter", ROOT / "scripts" / "jev_adapter.py")
+adapter = importlib.util.module_from_spec(spec_adapter)
+spec_adapter.loader.exec_module(adapter)
+
+# Import sandbox preparer
+spec_sandbox = importlib.util.spec_from_file_location("prepare_blind_sandbox", ROOT / "scripts" / "prepare_blind_sandbox.py")
+sandbox = importlib.util.module_from_spec(spec_sandbox)
+spec_sandbox.loader.exec_module(sandbox)
 
 POLICY = {
     "schema_version": 1,
@@ -183,6 +196,155 @@ class JevEmpiricalPipelineTests(unittest.TestCase):
         # Macro-F1 = (0.8 + 0.8571) / 2 = ~0.8286
         f1 = evaluator.calculate_macro_f1(matrix, ["a", "b"])
         self.assertAlmostEqual(f1, (0.8 + (6 / 7)) / 2, places=3)
+
+    def test_adapter_attestation_lifecycle_and_tamper_detection(self):
+        """Attestation must verify valid records and detect any alteration of payload or digest."""
+        task_id = "test-attestation-01"
+        raw_in = json.dumps({"question": "Run tests", "choice": ["tdd", "none"]})
+        raw_out = json.dumps({"choice": "tdd", "confidence": 0.98})
+        
+        attestation = adapter.generate_attestation(
+            task_id=task_id,
+            raw_input=raw_in,
+            raw_output=raw_out,
+            adapter_name="JevMcpClient",
+            provider="typesafe-jev-code",
+            model="jev-v0.5.0",
+        )
+        self.assertEqual(attestation["adapter_name"], "JevMcpClient")
+        self.assertEqual(attestation["upstream_version"], "v0.5.0")
+        
+        record = {
+            "task_id": task_id,
+            "raw_input": raw_in,
+            "raw_input_sha256": adapter.compute_sha256(raw_in),
+            "raw_output": raw_out,
+            "raw_output_sha256": adapter.compute_sha256(raw_out),
+            "adapter_attestation": attestation,
+        }
+        
+        # Valid attestation must pass
+        self.assertTrue(adapter.verify_attestation(record))
+        
+        # Tampered raw_output must fail
+        tampered_out = record.copy()
+        tampered_out["raw_output"] = '{"choice": "none"}'
+        with self.assertRaises(adapter.AttestationError):
+            adapter.verify_attestation(tampered_out)
+            
+        # Tampered digest must fail
+        tampered_digest = record.copy()
+        tampered_attestation = dict(attestation)
+        tampered_attestation["binding_digest"] = "bad" * 16
+        tampered_digest["adapter_attestation"] = tampered_attestation
+        with self.assertRaises(adapter.AttestationError):
+            adapter.verify_attestation(tampered_digest)
+
+    def test_evaluator_evaluates_attested_observed_record(self):
+        """Attested OBSERVED records evaluate to OBSERVED_REAL_EXECUTION without premature quality claims."""
+        task_id = "skill-01"
+        raw_in = json.dumps({"task_id": task_id, "domain": "skills", "input_text": "Write unit tests"})
+        raw_out = json.dumps({"choice": "tdd-workflow", "confidence": 0.96, "margin": 0.88})
+        
+        att = adapter.generate_attestation(
+            task_id=task_id,
+            raw_input=raw_in,
+            raw_output=raw_out,
+            adapter_name="JevMcpClient",
+            provider="typesafe-jev-code",
+            model="jev-v0.5.0",
+        )
+        
+        rec = {
+            "evidence_kind": "OBSERVED",
+            "is_synthetic": False,
+            "run_id": "live_run_01",
+            "task_id": task_id,
+            "domain": "skills",
+            "condition": "CONDITION_J_ADVISORY",
+            "raw_input": raw_in,
+            "raw_input_sha256": adapter.compute_sha256(raw_in),
+            "raw_output": raw_out,
+            "raw_output_sha256": adapter.compute_sha256(raw_out),
+            "adapter_attestation": att,
+            "parsed_decision": {"label": "tdd-workflow", "confidence": 0.96, "margin": 0.88},
+            "observed_metrics": {"latency_ms": 190.0, "tokens_in": 120, "tokens_out": 28, "cost_usd": 0.00001},
+        }
+        
+        ground_truth = {task_id: {"task_id": task_id, "domain": "skills", "expected_label": "tdd-workflow"}}
+        res = evaluator.evaluate_run([rec], ground_truth, POLICY)
+        
+        self.assertEqual(res["evidence_level"], "OBSERVED_REAL_EXECUTION")
+        self.assertFalse(res["model_quality_proven"]) # Quality not proven until paired comparison in isolated G1
+        self.assertEqual(res["status"], "OBSERVED_EXECUTION_EVALUATED")
+        self.assertEqual(res["overall"]["micro_accuracy"], 1.0)
+
+    def test_prepare_blind_sandbox_excludes_git_and_ground_truth(self):
+        """prepare_blind_sandbox must generate an isolated workspace free from ground truth or git history."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            target = Path(tmp_dir) / "sandbox"
+            summary = sandbox.prepare_blind_sandbox(
+                tasks_source=ROOT / "benchmarks" / "jev" / "tasks",
+                target_dir=target,
+                include_runner=True,
+            )
+            
+            self.assertEqual(summary["status"], "SANDBOX_PREPARED")
+            self.assertTrue(target.is_dir())
+            
+            # Tasks exist
+            task_files = list((target / "tasks").glob("*.jsonl"))
+            self.assertGreaterEqual(len(task_files), 1)
+            
+            # Ground truth must NOT exist
+            for p in target.rglob("*"):
+                self.assertNotIn("golden", p.name.lower())
+                self.assertNotIn("truth", p.name.lower())
+                self.assertNotEqual(p.name, ".git")
+                
+            # Manifest exists
+            manifest_file = target / "sandbox_manifest.json"
+            self.assertTrue(manifest_file.is_file())
+            manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+            self.assertTrue(manifest["blindness_verified"])
+            self.assertTrue(manifest["ground_truth_excluded"])
+            
+            # Container and canary files exist
+            self.assertTrue((target / "Containerfile").is_file())
+            self.assertTrue((target / "verify_negative_canaries.sh").is_file())
+            self.assertTrue((target / "run_isolated_podman.sh").is_file())
+
+    def test_mcp_client_mock_protocol_and_classification(self):
+        """JevMcpClient must speak JSON-RPC 2.0 stdio protocol correctly with an MCP server."""
+        mock_server_code = (
+            "import sys, json\n"
+            "for line in sys.stdin:\n"
+            "    line = line.strip()\n"
+            "    if not line: continue\n"
+            "    msg = json.loads(line)\n"
+            "    if msg.get('method') == 'initialize':\n"
+            "        resp = {'jsonrpc': '2.0', 'id': msg['id'], 'result': {'serverInfo': {'name': 'mock-jev', 'version': '0.5.0'}, 'capabilities': {'tools': {}}}}\n"
+            "        sys.stdout.write(json.dumps(resp) + '\\n'); sys.stdout.flush()\n"
+            "    elif msg.get('method') == 'notifications/initialized':\n"
+            "        continue\n"
+            "    elif msg.get('method') == 'tools/call':\n"
+            "        args = msg['params']['arguments']\n"
+            "        choice = args['choice'][0]\n"
+            "        content = json.dumps({'choice': choice, 'confidence': 0.95, 'margin': 0.85, 'probabilities': {choice: 0.95}})\n"
+            "        resp = {'jsonrpc': '2.0', 'id': msg['id'], 'result': {'content': [{'type': 'text', 'text': content}]}}\n"
+            "        sys.stdout.write(json.dumps(resp) + '\\n'); sys.stdout.flush()\n"
+        )
+        
+        cmd = [sys.executable, "-u", "-c", mock_server_code]
+        client = adapter.JevMcpClient(command=cmd)
+        with client:
+            res = client.classify(question="Write unit test for auth", choices=["tdd-workflow", "none"])
+            self.assertEqual(res["execution_status"], "SUCCESS")
+            self.assertEqual(res["label"], "tdd-workflow")
+            self.assertEqual(res["confidence"], 0.95)
+            self.assertEqual(res["margin"], 0.85)
+            self.assertIn("tdd-workflow", res["probabilities"])
+            self.assertGreater(res["latency_ms"], 0)
 
 if __name__ == "__main__":
     unittest.main()

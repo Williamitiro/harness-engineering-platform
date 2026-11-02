@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Configuração nativa do servidor MCP jev-code para Claude Code em ambiente descartável",
+  "runtime": "claude-code",
+  "upstream": {
+    "repository": "https://github.com/FrancoisChastel/jev-code",
+    "version": "v0.5.0",
+    "commit_sha": "74a4569bfe8bb4ad0cc1ba74fa5867f09e267300",
+    "license": "MIT"
+  },
+  "mcpServers": {
+    "jev": {
+      "command": "npx",
+      "args": ["-y", "@french-castle/jev-code@0.5.0", "mcp"],
+      "env": {
+        "TYPESAFE_API_KEY": "${TYPESAFE_API_KEY}"
+      }
+    }
+  },
+  "cli_registration": {
+    "command": "claude mcp add jev npx -y @french-castle/jev-code@0.5.0 mcp -e TYPESAFE_API_KEY=$TYPESAFE_API_KEY",
+    "env_vars": ["TYPESAFE_API_KEY"],
+    "scope": "project"
+  },
+  "safety_rules": [
+    "Nunca registrar globalmente no perfil do operador (~/.claude/ ou AppData).",
+    "Executar apenas dentro do container descartável homologado no Gate G1.",
+    "Nunca persistir a chave TYPESAFE_API_KEY em arquivos de configuração no disco.",
+    "A tomada de decisão final e execução de comandos permanecem exclusivas do Claude Code nativo."
+  ]
+}

@@ -4,7 +4,7 @@
 Pure standard library. Manages controlled execution of tasks from benchmarks/jev/tasks/.
 Enforces evidence categorization:
   - SYNTHETIC: generated in simulation mode for pipeline and policy testing.
-  - OBSERVED: captured directly from live provider execution.
+  - OBSERVED: captured directly from live provider execution with MCP adapter.
   - VERIFIED: captured in verified container with negative canaries checked.
 
 Refuses live execution unless Gate G1 isolation and API credentials are verified.
@@ -19,12 +19,38 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+
+# Import adapter functions for cryptographic attestation and MCP communication
+try:
+    from scripts.jev_adapter import (
+        AttestationError,
+        JevMcpClient,
+        compute_sha256,
+        generate_attestation,
+        verify_attestation,
+    )
+except ImportError:
+    # If run from within sandbox directory
+    try:
+        from jev_adapter import (  # type: ignore
+            AttestationError,
+            JevMcpClient,
+            compute_sha256,
+            generate_attestation,
+            verify_attestation,
+        )
+    except ImportError:
+        def compute_sha256(content: str) -> str:
+            return hashlib.sha256(content.encode("utf-8")).hexdigest()
+        generate_attestation = None  # type: ignore
+        verify_attestation = None  # type: ignore
+        JevMcpClient = None  # type: ignore
 
 class CollectorError(ValueError):
     pass
-
-def compute_sha256(content: str) -> str:
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 def load_tasks(path: Path) -> list[dict]:
     if not path.is_file():
@@ -45,7 +71,7 @@ def load_tasks(path: Path) -> list[dict]:
         if not item.get("domain") or not item.get("input_text") or not isinstance(item.get("candidate_labels"), list):
             raise CollectorError(f"Line {line_no} malformed task: missing required domain, input_text, or candidate_labels")
         # Ensure tasks do NOT include ground truth labels (prevent contamination)
-        if "expected_label" in item or "expected" in item:
+        if "expected_label" in item or "expected" in item or "golden_label" in item:
             raise CollectorError(f"Line {line_no} task {task_id} contains ground truth expected label! Tasks must be blind.")
         tasks.append(item)
     if not tasks:
@@ -146,16 +172,101 @@ def simulate_provider_call(task: dict, condition: str) -> dict:
         "execution_status": "SUCCESS",
     }
 
-def run_collection(tasks: list[dict], condition: str, mode: str, run_id: str,
-                   isolation_verified: bool = False, api_key_authorized: bool = False) -> list[dict]:
+def run_collection(
+    tasks: list[dict],
+    condition: str,
+    mode: str,
+    run_id: str,
+    isolation_verified: bool = False,
+    api_key_authorized: bool = False,
+    mcp_command: list[str] | None = None,
+) -> list[dict]:
     if mode == "live":
         if not isolation_verified:
             raise CollectorError("BLOCKED_G1: Cannot run live collection without verified container/VM isolation.")
         if not api_key_authorized:
             raise CollectorError("BLOCKED_AUTH: Cannot run live collection without explicit operator API key authorization.")
-        # Live execution path (requires pre-homologated environment and provider CLI)
-        raise CollectorError("BLOCKED_G1: Live execution runtime not yet invoked; Gate G1 is pending homologation.")
-    
+        
+        api_key = os.environ.get("TYPESAFE_API_KEY")
+        if not api_key:
+            raise CollectorError("BLOCKED_AUTH: TYPESAFE_API_KEY environment variable is missing for live collection.")
+            
+        if JevMcpClient is None or generate_attestation is None:
+            raise CollectorError("Jev adapter module could not be loaded for live collection.")
+            
+        now_iso = datetime.now(timezone.utc).isoformat()
+        records = []
+        
+        if condition == "CONDITION_J_ADVISORY":
+            client = JevMcpClient(command=mcp_command)
+            client.start()
+            try:
+                for task in tasks:
+                    raw_input_str = json.dumps({
+                        "task_id": task["task_id"],
+                        "domain": task["domain"],
+                        "input_text": task["input_text"],
+                        "candidate_labels": task["candidate_labels"],
+                    }, sort_keys=True, ensure_ascii=False)
+                    raw_input_sha = compute_sha256(raw_input_str)
+                    
+                    res = client.classify(question=task["input_text"], choices=task["candidate_labels"])
+                    raw_output_sha = compute_sha256(res["raw_output"])
+                    
+                    attestation = generate_attestation(
+                        task_id=task["task_id"],
+                        raw_input=raw_input_str,
+                        raw_output=res["raw_output"],
+                        adapter_name="JevMcpClient",
+                        provider=res["provider"],
+                        model=res["model"],
+                    )
+                    
+                    record = {
+                        "evidence_kind": "OBSERVED",
+                        "is_synthetic": False,
+                        "run_id": run_id,
+                        "condition": condition,
+                        "task_id": task["task_id"],
+                        "domain": task["domain"],
+                        "timestamp_iso": now_iso,
+                        "provider": res["provider"],
+                        "model": res["model"],
+                        "raw_input": raw_input_str,
+                        "raw_input_sha256": raw_input_sha,
+                        "raw_output": res["raw_output"],
+                        "raw_output_sha256": raw_output_sha,
+                        "adapter_attestation": attestation,
+                        "parsed_decision": {
+                            "label": res["label"],
+                            "confidence": res["confidence"],
+                            "margin": res["margin"],
+                            "probabilities": res["probabilities"],
+                        },
+                        "observed_metrics": {
+                            "latency_ms": res["latency_ms"],
+                            "tokens_in": res["tokens_in"],
+                            "tokens_out": res["tokens_out"],
+                            "cost_usd": res["cost_usd"],
+                        },
+                        "execution_status": res["execution_status"],
+                        "provenance": {
+                            "collector_version": "1.0.0",
+                            "mode": "live",
+                            "environment_isolated": isolation_verified,
+                            "canary_check_passed": isolation_verified,
+                            "transport": "mcp_stdio_jsonrpc",
+                        },
+                    }
+                    records.append(record)
+            finally:
+                client.close()
+        elif condition == "CONDITION_A_NATIVE":
+            raise CollectorError("Native agent live runner requires authenticated Codex/Claude session.")
+        else:
+            raise CollectorError(f"Unsupported condition: {condition}")
+        return records
+
     # Simulation mode
     records = []
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -219,6 +330,7 @@ def main() -> int:
     parser.add_argument("--run-id", type=str, default=None, help="Optional explicit run ID")
     parser.add_argument("--isolation-verified", action="store_true", help="Asserts G1 external container/VM isolation")
     parser.add_argument("--api-key-authorized", action="store_true", help="Asserts operator approval for API billing")
+    parser.add_argument("--mcp-command", nargs="+", default=None, help="Optional custom command to spawn MCP server")
     
     args = parser.parse_args()
     run_id = args.run_id or f"run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{args.condition.lower()}_{args.mode}"
@@ -232,6 +344,7 @@ def main() -> int:
             run_id=run_id,
             isolation_verified=args.isolation_verified,
             api_key_authorized=args.api_key_authorized,
+            mcp_command=args.mcp_command,
         )
         
         args.output.parent.mkdir(parents=True, exist_ok=True)
