@@ -61,48 +61,55 @@ def isolated_child_env(parent: dict[str, str]) -> dict[str, str]:
     """
     typesafe_key = parent.get("TYPESAFE_API_KEY", "").strip()
     openrouter_key = parent.get("OPENROUTER_API_KEY", "").strip()
-    if not typesafe_key and not openrouter_key:
-        raise SmokePreflightError(
-            "TYPESAFE_API_KEY or OPENROUTER_API_KEY absent from this process; no call attempted"
-        )
+    gateway_key = parent.get("AI_GATEWAY_API_KEY", "").strip()
+    if not (typesafe_key or openrouter_key or gateway_key):
+        raise SmokePreflightError("No supported provider credential injected")
 
     explicit_provider = parent.get("JEV_CODE_PROVIDER", "").strip().lower()
-    if explicit_provider and explicit_provider not in ("typesafe", "openrouter", "vercel", "openai", "ollama"):
-        raise SmokePreflightError(f"Unsupported JEV_CODE_PROVIDER: {explicit_provider}")
+    # This smoke test is only for Jev via System One. Other upstream providers
+    # require distinct authentication/wire contracts and are out of scope.
+    if explicit_provider and explicit_provider not in ("typesafe", "openrouter", "vercel"):
+        raise SmokePreflightError("Unsupported provider for Jev System One smoke test")
 
-    # Auto-detect provider if not explicitly specified.
-    # OpenRouter keys (sk-or-...) sent to api.typesafe.ai result in 401 AUTH_REJECTED.
-    provider = explicit_provider
-    if not provider:
-        if openrouter_key or typesafe_key.startswith("sk-or-"):
-            provider = "openrouter"
-        elif typesafe_key.startswith("vck_"):
-            provider = "vercel"
-        else:
-            provider = "typesafe"
+    if not explicit_provider and typesafe_key and openrouter_key and typesafe_key != openrouter_key:
+        raise SmokePreflightError("Ambiguous credentials: select JEV_CODE_PROVIDER explicitly")
+    if not explicit_provider and gateway_key and (typesafe_key or openrouter_key):
+        raise SmokePreflightError("Ambiguous credentials: select JEV_CODE_PROVIDER explicitly")
+
+    # Legacy compatibility only: the operator's OpenRouter key was placed in
+    # TYPESAFE_API_KEY. The prefix is a heuristic, never proof of provenance.
+    if explicit_provider:
+        provider = explicit_provider
+    elif openrouter_key or typesafe_key.startswith("sk-or-"):
+        provider = "openrouter"
+    elif gateway_key or typesafe_key.startswith("vck_"):
+        provider = "vercel"
+    else:
+        provider = "typesafe"
 
     env: dict[str, str] = {
         "NODE_ENV": "production",
-        # Upstream defaults to retries on transient failures; a one-shot
-        # smoke must not silently multiply billable provider attempts.
+        "JEV_CODE_PROVIDER": provider,
         "JEV_CODE_MAX_RETRIES": "0",
         "JEV_CODE_TIMEOUT_MS": "30000",
     }
 
     if provider == "openrouter":
         key = openrouter_key or typesafe_key
+        if not key or key.startswith(("ts_", "apikey_", "vck_")):
+            raise SmokePreflightError("OpenRouter provider and credential disagree")
+        # Never copy this credential into TYPESAFE_API_KEY. Upstream v0.5.0
+        # selects the host-specific variable when JEV_CODE_PROVIDER is set.
         env["OPENROUTER_API_KEY"] = key
-        env["TYPESAFE_API_KEY"] = key
-        env["JEV_CODE_PROVIDER"] = "openrouter"
     elif provider == "vercel":
-        key = parent.get("AI_GATEWAY_API_KEY", "").strip() or typesafe_key
+        key = gateway_key or typesafe_key
+        if not key or key.startswith(("sk-or-", "ts_", "apikey_")):
+            raise SmokePreflightError("Vercel provider and credential disagree")
         env["AI_GATEWAY_API_KEY"] = key
-        env["TYPESAFE_API_KEY"] = key
-        env["JEV_CODE_PROVIDER"] = "vercel"
     else:
+        if not typesafe_key or typesafe_key.startswith(("sk-or-", "vck_")):
+            raise SmokePreflightError("TypeSafe provider and credential disagree")
         env["TYPESAFE_API_KEY"] = typesafe_key
-        if explicit_provider:
-            env["JEV_CODE_PROVIDER"] = explicit_provider
 
     for name in ("PATH", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR"):
         if name in parent:
