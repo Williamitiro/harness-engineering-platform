@@ -34,6 +34,13 @@ class JevStartupTriageTests(unittest.TestCase):
         self.assertEqual(output, ["NODE_ASSERTION_OR_ABORT", "NODE_FATAL_RUNTIME"])
         self.assertNotIn("private-api-key", str(output))
 
+    def test_node_success_includes_only_semver(self):
+        completed = subprocess.CompletedProcess(["node"], 0, b"HE_NODE_READY v24.12.0", b"")
+        with patch("scripts.jev_startup_triage.subprocess.run", return_value=completed):
+            result = check_node("node", {"PATH": "synthetic"})
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["node_version"], "v24.12.0")
+
     def test_node_abort_has_bounded_safe_diagnostic(self):
         completed = subprocess.CompletedProcess(["node", "-e", "..."], 134, b"", b"FATAL ERROR private-token")
         with patch("scripts.jev_startup_triage.subprocess.run", return_value=completed) as run:
