@@ -1,0 +1,48 @@
+diff --git "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t2_condC\\src/__pycache__/circuit_breaker.cpython-312.pyc" "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t2_condC\\src/__pycache__/circuit_breaker.cpython-312.pyc"
+new file mode 100644
+index 0000000..e470ab4
+Binary files /dev/null and "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t2_condC\\src/__pycache__/circuit_breaker.cpython-312.pyc" differ
+diff --git "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\tasks_template\\T2\\src/circuit_breaker.py" "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t2_condC\\src/circuit_breaker.py"
+index d8c90fb..d1d36bf 100644
+--- "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\tasks_template\\T2\\src/circuit_breaker.py"
++++ "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t2_condC\\src/circuit_breaker.py"
+@@ -49,7 +49,37 @@ class CircuitBreaker:
+         return self._failure_count
+ 
+     def call(self, func: Callable, *args, **kwargs) -> Any:
+-        raise NotImplementedError("Feature not implemented")
++        if self._state == CircuitState.OPEN:
++            elapsed = self.clock() - self._opened_at
++            if elapsed < self.recovery_timeout:
++                raise CircuitBreakerOpenException("Circuit breaker is OPEN")
++            self._state = CircuitState.HALF_OPEN
++
++        if self._state == CircuitState.HALF_OPEN:
++            try:
++                result = func(*args, **kwargs)
++            except Exception:
++                self._state = CircuitState.OPEN
++                self._opened_at = self.clock()
++                raise
++            else:
++                self._state = CircuitState.CLOSED
++                self._failure_count = 0
++                return result
++
++        # CLOSED state
++        try:
++            result = func(*args, **kwargs)
++        except Exception:
++            self._failure_count += 1
++            if self._failure_count >= self.failure_threshold:
++                self._state = CircuitState.OPEN
++                self._opened_at = self.clock()
++            raise
++        else:
++            self._failure_count = 0
++            return result
+ 
+     def reset(self) -> None:
+-        raise NotImplementedError("Feature not implemented")
++        self._state = CircuitState.CLOSED
++        self._failure_count = 0

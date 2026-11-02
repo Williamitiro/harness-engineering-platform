@@ -1,0 +1,199 @@
+diff --git "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t3_condC\\src/__pycache__/order_calculator.cpython-312.pyc" "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t3_condC\\src/__pycache__/order_calculator.cpython-312.pyc"
+new file mode 100644
+index 0000000..4313b98
+Binary files /dev/null and "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t3_condC\\src/__pycache__/order_calculator.cpython-312.pyc" differ
+diff --git "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\tasks_template\\T3\\src/order_calculator.py" "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t3_condC\\src/order_calculator.py"
+index 4b1ef7b..f4b8a0a 100644
+--- "a/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\tasks_template\\T3\\src/order_calculator.py"
++++ "b/C:\\dev\\harness-engineering\\.poc\\antigravity-flash-001\\runs\\run_t3_condC\\src/order_calculator.py"
+@@ -1,8 +1,116 @@
+-from typing import Dict, Any, List
++from typing import Dict, Any, List, Optional
++
++
++class DiscountPolicy:
++    """
++    Handles calculation of promotional and customer-tier discounts.
++    """
++
++    def __init__(self, promo_code: Optional[str] = None, customer_tier: Optional[str] = None):
++        self.promo_code = promo_code
++        self.customer_tier = customer_tier
++
++    def calculate_discount(self, subtotal: float) -> float:
++        """
++        Calculate total discount given the subtotal.
++        """
++        discount = 0.0
++        if self.promo_code == "SUMMER10":
++            discount += subtotal * 0.10
++        elif self.promo_code == "SAVE20":
++            discount += subtotal * 0.20
++        elif self.promo_code == "FIXED15":
++            discount += min(15.0, subtotal)
++
++        if self.customer_tier == "gold":
++            discount += (subtotal - discount) * 0.05
++        elif self.customer_tier == "platinum":
++            discount += (subtotal - discount) * 0.10
++
++        return round(min(discount, subtotal), 2)
++
++
++class ShippingCalculator:
++    """
++    Handles calculation of shipping costs based on weight, shipping method, and customer tier/subtotal.
++    """
++
++    def __init__(
++        self,
++        weight_kg: float = 1.0,
++        method: str = "standard",
++        customer_tier: Optional[str] = None,
++        discounted_subtotal: float = 0.0,
++    ):
++        self.weight_kg = weight_kg
++        self.method = method
++        self.customer_tier = customer_tier
++        self.discounted_subtotal = discounted_subtotal
++
++    def calculate_shipping(
++        self,
++        weight_kg: Optional[float] = None,
++        method: Optional[str] = None,
++        customer_tier: Optional[str] = None,
++        discounted_subtotal: Optional[float] = None,
++    ) -> float:
++        """
++        Calculate shipping cost. Parameters can be overridden if provided.
++        """
++        weight = self.weight_kg if weight_kg is None else weight_kg
++        shipping_method = self.method if method is None else method
++        tier = self.customer_tier if customer_tier is None else customer_tier
++        subtotal = self.discounted_subtotal if discounted_subtotal is None else discounted_subtotal
++
++        if weight <= 2.0:
++            base_shipping = 5.0
++        elif weight <= 5.0:
++            base_shipping = 10.0
++        else:
++            base_shipping = 15.0 + (weight - 5.0) * 1.0
++
++        if shipping_method == "express":
++            shipping_cost = base_shipping + 8.0
++        else:
++            shipping_cost = base_shipping
++
++        # VIP shipping rules: platinum tier or discounted_subtotal > 100 gets free standard shipping or $4 express discount
++        if tier == "platinum" or subtotal > 100.0:
++            if shipping_method == "standard":
++                shipping_cost = 0.0
++            elif shipping_method == "express":
++                shipping_cost = max(0.0, shipping_cost - 4.0)
++
++        return round(shipping_cost, 2)
++
++
++class TaxCalculator:
++    """
++    Handles tax calculation based on state and taxable amount.
++    """
++
++    DEFAULT_TAX_RATES = {
++        "CA": 0.085,
++        "NY": 0.080,
++        "TX": 0.0625,
++    }
++
++    def __init__(self, state: str = "CA", custom_rates: Optional[Dict[str, float]] = None):
++        self.state = state
++        self.tax_rates = custom_rates if custom_rates is not None else self.DEFAULT_TAX_RATES
++
++    def calculate_tax(self, taxable_amount: float, state: Optional[str] = None) -> float:
++        """
++        Calculate tax on taxable amount for a given state (or default state).
++        """
++        st = state if state is not None else self.state
++        rate = self.tax_rates.get(st, 0.05)
++        return round(taxable_amount * rate, 2)
++
+ 
+ def calculate_order(order_data: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, float]:
+     """
+-    Monolithic order calculation function.
++    Order calculation function.
+     Calculates subtotal, discounts (promo code and tier), shipping (weight and tier/threshold),
+     and tax (state-based on discounted subtotal + shipping).
+     """
+@@ -24,53 +132,23 @@ def calculate_order(order_data: Dict[str, Any], config: Dict[str, Any] = None) -
+     subtotal = round(subtotal, 2)
+ 
+     # 2. Discount calculation
+-    discount = 0.0
+-    if promo_code == "SUMMER10":
+-        discount += subtotal * 0.10
+-    elif promo_code == "SAVE20":
+-        discount += subtotal * 0.20
+-    elif promo_code == "FIXED15":
+-        discount += min(15.0, subtotal)
+-
+-    if customer_tier == "gold":
+-        discount += (subtotal - discount) * 0.05
+-    elif customer_tier == "platinum":
+-        discount += (subtotal - discount) * 0.10
+-
+-    discount = round(min(discount, subtotal), 2)
++    discount_policy = DiscountPolicy(promo_code=promo_code, customer_tier=customer_tier)
++    discount = discount_policy.calculate_discount(subtotal)
+     discounted_subtotal = round(subtotal - discount, 2)
+ 
+     # 3. Shipping calculation
+-    if weight_kg <= 2.0:
+-        base_shipping = 5.0
+-    elif weight_kg <= 5.0:
+-        base_shipping = 10.0
+-    else:
+-        base_shipping = 15.0 + (weight_kg - 5.0) * 1.0
+-
+-    if shipping_method == "express":
+-        shipping_cost = base_shipping + 8.0
+-    else:
+-        shipping_cost = base_shipping
+-
+-    # VIP shipping rules: platinum tier or discounted_subtotal > 100 gets free standard shipping or $4 express discount
+-    if customer_tier == "platinum" or discounted_subtotal > 100.0:
+-        if shipping_method == "standard":
+-            shipping_cost = 0.0
+-        elif shipping_method == "express":
+-            shipping_cost = max(0.0, shipping_cost - 4.0)
+-
+-    shipping_cost = round(shipping_cost, 2)
++    shipping_calculator = ShippingCalculator(
++        weight_kg=weight_kg,
++        method=shipping_method,
++        customer_tier=customer_tier,
++        discounted_subtotal=discounted_subtotal,
++    )
++    shipping_cost = shipping_calculator.calculate_shipping()
+ 
+     # 4. Tax calculation
+-    tax_rates = {
+-        "CA": 0.085,
+-        "NY": 0.080,
+-        "TX": 0.0625
+-    }
+-    rate = tax_rates.get(state, 0.05)
++    tax_calculator = TaxCalculator(state=state)
+     taxable_amount = discounted_subtotal + shipping_cost
+-    tax = round(taxable_amount * rate, 2)
++    tax = tax_calculator.calculate_tax(taxable_amount)
+ 
+     # 5. Total
+     total = round(discounted_subtotal + shipping_cost + tax, 2)
+@@ -81,5 +159,5 @@ def calculate_order(order_data: Dict[str, Any], config: Dict[str, Any] = None) -
+         "discounted_subtotal": discounted_subtotal,
+         "shipping": shipping_cost,
+         "tax": tax,
+-        "total": total
++        "total": total,
+     }
