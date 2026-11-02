@@ -10,8 +10,12 @@ import re
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def private_diagnostic_directory(fixture: Path, env: dict[str, str]) -> Path:
@@ -87,14 +91,16 @@ $r | ConvertTo-Json -Compress
 '''
 
 
-def main() -> int:
+def main(argv=None, on_pass=None) -> int:
     import socket
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--codex-exe', type=Path)
+    parser.add_argument('--native-broker', action='store_true',
+                        help='Run the same canaries through native app-server command/exec over stdio')
     parser.add_argument('--diagnose-startup', action='store_true',
                         help='On failure retain stderr locally under an operator/SYSTEM-only ACL; never print it')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if os.name != 'nt':
         parser.error('Native Windows required')
     exe = args.codex_exe
@@ -165,9 +171,20 @@ def main() -> int:
             (fixture / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
             print(json.dumps(report, indent=2))
             return 1
+    broker = None
     try:
-        result = subprocess.run(command, cwd=workspace, env=env, capture_output=True,
-                                text=True, timeout=40)
+        if args.native_broker:
+            from scripts.codex_native_broker import NativeBroker
+            broker = NativeBroker(exe, config, env, workspace,
+                                  diagnostic_directory / 'native-rpc-error.txt' if diagnostic_directory else None)
+            broker.start()
+            native = broker.canaries(command[command.index('--') + 1:])
+            result = SimpleNamespace(returncode=native['exitCode'], stdout=native['stdout'],
+                                     stderr=native['stderr'])
+            report['scope'] = 'NATIVE_CODEX_SUPERVISOR_MXC_TASK_TOOLS'
+        else:
+            result = subprocess.run(command, cwd=workspace, env=env, capture_output=True,
+                                    text=True, timeout=40)
         report['exit_code'] = result.returncode
         # Stdout remains a closed schema. Raw stderr is retained only by the
         # operator's explicit diagnostic option and only under its private ACL.
@@ -205,9 +222,23 @@ def main() -> int:
                 report['private_diagnostic_file'] = str(diagnostic_file)
     except subprocess.TimeoutExpired:
         report['error'] = 'MXC_TIMEOUT_NO_RETRY'
+    except RuntimeError:
+        report['error'] = 'NATIVE_BROKER_PREFLIGHT_FAILED'
+        if diagnostic_directory is not None and (diagnostic_directory / 'native-rpc-error.txt').exists():
+            report['private_diagnostic_file'] = str(diagnostic_directory / 'native-rpc-error.txt')
     finally:
         listener.close()
-    # Even passing canaries alone cannot authenticate the future credential broker.
+    if report.get('canaries_passed') and broker is not None:
+        report['broker_verified'] = True
+        report['status'] = 'READY_FOR_LOCAL_G1_PREFLIGHT'
+        # Trusted supervisor callback only, never an agent-supplied command/flag.
+        try:
+            if on_pass is not None:
+                on_pass(report, broker)
+        finally:
+            broker.close()
+    elif broker is not None:
+        broker.close()
     output = fixture / 'report.json'
     output.write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2))
