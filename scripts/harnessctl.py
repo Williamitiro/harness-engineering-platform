@@ -65,9 +65,13 @@ def cleanup_empty_parents(start_dir: Path, stop_at: Path) -> None:
 
 
 def check_sandbox(target: Path) -> None:
-    if not target.is_dir() or ".poc" not in target.parts:
-        raise GateError("destination must be an existing directory below .poc/")
+    if not target.is_dir():
+        raise GateError("destination must be an existing directory")
     assert_no_symlink(target)
+    base = (Path(__file__).resolve().parents[1] / ".poc").resolve()
+    resolved = target.absolute().resolve(strict=False)
+    if resolved == base or base not in resolved.parents:
+        raise GateError("destination must be a child of THIS repository's .poc/")
     git_dir = target / ".git"
     if git_dir.exists() or git_dir.is_symlink():
         raise GateError("destination may not be a Git checkout")

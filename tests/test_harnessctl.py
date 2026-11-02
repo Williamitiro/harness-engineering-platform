@@ -19,7 +19,8 @@ spec.loader.exec_module(h)
 @unittest.skipUnless(shutil.which("git"), "Git not installed")
 class LifecycleTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        (ROOT / ".poc").mkdir(exist_ok=True)
+        self.tmp = tempfile.TemporaryDirectory(dir=ROOT / ".poc")
         self.addCleanup(self.tmp.cleanup)
         root = Path(self.tmp.name)
         self.source = root / "ecc"
@@ -98,7 +99,14 @@ class LifecycleTests(unittest.TestCase):
 
     def test_outside_sandbox_refused(self):
         with self.assertRaises(h.GateError):
-            h.check_sandbox(Path(self.tmp.name))
+            h.check_sandbox(ROOT)
+        # A directory named .poc outside the repo is not a trusted sandbox.
+        other = Path(self.tmp.name) / ".poc"
+        other.mkdir()
+        # still inside the repository .poc; therefore explicitly check the
+        # actual repo boundary by constructing the parent directory instead.
+        with self.assertRaises(h.GateError):
+            h.check_sandbox(ROOT.parent)
 
     def test_source_wrong_revision_refused(self):
         self.manifest["ecc"]["commit"] = "a" * 40
