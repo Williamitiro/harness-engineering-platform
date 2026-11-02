@@ -23,10 +23,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 try:
     from scripts.jev_adapter import JevAdapterError, JevMcpClient
+    from scripts.jev_live_smoke import isolated_child_env
 except ImportError:
     import sys
     sys.path.insert(0, str(ROOT))
     from scripts.jev_adapter import JevAdapterError, JevMcpClient
+    from scripts.jev_live_smoke import isolated_child_env
 
 
 class RealJevPackageIntegrationTests(unittest.TestCase):
@@ -153,6 +155,37 @@ class RealJevPackageIntegrationTests(unittest.TestCase):
             client._send_and_receive({"id": 1}, timeout_s=-1.0)
         self.assertIn("Invalid timeout", str(ctx.exception))
         client.close()
+
+
+    def test_05_real_upstream_doctor_selects_openrouter_from_misnamed_key(self):
+        """Contract test against real upstream provider selection, with fake credentials and no API."""
+        parent = {
+            "TYPESAFE_API_KEY": "sk-or-v1-not-a-real-secret",
+            "PATH": os.environ.get("PATH", ""),
+            "SystemRoot": os.environ.get("SystemRoot", ""),
+            "WINDIR": os.environ.get("WINDIR", ""),
+            "TEMP": os.environ.get("TEMP", ""),
+            "TMP": os.environ.get("TMP", ""),
+        }
+        selected = isolated_child_env(parent)
+        self.assertEqual(selected["JEV_CODE_PROVIDER"], "openrouter")
+        self.assertNotIn("TYPESAFE_API_KEY", selected)
+        env = {
+            name: value for name, value in os.environ.items()
+            if not name.endswith("_API_KEY")
+            and name not in ("JEV_CODE_PROVIDER", "TYPESAFE_BASE_URL", "TYPESAFE_DEFAULT_MODEL")
+        }
+        env.update(selected)
+        proc = subprocess.run(
+            [self.npx, "-y", "@french-castle/jev-code@0.5.0", "doctor"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env=env, timeout=25, check=False,
+        )
+        # No --live is passed. This validates selected host, not authorization or billed inference.
+        self.assertEqual(proc.returncode, 0, "Offline doctor returned nonzero")
+        self.assertIn("OpenRouter", proc.stdout)
+        self.assertIn("https://openrouter.ai/api", proc.stdout)
+        self.assertNotIn("sk-or-v1-not-a-real-secret", proc.stdout)
 
 
 if __name__ == "__main__":
