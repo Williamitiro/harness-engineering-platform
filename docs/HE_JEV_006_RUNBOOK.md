@@ -126,3 +126,38 @@ Execução realizada via `pwsh -NoProfile -File .\scripts\run_jev_live_smoke.ps1
 ```
 
 O gate `PROVIDER_RESPONSE_OBSERVED` foi alcançado com sucesso. O modelo servido via OpenRouter (`typesafe/jev-1.14-20261014`) classificou a tarefa com decisão `auto` (`decision_status: SUCCESS`, label `software-development`) em 880ms.
+
+---
+
+## HE-JEV-006c — Dupla auditoria independente do Gemini / correção de escopo
+
+**Revisão:** 2026-11-02. A execução live bem-sucedida no commit `848d001` é **evidência reportada pelo executor local e documentada no PR**, não reproduzida pelo GitHub Actions nem pelo revisor remoto. O CI valida código, mocks e protocolo MCP sem API paga.
+
+### Confirmação da causa raiz
+
+O revisor leu diretamente o código-fonte `FrancoisChastel/jev-code@v0.5.0`: `src/core/config.ts::selectProvider` e `src/core/providers.ts`. O upstream associa `TYPESAFE_API_KEY` ao host TypeSafe por padrão e `OPENROUTER_API_KEY` ao OpenRouter. `JEV_CODE_PROVIDER` seleciona explicitamente o host. O código não faz auto-roteamento por prefixo; o `doctor` apenas avisa sobre inconsistências.
+
+O Gemini conseguiu o smoke live ao selecionar OpenRouter para a credencial de origem OpenRouter que estava catalogada sob nome genérico incorreto. **Essa correção funcionou naquele ambiente.**
+
+### Riscos encontrados no código publicado pelo Gemini e ajustes
+
+1. A versão inicial duplicava a mesma chave para `OPENROUTER_API_KEY` **e** `TYPESAFE_API_KEY`; esta duplicação é desnecessária. Agora o filho recebe somente o nome de variável do provedor escolhido. Não é preciso mudar o valor mantido no Infisical para o smoke legado.
+2. Antes, `JEV_CODE_PROVIDER=typesafe` com uma chave conhecida de OpenRouter poderia executar uma chamada mal direcionada. Agora o smoke recusa combinações reconhecidamente inconsistentes antes de criar o processo MCP.
+3. Quando existem chaves TypeSafe/OpenRouter distintas sem preferência expressa, o teste antigo escolhia implicitamente OpenRouter. Agora falha em modo fechado e solicita configurar `JEV_CODE_PROVIDER` para eliminar ambiguidades.
+4. Para este smoke **Jev System One**, apenas `typesafe`, `openrouter` e `vercel` são suportados. Testar `openai` ou `ollama` requer um smoke específico, com outro contrato de chaves; não se tenta enviá-los por padrão.
+5. Foi adicionada uma prova offline contra o **pacote upstream real**: o comando `jev-code doctor` sem `--live`, usando chave artificial com prefixo OpenRouter originalmente em `TYPESAFE_API_KEY`, precisa selecionar `OpenRouter` e base URL `https://openrouter.ai/api`. Nenhuma API paga é chamada nessa prova.
+
+### Limites e estados
+
+| Verificação | Estado |
+|---|---|
+| Protocolo MCP v0.5.0 sem chave | Validado anteriormente por CI |
+| Seleção correta de host com chave sintética pelo `doctor` real | Requer CI do commit corretivo concluído |
+| Smoke real em OpenRouter | Reportado `PROVIDER_RESPONSE_OBSERVED` no commit Gemini `848d001` |
+| Isolamento total G1 para agentes | NÃO homologado |
+| Condições A/J com modelos reais e tarefa cega | NÃO executadas |
+| Métricas de custo e eficácia | NÃO verificadas |
+
+**Atenção:** o uso de um prefixo como `sk-or-` é apenas heurística de compatibilidade para a configuração legada. Não valida a autenticidade de uma credencial. Para projetos novos, manter uma variável por provedor e selecionar explicitamente o destino; não escrever segredos em `.env`, comentários de PR ou logs.
+
+**Sem necessidade de repetir o smoke faturável para confirmar a auditoria do CI.** Uma nova chamada live só é indicada se houver mudança operacional de credencial/configuração ou se a integridade do resultado local for questionada. Não habilitar agentes com acesso a chaves enquanto G1 completo estiver pendente.
