@@ -214,7 +214,7 @@ def analyze_trajectory(events: list[dict], client: str) -> dict:
     for r in successful:
         cmd = r["command"].replace("\\", "/").lower()
         output = r["output"].lower()
-        if not re.search(r"get-content|\\bcat\\b|\\btype\\b|\\bsed\\b", cmd):
+        if not re.search(r"get-content|\bcat\b|\btype\b|\bsed\b", cmd):
             continue
         for skill in harnessctl.ALLOWED:
             if f"{skill}/skill.md" in cmd and (
@@ -222,7 +222,7 @@ def analyze_trajectory(events: list[dict], client: str) -> dict:
             ):
                 successful_reads.add(skill)
 
-    test_pattern = re.compile(r"(?:python(?:3)?\\s+-m\\s+)?(?:pytest|unittest)\\b", re.I)
+    test_pattern = re.compile(r"(?:python(?:3)?\s+-m\s+)?(?:pytest|unittest)\b", re.I)
     tests = [(i, r) for i, r in enumerate(records) if test_pattern.search(r["command"])]
     red_green = any(
         first["exit_code"] != 0 and second["exit_code"] == 0 and i < j
