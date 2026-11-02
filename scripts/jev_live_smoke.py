@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.jev_adapter import JevMcpClient
+from scripts.jev_adapter import JevAdapterError, JevMcpClient
 
 PACKAGE_NAME = "@french-castle/jev-code"
 PACKAGE_VERSION = "0.5.0"
@@ -104,6 +104,27 @@ def run_one_call(entry: Path, parent_env: dict[str, str] | None = None) -> dict[
     }
 
 
+def safe_failure_code(exc: Exception) -> str:
+    """Expose only a stable enum; never arbitrary provider/transport exception text."""
+    if isinstance(exc, SmokePreflightError):
+        return "LOCAL_PREFLIGHT_FAILED"
+    if isinstance(exc, JevAdapterError):
+        if exc.diagnostic_code != "JEV_ERROR":
+            return exc.diagnostic_code
+        # These messages originate in our own adapter, not upstream HTTP body.
+        description = str(exc).lower()
+        if "timed out" in description:
+            return "MCP_TIMEOUT"
+        if "closed stdout" in description or "input closed" in description:
+            return "MCP_PROCESS_EXITED"
+        if "could not start" in description:
+            return "MCP_SPAWN_FAILED"
+        if "initialize" in description:
+            return "MCP_INITIALIZE_FAILED"
+        return "MCP_PROTOCOL_OR_CLIENT_ERROR"
+    return "LOCAL_RUNTIME_ERROR"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package-entry", type=Path, required=True)
@@ -116,9 +137,12 @@ def main() -> int:
     try:
         result = run_one_call(args.package_entry)
     except Exception as exc:
-        # Never reflect provider errors, HTTP bodies, stack traces or credentials
-        # to logs. Local debugging should use a separate, explicitly redacted tool.
-        print(f"SMOKE_FAILED: {type(exc).__name__}; no provider body logged", file=sys.stderr)
+        # Never reflect provider error text, HTTP bodies, stack traces or credentials.
+        print(
+            f"SMOKE_FAILED: code={safe_failure_code(exc)}; "
+            "provider_body=REDACTED; no result saved",
+            file=sys.stderr,
+        )
         return 1
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
