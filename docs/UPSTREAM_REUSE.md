@@ -33,8 +33,11 @@ Inspeção direta via GitHub API e documentação oficial em 02/11/2026:
 | --- | --- | --- | --- | --- | --- | --- |
 | `jev-code` | [FrancoisChastel/jev-code](https://github.com/FrancoisChastel/jev-code) | `v0.5.0` (2026-10-08) | `74a4569bfe8bb4ad0cc1ba74fa5867f09e267300` | MIT | Node >=20, `@modelcontextprotocol/sdk` (1.31.0), `zod` (4.6.5) | **Candidato prioritário (MCP consultivo)**; PRs de dependências abertos (`#22`, `#24`, `#25`); requer flag `--no-env` e isolamento |
 | `jev-classifier` | [felpsdev/jev-classifier](https://github.com/felpsdev/jev-classifier) | Sem release (branch `master`) | `e0c6cc7c6d2b1027be86ad8f4e03e191a88ec402` | MIT | Node >=22, proxy local (porta 8080) | **Adiado**; proxy intercepta tráfego HTTP de modelo; maior risco operacional e de privacidade |
-| `jev-skills` | [n23eos/jev-skills](https://github.com/n23eos/jev-skills) | `v0.3.0` (2026-10-02) | `ff2d92b07091209c03d455d562f58c928b7b9e4e` | MIT | Python >=3.10, uv | **Referência de padrões**; 14 skills consultivas; não instalar para evitar sobreposição com ECC |
+| `jev-skills` | [n23eos/jev-skills](https://github.com/n23eos/jev-skills) | `v0.3.0` (2026-10-02) | `4cb8ab4ec3c7fa3821dbd2b398b490a083b1b034` | MIT | Python >=3.10, uv | **Referência de padrões**; 14 skills consultivas; não instalar para evitar sobreposição com ECC |
 | `typesafe-ai/skills` | [typesafe-ai/skills](https://github.com/typesafe-ai/skills) | Sem release (branch `main`) | `302eea662c54bca6730873fe245bec1d69ebc23d` | MIT | Markdown / docs | **Referência canônica** da API System One (`Choice`, `Score`, `Noul`, `Box`) |
 | Documentação TypeSafe | [docs.typesafe.ai](https://docs.typesafe.ai/llms.txt) | `llms.txt` | N/A | N/A | Endpoint `POST /v1/systemone` | Confirma que Jev é modelo de decisões tipadas, não LLM gerador de código |
 
 Consultar [decisão](JEV_DECISAO.md), [pesquisa comparativa](JEV_ESTUDO_COMPARATIVO.md) e [protocolo](JEV_PILOTO_PROTOCOLO.md). Nenhum upstream foi instalado globalmente nem executado com bypass de permissões. Live execution permanece `NOT_RUN` / `BLOCKED_G1` devido à ausência de isolamento externo em container/VM.
+
+
+> **Correção SHA v0.3.0 jev-skills:** tag anotada `0c3a83ac32c6b120345f7b236f73f3433db0e301` -> commit `4cb8ab4ec3c7fa3821dbd2b398b490a083b1b034`; o commit anterior `ff2d92...` não corresponde à versão marcada. [Auditoria](AUDITORIA_HE_JEV_001_2026-11-02.md).

@@ -2,6 +2,14 @@
 
 **Repositório:** `Williamitiro/harness-engineering-platform`. **Branch única de trabalho:** `codex/harness-foundation-v1`, PR #2 (Draft). Preservar PR #1, main e evidências; nunca fazer merge ou force push.
 
+## Resultado da auditoria externa posterior ao commit a88ce61
+
+A revisão do commit a88ce61 descobriu **ausência completa de medição real de modelos**. As 30 linhas de `fixtures_pilot.jsonl` já continham o gabarito, as previsões nativa/JEV, latência e tokens simulados, de modo que 73,3% vs 100% é apenas aritmética de dados fabricados. É terminantemente proibido reapresentar essas taxas, economia, proteção contra prompt injection ou custos como resultados reais. O relatório de Gemini e o JSON foram anotados como inválidos para inferência empírica.
+
+Ler primeiro `docs/AUDITORIA_HE_JEV_001_2026-11-02.md`. O código offline continua útil para validar schema e políticas, mas nunca comprova qualidade de Jev.
+
+**Novo objetivo local, com escopo fechado:** preparar (sem instalar globalmente) a integração oficial `jev-code` usando sua versão fixa, especificar protocolo de coleta reprodutível de outputs reais com IDs de execução, checksums de transcrição e runtime/modelo identificado; pré-registrar conjunto holdout de tarefas e rótulos independentes; preparar prova de isolamento G1. Não realizar chamada live nem criar credenciais sem autorização específica. Se o ambiente local não estiver isolado, concluir com `NOT_RUN/BLOCKED_G1`. Codex é o revisor independente.
+
 ## Ordem operacional
 1. Fazer bootstrap: ler README, AGENTS/contratos, documentação Jev, errata de segurança, protocolo e handoff; validar git status clean e HEAD remoto antes de mudanças. Não reescrever documentação de arquitetura.
 2. Executar `python -m unittest discover -s tests -v`, `python scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_example.jsonl --policy config/jev_pilot_policy.json`, compilação e validação CI. Corrigir só falhas reproduzidas. Dados de fixture não são resultados de modelo.
