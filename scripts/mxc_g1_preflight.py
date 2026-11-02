@@ -142,6 +142,8 @@ def main() -> int:
     command = [str(exe), *config, 'sandbox', '--include-managed-config',
                '--permission-profile', 'he-jev-g1', '-C', str(workspace), '--',
                str(powershell), '-NoLogo', '-NoProfile', '-NonInteractive',
+               # Operator authorized RemoteSigned for this disposable child only.
+               '-ExecutionPolicy', 'RemoteSigned',
                '-File', str(workspace / 'probe.ps1')]
     # MXC requires the operational host SystemDrive variable during preparation.
     keep = ('SystemRoot', 'SystemDrive', 'WINDIR', 'PATH', 'PATHEXT', 'TEMP', 'TMP',
