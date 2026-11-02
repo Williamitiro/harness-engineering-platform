@@ -29,13 +29,27 @@ class JevStartupTriageTests(unittest.TestCase):
             self.assertNotIn("CODEX_TOKEN", selected)
             self.assertNotIn("private", str(selected))
 
+    def test_expanded_windows_profile_includes_core_runtime_but_no_secrets(self):
+        parent = {
+            "PATH": "fake-path", "ComSpec": "C:\\Windows\\System32\\cmd.exe",
+            "NUMBER_OF_PROCESSORS": "8", "PROCESSOR_ARCHITECTURE": "AMD64",
+            "OS": "Windows_NT", "OPENROUTER_API_KEY": "private-secret",
+            "NODE_OPTIONS": "--require private-file",
+        }
+        expanded = clean_runtime_env(parent, windows_os=True)
+        self.assertEqual(expanded["ComSpec"], parent["ComSpec"])
+        self.assertEqual(expanded["NUMBER_OF_PROCESSORS"], "8")
+        self.assertEqual(expanded["OS"], "Windows_NT")
+        self.assertNotIn("OPENROUTER_API_KEY", expanded)
+        self.assertNotIn("NODE_OPTIONS", expanded)
+
     def test_stderr_does_not_echo_raw_data(self):
         output = stderr_category(b"Assertion failed: private-api-key in uv_loop_init")
         self.assertEqual(output, ["NODE_ASSERTION_OR_ABORT", "NODE_FATAL_RUNTIME"])
         self.assertNotIn("private-api-key", str(output))
 
     def test_node_success_includes_only_semver(self):
-        completed = subprocess.CompletedProcess(["node"], 0, b"HE_NODE_READY v24.12.0", b"")
+        completed = subprocess.CompletedProcess(["node"], 0, b"v24.12.0\r\n", b"")
         with patch("scripts.jev_startup_triage.subprocess.run", return_value=completed):
             result = check_node("node", {"PATH": "synthetic"})
         self.assertEqual(result["status"], "PASS")
