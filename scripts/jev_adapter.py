@@ -188,7 +188,13 @@ class JevMcpClient:
         for raw in stream:
             # Categorize only known Node startup faults in memory; never keep raw text.
             lower = raw.lower()[:4096]
-            if b"err_module_not_found" in lower or b"cannot find module" in lower:
+            if b"assertion failed" in lower or b"sigabrt" in lower or b"abort()" in lower:
+                self._stderr_categories.add("NODE_ASSERTION_OR_ABORT")
+            elif b"fatal error" in lower or b"uv_fatal_error" in lower or b"uv_loop" in lower:
+                self._stderr_categories.add("NODE_FATAL_RUNTIME")
+            elif b"heap out of memory" in lower or b"allocation failed" in lower:
+                self._stderr_categories.add("NODE_OUT_OF_MEMORY")
+            elif b"err_module_not_found" in lower or b"cannot find module" in lower:
                 self._stderr_categories.add("NODE_MODULE_MISSING")
             elif b"syntaxerror" in lower or b"unexpected token" in lower:
                 self._stderr_categories.add("NODE_SYNTAX_ERROR")
