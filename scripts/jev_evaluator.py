@@ -98,6 +98,14 @@ def load_and_verify_run(path: Path) -> list[dict]:
         if compute_sha256(raw_out) != raw_out_sha:
             raise EvaluatorError(f"Run line {line_no} raw_output SHA-256 mismatch! Tampering detected.")
         
+        # SHA-256 in the same editable JSON document does not authenticate a provider.
+        # Until a trusted provider adapter and external attestation exist, reject
+        # every non-synthetic record rather than upgrading a user-supplied flag.
+        if rec.get("evidence_kind") != "SYNTHETIC" or rec.get("is_synthetic") is not True:
+            raise EvaluatorError(
+                f"Run line {line_no} UNVERIFIED_PROVENANCE: only SYNTHETIC "
+                "records accepted until a trusted provider collector/attestation exists"
+            )
         records.append(rec)
     if not records:
         raise EvaluatorError("Run records file is empty")
@@ -139,6 +147,8 @@ def evaluate_domain(records: list[dict], ground_truths: dict[str, dict], policy:
         gt = ground_truths.get(task_id)
         if not gt:
             raise EvaluatorError(f"Task {task_id} not found in holdout ground truth!")
+        if rec.get("domain") != gt.get("domain"):
+            raise EvaluatorError(f"Domain mismatch for {task_id}")
         
         expected = gt["expected_label"]
         decision = rec.get("parsed_decision", {})
@@ -199,25 +209,17 @@ def evaluate_domain(records: list[dict], ground_truths: dict[str, dict], policy:
     }
 
 def evaluate_run(records: list[dict], ground_truths: dict[str, dict], policy: dict) -> dict:
-    # Determine evidence level strictly
-    is_any_synthetic = any(r.get("evidence_kind") == "SYNTHETIC" or r.get("is_synthetic") for r in records)
-    is_all_verified = all(r.get("evidence_kind") == "VERIFIED" for r in records)
-    
-    if is_any_synthetic:
-        evidence_level = "SYNTHETIC_SIMULATION_ONLY"
-        model_quality_proven = False
-        recommendation = "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"
-        status = "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY"
-    elif is_all_verified:
-        evidence_level = "VERIFIED_ISOLATED_BENCHMARK"
-        model_quality_proven = True
-        recommendation = "VALIDATED_EMPIRICAL_DATA"
-        status = "COMPLETED_VERIFIED"
-    else:
-        evidence_level = "OBSERVED_REAL_EXECUTION"
-        model_quality_proven = True
-        recommendation = "OBSERVED_DATA_PENDING_G1_VERIFICATION"
-        status = "COMPLETED_OBSERVED"
+    # A record can claim VERIFIED/OBSERVED without ever contacting a provider.
+    # Reject it; the local SHA-256 alongside the payload proves only consistency.
+    if not records or any(r.get("evidence_kind") != "SYNTHETIC" or
+                          r.get("is_synthetic") is not True for r in records):
+        raise EvaluatorError(
+            "UNVERIFIED_PROVENANCE: live attestation/provider adapter NOT IMPLEMENTED"
+        )
+    evidence_level = "SYNTHETIC_SIMULATION_ONLY"
+    model_quality_proven = False
+    recommendation = "NO_EMPIRICAL_EVIDENCE_FOR_ADOPTION"
+    status = "SYNTHETIC_FIXTURE_ARITHMETIC_ONLY"
     
     # Split records by domain to evaluate each domain independently
     by_domain: dict[str, list[dict]] = {}
@@ -237,10 +239,10 @@ def evaluate_run(records: list[dict], ground_truths: dict[str, dict], policy: di
         "model_quality_proven": model_quality_proven,
         "recommendation": recommendation,
         "provenance": {
-            "source_kind": "SIMULATION_MOCK" if is_any_synthetic else "REAL_EXECUTION",
-            "codex_or_native_called": not is_any_synthetic,
-            "jev_model_called": not is_any_synthetic,
-            "runtime_metrics_observed": not is_any_synthetic,
+            "source_kind": "SIMULATION_MOCK",
+            "codex_or_native_called": False,
+            "jev_model_called": False,
+            "runtime_metrics_observed": False,
             "sample_size": len(records),
         },
         "overall": overall,
@@ -250,6 +252,34 @@ def evaluate_run(records: list[dict], ground_truths: dict[str, dict], policy: di
             "Live adoption requires Gate G1 external isolation and authorized API billing.",
         ],
     }
+
+def verify_paired_runs(main_records: list[dict], comparison_records: list[dict]) -> None:
+    """Require a paired, like-for-like synthetic comparison, not two arbitrary files."""
+    if not main_records or not comparison_records:
+        raise EvaluatorError("Comparison requires two nonempty run files")
+    if any(r.get("evidence_kind") != "SYNTHETIC" or
+           r.get("is_synthetic") is not True for r in main_records + comparison_records):
+        raise EvaluatorError("UNVERIFIED_PROVENANCE: comparison requires trusted adapter")
+    main_by_id = {r["task_id"]: r for r in main_records}
+    other_by_id = {r["task_id"]: r for r in comparison_records}
+    if len(main_by_id) != len(main_records) or len(other_by_id) != len(comparison_records):
+        raise EvaluatorError("Duplicate task IDs in comparison")
+    if main_by_id.keys() != other_by_id.keys():
+        raise EvaluatorError("Unpaired comparison: task IDs differ")
+    conditions = ({r.get("condition") for r in main_records},
+                  {r.get("condition") for r in comparison_records})
+    if conditions not in (
+        ({"CONDITION_A_NATIVE"}, {"CONDITION_J_ADVISORY"}),
+        ({"CONDITION_J_ADVISORY"}, {"CONDITION_A_NATIVE"}),
+    ):
+        raise EvaluatorError("Comparison requires one pure A run and one pure J run")
+    for key in main_by_id:
+        a, b = main_by_id[key], other_by_id[key]
+        if a.get("raw_input_sha256") != b.get("raw_input_sha256"):
+            raise EvaluatorError(f"Input differs across conditions for task {key}")
+        if a.get("domain") != b.get("domain"):
+            raise EvaluatorError(f"Domain differs across conditions for task {key}")
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -268,6 +298,7 @@ def main() -> int:
         
         if args.compare_run:
             records_compare = load_and_verify_run(args.compare_run)
+            verify_paired_runs(records_main, records_compare)
             res_compare = evaluate_run(records_compare, ground_truths, policy)
             
             # Form comparison report

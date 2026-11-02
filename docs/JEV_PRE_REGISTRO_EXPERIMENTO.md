@@ -1,5 +1,8 @@
 # Pré-Registro do Experimento Empírico — Validação Jev vs. Nativo
 
+> **AUDITORIA DE SEGURANÇA 02/11/2026:** A versão HE-JEV-002 continha um bug crítico de proveniência: `jev_evaluator.py` tratava qualquer JSONL com `evidence_kind: VERIFIED` (campo controlado pelo autor do JSONL) e hashes presentes no mesmo registro como prova de execução real. Isso não autentica provedor, ambiente nem sessão. Foi corrigido: o avaliador **aceita apenas evidência SYNTHETIC** até existir adaptador live com atestação/verificação externa. Os comandos de coleta live listados abaixo permanecem **não implementados e bloqueados**, mesmo com flags declarativas. O gabarito no mesmo repositório Git **não é blindado operacionalmente**; é necessário montar somente tarefas no workspace do executor e manter gabaritos em volume/ambiente separado, inacessível. Ver `docs/AUDITORIA_HE_JEV_002_2026-11-02.md`.
+
+
 **Identificação do Estudo:** HE-JEV-EMP-001  
 **Data do Pré-Registro:** 2026-11-02  
 **Repositório:** `Williamitiro/harness-engineering-platform`  

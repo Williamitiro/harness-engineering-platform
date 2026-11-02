@@ -126,6 +126,52 @@ class JevEmpiricalPipelineTests(unittest.TestCase):
                 evaluator.load_and_verify_run(path)
             self.assertIn("SHA-256 mismatch", str(ctx.exception))
 
+    def test_evaluator_rejects_spoofed_verified_record(self):
+        """Changing flags and recalculating hashes cannot establish a live run."""
+        record = {
+            "evidence_kind": "VERIFIED", "is_synthetic": False,
+            "run_id": "made-up-live", "task_id": "t1", "domain": "skills",
+            "raw_input": "synthetic input", "raw_output": '{"choice":"tdd-workflow"}',
+            "parsed_decision": {"label": "tdd-workflow", "confidence": 1.0, "margin": 1.0},
+            "observed_metrics": {"latency_ms": 1, "tokens_in": 1},
+        }
+        record["raw_input_sha256"] = evaluator.compute_sha256(record["raw_input"])
+        record["raw_output_sha256"] = evaluator.compute_sha256(record["raw_output"])
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "forged.jsonl"
+            p.write_text(json.dumps(record))
+            with self.assertRaisesRegex(evaluator.EvaluatorError, "UNVERIFIED_PROVENANCE"):
+                evaluator.load_and_verify_run(p)
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "UNVERIFIED_PROVENANCE"):
+            evaluator.evaluate_run([record], {}, POLICY)
+
+    def test_evaluator_rejects_spoofed_observed_record(self):
+        record = {"evidence_kind": "OBSERVED", "is_synthetic": False, "task_id": "t1"}
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "UNVERIFIED_PROVENANCE"):
+            evaluator.evaluate_run([record], {}, POLICY)
+
+    def test_comparison_rejects_unpaired_ids_or_inputs(self):
+        def item(tid, cond, sha="same"):
+            return {"task_id": tid, "condition": cond, "domain": "skills",
+                    "evidence_kind": "SYNTHETIC", "is_synthetic": True,
+                    "raw_input_sha256": sha}
+        a = item("t1", "CONDITION_A_NATIVE")
+        j = item("t1", "CONDITION_J_ADVISORY")
+        evaluator.verify_paired_runs([a], [j])
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "task IDs differ"):
+            evaluator.verify_paired_runs([a], [item("t2", "CONDITION_J_ADVISORY")])
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "Input differs"):
+            evaluator.verify_paired_runs([a], [item("t1", "CONDITION_J_ADVISORY", "other")])
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "one pure A run"):
+            evaluator.verify_paired_runs([a], [item("t1", "CONDITION_A_NATIVE")])
+
+    def test_evaluator_rejects_domain_mismatch(self):
+        record = {"task_id": "t1", "domain": "skills",
+                  "parsed_decision": {"label": "tdd-workflow"}}
+        truth = {"t1": {"task_id": "t1", "domain": "ci_triage", "expected_label": "tdd-workflow"}}
+        with self.assertRaisesRegex(evaluator.EvaluatorError, "Domain mismatch"):
+            evaluator.evaluate_domain([record], truth, POLICY)
+
     def test_evaluator_calculates_macro_f1_correctly(self):
         """Macro-F1 must be correctly calculated per class rather than simple accuracy."""
         matrix = {
