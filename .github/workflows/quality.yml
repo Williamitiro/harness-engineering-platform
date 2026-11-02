@@ -17,7 +17,7 @@ jobs:
       - name: Python runtime
         run: python3 --version
       - name: Compile tools
-        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py scripts/harness_eval.py scripts/jev_offline_eval.py scripts/jev_collector.py scripts/jev_evaluator.py
+        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py scripts/harness_eval.py scripts/jev_offline_eval.py scripts/jev_collector.py scripts/jev_evaluator.py scripts/canary_probes.py scripts/infisical_verifier.py scripts/native_baseline.py
       - name: Offline isolated unit tests
         run: python3 -m unittest discover -s tests -v
       - name: Audit historical CSV arithmetic without changing evidence

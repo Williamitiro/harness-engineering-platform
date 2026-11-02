@@ -109,7 +109,7 @@ def prepare_blind_sandbox(
         target_scripts_dir = target_dir / "scripts"
         target_scripts_dir.mkdir(parents=True, exist_ok=True)
         
-        for script_name in ("jev_collector.py", "jev_adapter.py"):
+        for script_name in ("jev_collector.py", "jev_adapter.py", "native_baseline.py", "canary_probes.py"):
             src_script = ROOT / "scripts" / script_name
             if src_script.is_file():
                 dest = target_scripts_dir / script_name
@@ -209,13 +209,32 @@ def prepare_blind_sandbox(
         encoding="utf-8"
     )
 
+    bwrap_script_path = target_dir / "run_isolated_bwrap.sh"
+    bwrap_script_path.write_text(
+        "#!/bin/bash\n"
+        "# Offline isolated execution via bubblewrap (WSL2 / Linux container sandbox)\n"
+        "set -eu\n"
+        'WORKDIR="$(cd "$(dirname "$0")" && pwd)"\n'
+        "bwrap \\\n"
+        "  --ro-bind /usr /usr \\\n"
+        "  --ro-bind /lib /lib \\\n"
+        "  --ro-bind /lib64 /lib64 \\\n"
+        "  --proc /proc \\\n"
+        "  --dev /dev \\\n"
+        '  --bind "$WORKDIR" /workspace \\\n'
+        "  --unshare-all \\\n"
+        "  --chdir /workspace \\\n"
+        '  python3 scripts/canary_probes.py\n',
+        encoding="utf-8"
+    )
+
     return {
         "status": "SANDBOX_PREPARED",
         "target_directory": str(target_dir),
         "tasks_copied": len(list(target_tasks_dir.glob("*.jsonl"))),
         "manifest_path": str(manifest_path),
         "blindness_verified": True,
-        "files_count": len(copied_files) + 4,
+        "files_count": len([p for p in target_dir.rglob("*") if p.is_file()]),
     }
 
 def main() -> int:

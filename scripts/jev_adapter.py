@@ -13,6 +13,7 @@ import math
 import os
 from pathlib import Path
 import queue
+import shutil
 import subprocess
 import threading
 import time
@@ -109,7 +110,8 @@ class JevMcpClient:
         env: dict[str, str] | None = None,
         cwd: Path | None = None,
     ) -> None:
-        self.command = command or ["npx", "-y", "@french-castle/jev-code@0.5.0", "mcp"]
+        npx_bin = shutil.which("npx") or shutil.which("npx.cmd") or "npx"
+        self.command = command or [npx_bin, "-y", "@french-castle/jev-code@0.5.0", "mcp"]
         self.env = dict(os.environ)
         if env:
             self.env.update(env)
