@@ -152,7 +152,7 @@ O Gemini conseguiu o smoke live ao selecionar OpenRouter para a credencial de or
 | Verificação | Estado |
 |---|---|
 | Protocolo MCP v0.5.0 sem chave | Validado anteriormente por CI |
-| Seleção correta de host com chave sintética pelo `doctor` real | Requer CI do commit corretivo concluído |
+| Seleção correta de host com chave sintética pelo `doctor` real | PASS — CI #41512926594 (5 testes de integração aprovados) |
 | Smoke real em OpenRouter | Reportado `PROVIDER_RESPONSE_OBSERVED` no commit Gemini `848d001` |
 | Isolamento total G1 para agentes | NÃO homologado |
 | Condições A/J com modelos reais e tarefa cega | NÃO executadas |
