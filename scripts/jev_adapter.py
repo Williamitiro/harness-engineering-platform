@@ -154,6 +154,20 @@ class JevMcpClient:
         self._next_id = 1
         self._messages: queue.Queue[dict | None] = queue.Queue()
         self._stderr_tail: list[str] = []
+        self._stderr_categories: set[str] = set()
+        self._invalid_stdout_lines = 0
+
+    def startup_diagnostic(self) -> dict[str, Any]:
+        """Sanitized, bounded startup evidence: never expose stderr or environment."""
+        exit_code = self.process.poll() if self.process is not None else None
+        return {
+            "process_started": self.process is not None,
+            "process_exited": exit_code is not None if self.process is not None else None,
+            "exit_code": exit_code if isinstance(exit_code, int) and -999 <= exit_code <= 999 else None,
+            "stderr_categories": sorted(self._stderr_categories),
+            "stderr_present": bool(self._stderr_tail),
+            "non_json_stdout_lines": min(self._invalid_stdout_lines, 10),
+        }
 
     def _stdout_reader(self) -> None:
         assert self.process is not None and self.process.stdout is not None
@@ -164,6 +178,7 @@ class JevMcpClient:
                     if isinstance(msg, dict):
                         self._messages.put(msg)
                 except (ValueError, UnicodeError):
+                    self._invalid_stdout_lines += 1
                     continue
         finally:
             self._messages.put(None)
@@ -171,7 +186,18 @@ class JevMcpClient:
     def _stderr_reader(self) -> None:
         assert self.process is not None and self.process.stderr is not None
         for raw in self.process.stderr:
-            # Redact stderr from user-facing messages: providers can echo secrets.
+            # Categorize only known Node startup faults in memory; never keep raw text.
+            lower = raw.lower()[:4096]
+            if b"err_module_not_found" in lower or b"cannot find module" in lower:
+                self._stderr_categories.add("NODE_MODULE_MISSING")
+            elif b"syntaxerror" in lower or b"unexpected token" in lower:
+                self._stderr_categories.add("NODE_SYNTAX_ERROR")
+            elif b"eacces" in lower or b"access is denied" in lower:
+                self._stderr_categories.add("PROCESS_ACCESS_DENIED")
+            elif b"enoent" in lower or b"no such file" in lower:
+                self._stderr_categories.add("PROCESS_FILE_MISSING")
+            elif b"err_" in lower:
+                self._stderr_categories.add("NODE_RUNTIME_ERROR")
             if len(self._stderr_tail) < 3:
                 self._stderr_tail.append("stderr available (redacted)")
 
@@ -185,7 +211,7 @@ class JevMcpClient:
                 cwd=str(self.cwd) if self.cwd else None, env=self.env,
             )
         except OSError as exc:
-            raise JevAdapterError(f"MCP server could not start: {exc}") from exc
+            raise JevAdapterError("MCP server could not start", diagnostic_code="MCP_SPAWN_FAILED") from exc
         threading.Thread(target=self._stdout_reader, daemon=True).start()
         threading.Thread(target=self._stderr_reader, daemon=True).start()
         try:
@@ -197,9 +223,15 @@ class JevMcpClient:
                     "clientInfo": {"name": "harness-jev-adapter", "version": ADAPTER_VERSION},
                 },
             }, timeout_s)
-            if "error" in response or not isinstance(response.get("result"), dict):
-                raise JevAdapterError("MCP initialize rejected")
-            self._send_notification({"jsonrpc": "2.0", "method": "notifications/initialized"})
+            if "error" in response:
+                raise JevAdapterError("MCP initialize rejected", diagnostic_code="MCP_INITIALIZE_REJECTED")
+            if not isinstance(response.get("result"), dict):
+                raise JevAdapterError("MCP initialize invalid response", diagnostic_code="MCP_INITIALIZE_INVALID")
+            try:
+                self._send_notification({"jsonrpc": "2.0", "method": "notifications/initialized"})
+            except JevAdapterError as exc:
+                raise JevAdapterError("MCP initialize notification failed",
+                                      diagnostic_code="MCP_INITIALIZED_NOTIFY_FAILED") from exc
         except BaseException:
             self.close()
             raise
@@ -214,12 +246,12 @@ class JevMcpClient:
 
     def _write(self, message: dict[str, Any]) -> None:
         if not self.process or not self.process.stdin:
-            raise JevAdapterError("MCP server unavailable")
+            raise JevAdapterError("MCP server unavailable", diagnostic_code="MCP_PROCESS_UNAVAILABLE")
         try:
             self.process.stdin.write((json.dumps(message, ensure_ascii=False) + "\n").encode("utf-8"))
             self.process.stdin.flush()
         except (BrokenPipeError, OSError, ValueError) as exc:
-            raise JevAdapterError("MCP process input closed") from exc
+            raise JevAdapterError("MCP process input closed", diagnostic_code="MCP_STDIN_CLOSED") from exc
 
     def _send_and_receive(self, payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
         if not math.isfinite(timeout_s) or timeout_s <= 0:
@@ -230,13 +262,14 @@ class JevMcpClient:
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise JevAdapterError("MCP response timed out")
+                raise JevAdapterError("MCP response timed out", diagnostic_code="MCP_RESPONSE_TIMEOUT")
             try:
                 response = self._messages.get(timeout=remaining)
             except queue.Empty as exc:
                 raise JevAdapterError("MCP response timed out") from exc
             if response is None:
-                raise JevAdapterError("MCP server closed stdout before responding")
+                raise JevAdapterError("MCP server closed stdout before responding",
+                                      diagnostic_code="MCP_STDOUT_CLOSED")
             if response.get("id") != expected_id:
                 # A wrong-id response cannot satisfy this request.
                 continue
