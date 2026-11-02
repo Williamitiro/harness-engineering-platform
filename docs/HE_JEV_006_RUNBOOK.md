@@ -71,3 +71,7 @@ Códigos possíveis:
 - `MCP_PROTOCOL_OR_CLIENT_ERROR` ou `LOCAL_RUNTIME_ERROR`: possível problema no adaptador, executar testes locais offline.
 
 `PROVIDER_RESPONSE_OBSERVED` confirma apenas que uma chamada consultiva de texto público teve resposta, e **não** comprova G1 nem ganho empírico. Todos os comandos de benchmark live de agentes continuam bloqueados.
+
+### Limite de tentativa de rede
+
+O runner fixa `JEV_CODE_MAX_RETRIES=0` e `JEV_CODE_TIMEOUT_MS=30000` no subprocesso MCP para evitar retries HTTP automáticos da camada `jev-code` no teste diagnóstico. Isso limita a uma solicitação lógica sem retries configurados pelo Jev; **não permite inferir cobrança** e não valida comportamento de qualquer intermediário externo. O script não grava a chave.
