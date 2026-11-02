@@ -27,7 +27,41 @@ ADAPTER_VERSION = "1.1.0"
 
 
 class JevAdapterError(RuntimeError):
-    pass
+    """Safe local exception; upstream strings must never reach logs."""
+
+    def __init__(self, message: str, diagnostic_code: str = "JEV_ERROR"):
+        super().__init__(message)
+        self.diagnostic_code = diagnostic_code
+
+
+def classify_upstream_error(message: str) -> str:
+    """Map untrusted provider/MCP error text to a fixed, non-secret code.
+
+    Never propagate message or HTTP body to a log. Match specific status codes
+    first so a provider response with mixed wording stays deterministic.
+    """
+    import re
+
+    text = message.lower()[:8192]
+    if re.search(r"\\b401\\b|unauthori[sz]ed|invalid.{0,24}(api.?key|token)|authentication failed", text):
+        return "AUTH_REJECTED"
+    if re.search(r"\\b403\\b|forbidden|permission denied", text):
+        return "PERMISSION_DENIED"
+    if re.search(r"\\b402\\b|payment required|insufficient (credits|balance)|billing", text):
+        return "BILLING_OR_CREDITS"
+    if re.search(r"\\b429\\b|rate.?limit|too many requests", text):
+        return "RATE_LIMITED"
+    if re.search(r"\\b(500|502|503|504)\\b|service unavailable|bad gateway", text):
+        return "PROVIDER_UNAVAILABLE"
+    if re.search(r"\\b400\\b|bad request|validation error|invalid request", text):
+        return "REQUEST_REJECTED"
+    if re.search(r"api.?key.{0,36}(missing|not set|required)|missing.{0,24}api.?key", text):
+        return "MISSING_PROVIDER_KEY"
+    if re.search(r"fetch failed|econn|enotfound|eai_again|etimedout|network error|socket hang up|certificate|tls|dns", text):
+        return "NETWORK_OR_TLS"
+    if re.search(r"timeout|timed out|aborted", text):
+        return "PROVIDER_TIMEOUT"
+    return "UPSTREAM_ERROR_UNCLASSIFIED"
 
 
 class AttestationError(ValueError):
@@ -240,10 +274,21 @@ class JevMcpClient:
         response = self._send_and_receive(request, timeout_s)
         elapsed = round((time.perf_counter() - start) * 1000.0, 2)
         if "error" in response:
-            raise JevAdapterError("MCP JSON-RPC tool call failed")
+            rpc_error = response.get("error")
+            # Only classify the untrusted text; never print/serialize it.
+            raw = json.dumps(rpc_error, ensure_ascii=False) if isinstance(rpc_error, dict) else ""
+            code = classify_upstream_error(raw)
+            raise JevAdapterError("MCP JSON-RPC tool call failed", diagnostic_code=code)
         result = response.get("result")
-        if not isinstance(result, dict) or result.get("isError") is True:
-            raise JevAdapterError("jev_classify tool reported an error")
+        if not isinstance(result, dict):
+            raise JevAdapterError("MCP result is not an object", diagnostic_code="MCP_PROTOCOL_ERROR")
+        if result.get("isError") is True:
+            raw = " ".join(
+                str(item.get("text", "")) for item in result.get("content", [])
+                if isinstance(item, dict) and item.get("type") == "text"
+            ) if isinstance(result.get("content"), list) else ""
+            code = classify_upstream_error(raw)
+            raise JevAdapterError("jev_classify tool reported an error", diagnostic_code=code)
         content = result.get("content")
         if not isinstance(content, list):
             raise JevAdapterError("MCP result has no content array")
