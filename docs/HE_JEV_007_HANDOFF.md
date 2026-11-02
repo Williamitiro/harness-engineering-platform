@@ -2,7 +2,7 @@
 
 ## 1. Estado final
 
-`BLOCKED_G1`. O `MXC_OK` reportado pelo operador é compatibilidade, não aprovação G1. O bloqueio anterior do launcher WSL não é pré-requisito para continuar no Windows e está superado pelo adendo da Issue #3 (relido, atualização `2026-11-02T21:28:48Z`).
+`BLOCKED_G1` integral: **canários negativos MXC PASS; fronteira broker/Codex ainda PENDING**. O operador executou o preflight corrigido e o agente consultou seu `report.json` local sem repetir o teste. Resultado `exit_code=0`, `canaries_passed=true`, `broker_verified=false`. O bloqueio anterior WSL não é pré-requisito para continuar no Windows.
 
 Worktree única: `C:\dev\harness-engineering`; branch `codex/he-jev-007a`, upstream `origin/codex/he-jev-007a`. Entrada limpa em `3469dcaace7631bd434776c4d02fed376908cefe`; uma atualização `git fetch origin`. PR #4 OPEN/Draft, base main (`10de6958b88ee6fbf66a72642a3c24e59ad55f9a`). Nenhuma branch/worktree/PR adicional.
 
@@ -32,9 +32,9 @@ Referências oficiais consultadas: [Windows sandbox](https://learn.chatgpt.com/d
 | FAIL REPORTADO | Execução externa do operador com o mesmo comando | Mesmo erro/exit 1, stdout vazio. Fixture reportada `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-l_zn0nfh`. Não reproduzida novamente pelo agente. |
 | FAIL REPORTADO / DIAGNÓSTICO OBTIDO | Execução externa com `--diagnose-startup` | Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-6x7kgc_5`; exit 1 antes dos probes. Arquivo privado consultado localmente: a preparação MXC exige `SystemDrive` não vazio, ausente da lista de ambiente do launcher. Nenhum segredo no diagnóstico e nenhum log bruto copiado para Git. |
 | FAIL REPORTADO / DIAGNÓSTICO OBTIDO | Execução externa após inclusão de `SystemDrive` | Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-lg9di7ec`; exit 1. Log privado confirma que PowerShell iniciou, mas recusou `probe.ps1` pela política de execução. Canários não executados. |
-| PENDING | Runtime após `RemoteSigned` autorizado para o filho | Argumento adicionado; nenhuma nova execução MXC ou suíte pelo agente. Validação externa ainda necessária. |
+| PASS OBSERVADO | Runtime após `RemoteSigned` autorizado para o filho | Operador executou `python scripts/mxc_g1_preflight.py --diagnose-startup` na versão `7df51b9`. Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-3hq11r0e`; relatório local consultado, exit 0. Cópia sanitizada em `docs/evidence/HE_JEV_007A_MXC_CANARIES.json`. Nenhuma repetição pelo agente. |
 | PASS | Inspeção estática via `ast.parse` e verificação da tupla `keep` | Sintaxe válida e `SystemDrive` presente na lista. Não executa o launcher nem aprova G1. |
-| PENDING | Canários filesystem/rede/ambiente | Sem relatório válido: nenhuma negação comprovada. Não confundir falha de inicialização com contenção. |
+| PASS OBSERVADO | Canários filesystem/rede/ambiente | Controles de leitura/escrita permitidos true; canários protegido, gabarito artificial, `.git` artificial e deny interno DENIED; escrita externa DENIED; variáveis de credencial verificadas ausentes; TCP externo e loopback DENIED. `canaries_passed=true`. Escopo limitado aos probes e à política desta execução, sem atestação externa nem execução de modelo. |
 | PENDING | Suíte offline completa | Não executada após falha persistente da rodada direcionada; regra de parada aplicada. |
 | PENDING | Fronteira broker/Codex avaliado | Não implementada/validada nesta etapa; `broker_verified=false`. Mesmo canários aprovados isoladamente não liberariam benchmark. |
 | PENDING | CI do push | Sem resultado presumido; [Actions](https://github.com/Williamitiro/harness-engineering-platform/actions), sem acompanhamento contínuo. |
@@ -43,17 +43,17 @@ Cada fixture retém `command.json` (argumentos exatos sem segredos) e `report.js
 
 ## 4. Bloqueio real
 
-A omissão de `SystemDrive` foi corrigida. A execução externa seguinte avançou até o PowerShell, que bloqueou `probe.ps1` pela política de execução. O operador autorizou `RemoteSigned` somente nesse processo descartável; a correção foi aplicada, ainda sem execução posterior. Leitura negada, ambiente sem credenciais e egress negado permanecem NÃO COMPROVADOS. `MXC_OK` não cobre esta política; não foi demonstrada inviabilidade geral do MXC e não se propõe WSL como alternativa.
+Os bloqueios de inicialização (`SystemDrive` e execução de `probe.ps1`) foram resolvidos e os canários passaram. O único gate técnico ainda aberto é comprovar a fronteira do broker/supervisor com o Codex avaliado: segredo apenas no supervisor, interface restrita e invocações limitadas. O teste atual não implementa nem autentica essa fronteira (`broker_verified=false`) e não executa o modelo Codex. Portanto o isolamento observado do subprocesso MXC não libera benchmark nem prova isolamento end-to-end do futuro executor A/J. Coletor live permanece bloqueado.
 
 ## 5. Próximo comando necessário
 
-Executar uma vez em PowerShell nativo externo à sessão de agente, a partir do repositório, sem Infisical e sem injetar credenciais:
+**Nenhum novo comando necessário para os canários: já passaram; não repetir.** Comando já executado pelo operador, registrado apenas para reprodução futura quando houver mudança relevante:
 
 ```powershell
 Set-Location -LiteralPath 'C:\dev\harness-engineering'; python .\scripts\mxc_g1_preflight.py --diagnose-startup
 ```
 
-O comando é gratuito, limita MXC a 40 s (mais até 10 s para preparar a ACL), não usa background e imprime o caminho da fixture. Não repetir automaticamente. Se falhar, informar somente o campo `private_diagnostic_file` do relatório; não colar o conteúdo do arquivo privado no chat/GitHub. O agente poderá examinar localmente o erro de inicialização e devolver somente uma conclusão sanitizada, sem outra execução MXC. Se a preparação da ACL falhar, reportar `PRIVATE_DIAGNOSTIC_ACL_FAILED_NO_MXC_STARTED` e parar.
+O comando é gratuito, limita MXC a 40 s (mais até 10 s para preparar a ACL) e não usa background. Não há comando implementado de preflight do broker nesta entrega. Não substituir esse gate por repetição dos mesmos canários.
 
 ## 6. Piloto
 
@@ -61,4 +61,4 @@ Comando omitido. Nenhuma chamada paga, smoke JEV, benchmark A/J, N=3 ou N=30 exe
 
 ## 7. Próxima decisão
 
-Executar uma vez o launcher corrigido com o comando acima. Só retomar homologação após obter relatório dos canários e comprovar a fronteira do supervisor. Sem merge/deploy, configurações globais alteradas ou nova execução MXC pelo agente durante esta correção.
+Encerrar esta etapa de validação MXC com canários PASS. Próximo trabalho específico, mediante nova ordem: implementar e validar offline a fronteira mínima do supervisor/broker usando o runtime MXC agora observado. Não executar piloto ou ampliar para 007B. Nenhum comando adicional solicitado ao operador nesta entrega; PR permanece Draft, sem merge/deploy.
