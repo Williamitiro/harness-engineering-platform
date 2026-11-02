@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "ecc": {
+    "repository": "https://github.com/affaan-m/ECC",
+    "version_label": "2.2.3",
+    "commit": "b38be6a7f6350964d59328b52f0624e1d1d552d1",
+    "skills": {
+      "tdd-workflow": "b6a8dd3e5215641cd9c33a46eae1d2b87508a07bc451e2c2fe25591f33a6b519",
+      "verification-loop": "9ee288d426660b0c785f534a003a4960fb4d8083a21302d8a4fd9b035b2edbb1"
+    }
+  },
+  "candidate": {
+    "gstack": "NOT_ADOPTED",
+    "harbor": "EVALUATION_ONLY_AFTER_GATES"
+  },
+  "notes": "Skill bytes and commit fixed by A0 evidence; updating is a reviewed change."
+}
