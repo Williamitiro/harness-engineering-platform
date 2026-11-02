@@ -15,6 +15,7 @@ Worktree única: `C:\dev\harness-engineering`; branch `codex/he-jev-007a`, upstr
 - `scripts/{jev_adapter,jev_live_smoke,native_baseline,jev_collector,prepare_blind_sandbox,canary_probes,jev_evaluator}.py` e políticas existentes preservados. Gabaritos reais não abertos. JEV/OpenRouter/Infisical e limiares 0,85/0,50 inalterados; live continua bloqueado.
 - `docs/HE_JEV_007_HANDOFF.md`: atualizado com resultado Windows, substituindo a exigência anterior de runtime Linux.
 - Retomada de diagnóstico: `--diagnose-startup` preserva somente stderr de falha em diretório local com ACL para o SID do operador e SYSTEM. A ACL é aplicada antes de iniciar MXC, com duas operações auxiliares limitadas a 5 s cada; falha da ACL aborta sem iniciar MXC. Não altera ACL dos canários, política G1, configurações globais ou saída sanitizada. O arquivo privado não é impresso, publicado nem gravado no checkout.
+- Correção após diagnóstico externo: incluir `SystemDrive` na lista explícita de variáveis operacionais do supervisor. O MXC exige essa variável na preparação; ela não é uma credencial. Nenhuma permissão de arquivo/rede foi ampliada.
 
 Referências oficiais consultadas: [Windows sandbox](https://learn.chatgpt.com/docs/windows/windows-sandbox) e [Permissions](https://learn.chatgpt.com/docs/permissions). A política usa negação por padrão e exceções específicas. Nada foi homologado apenas por configuração declarada.
 
@@ -28,7 +29,9 @@ Referências oficiais consultadas: [Windows sandbox](https://learn.chatgpt.com/d
 | FAIL | `python scripts/mxc_g1_preflight.py` (rodada direcionada) | Exit 1, `MXC_START_OR_PROBE_FAILED`, nenhuma saída JSON dos probes. Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-h9u_0hox`. |
 | FAIL | Mesmo comando, após única correção de diagnóstico sanitizado | Exit 1, stdout vazio, `NO_VALID_PROBE_REPORT`; termos permitidos detectados no stderr: `mxc`, `failed`; nenhum `Windows error N` reconhecido. Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-uxhp8lvc`. |
 | FAIL REPORTADO | Execução externa do operador com o mesmo comando | Mesmo erro/exit 1, stdout vazio. Fixture reportada `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-l_zn0nfh`. Não reproduzida novamente pelo agente. |
-| PENDING | Novo modo `--diagnose-startup` e ACL privada | Implementado após o retorno externo; não executado nesta retomada. Sem nova rodada de testes ou tentativa MXC pelo agente. |
+| FAIL REPORTADO / DIAGNÓSTICO OBTIDO | Execução externa com `--diagnose-startup` | Fixture `C:\Users\itiro\AppData\Local\Temp\he-jev-mxc-g1-6x7kgc_5`; exit 1 antes dos probes. Arquivo privado consultado localmente: a preparação MXC exige `SystemDrive` não vazio, ausente da lista de ambiente do launcher. Nenhum segredo no diagnóstico e nenhum log bruto copiado para Git. |
+| PENDING | Runtime após inclusão de `SystemDrive` | Correção mínima implementada; nenhuma nova execução MXC ou suíte pelo agente. Validação externa ainda necessária. |
+| PASS | Inspeção estática via `ast.parse` e verificação da tupla `keep` | Sintaxe válida e `SystemDrive` presente na lista. Não executa o launcher nem aprova G1. |
 | PENDING | Canários filesystem/rede/ambiente | Sem relatório válido: nenhuma negação comprovada. Não confundir falha de inicialização com contenção. |
 | PENDING | Suíte offline completa | Não executada após falha persistente da rodada direcionada; regra de parada aplicada. |
 | PENDING | Fronteira broker/Codex avaliado | Não implementada/validada nesta etapa; `broker_verified=false`. Mesmo canários aprovados isoladamente não liberariam benchmark. |
@@ -38,7 +41,7 @@ Cada fixture retém `command.json` (argumentos exatos sem segredos) e `report.js
 
 ## 4. Bloqueio real
 
-O launcher com política restrita não produziu relatório dos canários no contexto desta sessão. Logo, leitura negada, ambiente sem credenciais e egress negado permanecem NÃO COMPROVADOS. `MXC_OK` não cobre esta política. Não foi demonstrada inviabilidade geral do MXC e não se propõe WSL como alternativa. A origem da falha de inicialização ainda requer diagnóstico externo; não se alegou causa raiz com base apenas nos termos sanitizados.
+O diagnóstico privado da execução externa identificou a causa concreta da falha de preparação: `SystemDrive` foi omitida da lista de ambiente do launcher. A lista foi corrigida, mas o runtime corrigido ainda não foi executado. Leitura negada, ambiente sem credenciais e egress negado permanecem NÃO COMPROVADOS. `MXC_OK` não cobre esta política; não foi demonstrada inviabilidade geral do MXC e não se propõe WSL como alternativa.
 
 ## 5. Próximo comando necessário
 
@@ -56,4 +59,4 @@ Comando omitido. Nenhuma chamada paga, smoke JEV, benchmark A/J, N=3 ou N=30 exe
 
 ## 7. Próxima decisão
 
-Diagnosticar a falha do launcher MXC fora desta sessão com o comando acima. Só retomar homologação após obter relatório dos canários e comprovar a fronteira do supervisor. Sem merge/deploy e sem configurações globais alteradas. Sessão encerrada no limite de uma rodada e uma correção.
+Executar uma vez o launcher corrigido com o comando acima. Só retomar homologação após obter relatório dos canários e comprovar a fronteira do supervisor. Sem merge/deploy, configurações globais alteradas ou nova execução MXC pelo agente durante esta correção.

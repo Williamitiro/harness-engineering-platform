@@ -143,7 +143,8 @@ def main() -> int:
                '--permission-profile', 'he-jev-g1', '-C', str(workspace), '--',
                str(powershell), '-NoLogo', '-NoProfile', '-NonInteractive',
                '-File', str(workspace / 'probe.ps1')]
-    keep = ('SystemRoot', 'WINDIR', 'PATH', 'PATHEXT', 'TEMP', 'TMP',
+    # MXC requires the operational host SystemDrive variable during preparation.
+    keep = ('SystemRoot', 'SystemDrive', 'WINDIR', 'PATH', 'PATHEXT', 'TEMP', 'TMP',
             'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'ProgramFiles')
     env = {key: os.environ[key] for key in keep if key in os.environ}
     report = {'status': 'BLOCKED_G1', 'scope': 'MXC_NEGATIVE_CANARIES_ONLY',
