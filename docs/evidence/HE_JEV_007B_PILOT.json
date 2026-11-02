@@ -1,0 +1,68 @@
+{
+  "status": "ABORTED",
+  "records": [],
+  "logical_calls": {
+    "A": 0,
+    "J": 0,
+    "fallback": 0
+  },
+  "retries": 0,
+  "phase": "jev_initialize",
+  "cost_usd": null,
+  "g1_fixture": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-qxshsfwt",
+  "error": {
+    "stage": "jev_initialize",
+    "code": "JEV_ERROR"
+  },
+  "scope": "CLASSIFICATION_ONLY_NOT_CODE_QUALITY",
+  "private_native_diagnostic_directory": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-qxshsfwt\\private-diagnostics",
+  "quality": null,
+  "native_preflight": {
+    "status": "READY_FOR_LOCAL_G1_PREFLIGHT",
+    "scope": "NATIVE_CODEX_SUPERVISOR_MXC_TASK_TOOLS",
+    "fixture": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-qxshsfwt",
+    "paid_calls": 0,
+    "broker_verified": true,
+    "timeout_s": 40,
+    "max_invocations": 1,
+    "retries": 0,
+    "policy_filesystem": {
+      ":root": "deny",
+      ":minimal": "read",
+      "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-qxshsfwt\\workspace": "write",
+      "C:\\dev\\harness-engineering": "deny",
+      "C:\\Users\\itiro": "deny",
+      "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-qxshsfwt\\protected": "deny",
+      "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-qxshsfwt\\workspace\\denied-canary.txt": "deny"
+    },
+    "network_enabled": false,
+    "exit_code": 0,
+    "probes": {
+      "allowed_read": true,
+      "allowed_write": true,
+      "protected_read": "DENIED",
+      "golden_read": "DENIED",
+      "git_read": "DENIED",
+      "workspace_denied_read": "DENIED",
+      "outside_write": "DENIED",
+      "credential_environment_absent": true,
+      "network_external": "DENIED",
+      "network_loopback": "DENIED"
+    },
+    "canaries_passed": true,
+    "pilot_output": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-pilot-once-20261102-final\\pilot.json",
+    "pilot_report": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-pilot-once-20261102-final\\pilot.md",
+    "pilot_status": "ABORTED",
+    "logical_calls": {
+      "A": 0,
+      "J": 0,
+      "fallback": 0
+    },
+    "pilot_error": {
+      "stage": "jev_initialize",
+      "code": "JEV_ERROR"
+    }
+  },
+  "supervisor_exit_code": 1,
+  "total_wall_ms": 3875.0
+}
