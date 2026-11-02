@@ -43,17 +43,17 @@ def classify_upstream_error(message: str) -> str:
     import re
 
     text = message.lower()[:8192]
-    if re.search(r"\\b401\\b|unauthori[sz]ed|invalid.{0,24}(api.?key|token)|authentication failed", text):
+    if re.search(r"\b401\b|unauthori[sz]ed|invalid.{0,24}(api.?key|token)|authentication failed", text):
         return "AUTH_REJECTED"
-    if re.search(r"\\b403\\b|forbidden|permission denied", text):
+    if re.search(r"\b403\b|forbidden|permission denied", text):
         return "PERMISSION_DENIED"
-    if re.search(r"\\b402\\b|payment required|insufficient (credits|balance)|billing", text):
+    if re.search(r"\b402\b|payment required|insufficient (credits|balance)|billing", text):
         return "BILLING_OR_CREDITS"
-    if re.search(r"\\b429\\b|rate.?limit|too many requests", text):
+    if re.search(r"\b429\b|rate.?limit|too many requests", text):
         return "RATE_LIMITED"
-    if re.search(r"\\b(500|502|503|504)\\b|service unavailable|bad gateway", text):
+    if re.search(r"\b(500|502|503|504)\b|service unavailable|bad gateway", text):
         return "PROVIDER_UNAVAILABLE"
-    if re.search(r"\\b400\\b|bad request|validation error|invalid request", text):
+    if re.search(r"\b400\b|bad request|validation error|invalid request", text):
         return "REQUEST_REJECTED"
     if re.search(r"api.?key.{0,36}(missing|not set|required)|missing.{0,24}api.?key", text):
         return "MISSING_PROVIDER_KEY"
