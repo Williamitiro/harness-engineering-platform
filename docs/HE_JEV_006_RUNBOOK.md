@@ -45,3 +45,29 @@ O script imprime exclusivamente os metadados resumidos do resultado ou uma mensa
 2. Estabelecer e validar o runtime G1 de ponta a ponta e sua trilha de evidência independente.
 3. Implementar baseline nativo A real, condição J real em tarefas pareadas, custos observáveis e critérios de adoção.
 4. Manter PR Draft, sem aprovação implícita de produção ou merge.
+
+## HE-JEV-006a — diagnóstico seguro após primeira falha
+
+A primeira execução do operador em 2026-11-02 instalou o pacote v0.5.0, recebeu uma variável do Infisical e retornou `SMOKE_FAILED: JevAdapterError`. Essa mensagem genérica **não prova** que a chave foi rejeitada, que houve cobrança ou que o endpoint respondeu.
+
+Correção de observabilidade: `JevMcpClient.classify` categoriza erros do upstream sem repassar mensagens externas. `jev_live_smoke.py` imprime apenas `code=...` estável. Os testes verificam que dados sensíveis inseridos artificialmente em mensagens de erro não aparecem na saída.
+
+Para executar **uma segunda tentativa autorizada**, sem reinstalar o pacote se já estiver íntegro:
+
+```powershell
+git switch codex/harness-foundation-v1
+git pull --ff-only
+pwsh -NoProfile -File .\scripts\run_jev_live_smoke.ps1
+```
+
+Códigos possíveis:
+- `AUTH_REJECTED`: o provedor recusou autenticação; confira no painel TypeSafe a origem da chave sem divulgá-la. Uma variável presente não comprova validade.
+- `BILLING_OR_CREDITS`: crédito/conta/forma de pagamento requer atenção.
+- `RATE_LIMITED`: restrição de chamadas; não disparar retries em lote.
+- `NETWORK_OR_TLS`: falha de conexão/TLS; avaliar proxy e conectividade da máquina sem transmitir a chave para um host desconhecido.
+- `REQUEST_REJECTED`: payload incompatível ou validação upstream.
+- `MCP_TIMEOUT`, `MCP_PROCESS_EXITED`, `MCP_INITIALIZE_FAILED`: problema no processo/protocolo local.
+- `UPSTREAM_ERROR_UNCLASSIFIED`: não reconhecido; analisar uma reprodução local sanitizada, sem enviar corpo bruto, header Authorization ou variáveis.
+- `MCP_PROTOCOL_OR_CLIENT_ERROR` ou `LOCAL_RUNTIME_ERROR`: possível problema no adaptador, executar testes locais offline.
+
+`PROVIDER_RESPONSE_OBSERVED` confirma apenas que uma chamada consultiva de texto público teve resposta, e **não** comprova G1 nem ganho empírico. Todos os comandos de benchmark live de agentes continuam bloqueados.
