@@ -24,3 +24,7 @@ A inspeção do GitHub em 02/11/2026 mostrou pushes recentes em ECC (30/10), GSt
 ## Pesquisa pendente para Codex
 
 Inspecionar documentação e comportamento efetivos das versões locais de Codex e Claude Code; verificar empacotamento oficial de plugins/skills e o que o Harbor suporta nas versões pinadas. Preencher matriz de compatibilidade com experimentos reproduzíveis. Somente então habilitar novos plugins no ambiente do operador.
+
+## Addendum 02/11/2026 — Jev/System One
+
+Consultar [decisão](JEV_DECISAO.md), [pesquisa comparativa](JEV_ESTUDO_COMPARATIVO.md) e [protocolo](JEV_PILOTO_PROTOCOLO.md). Candidatos atuais: `FrancoisChastel/jev-code` v0.5.0 como MCP consultivo, `felpsdev/jev-classifier` proxy adiado, `n23eos/jev-skills` como fonte de padrões e `typesafe-ai/skills` como referência oficial. Nenhum deles foi instalado ou validado live neste corte. JEV não é oráculo nem controle de segurança. Priorizar integração que preserve os Harnesses nativos, a privacidade e decisões reversíveis.

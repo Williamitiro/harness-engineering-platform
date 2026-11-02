@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "status": "PROPOSED_NOT_APPROVED",
+  "scope": "offline classification metrics only",
+  "allowed_labels": ["tdd-workflow", "verification-loop", "none", "uncertain"],
+  "auto_accept_confidence": 0.85,
+  "minimum_margin": 0.5,
+  "note": "Thresholds are evaluation hypotheses, not authorization for action; never auto-deploy or apply permissions."
+}

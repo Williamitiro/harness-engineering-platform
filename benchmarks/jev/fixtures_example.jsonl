@@ -1,0 +1,5 @@
+{"id":"synthetic-01","expected":"tdd-workflow","predicted":"tdd-workflow","confidence":0.96,"margin":0.81,"latency_ms":180.2}
+{"id":"synthetic-02","expected":"verification-loop","predicted":"tdd-workflow","confidence":0.64,"margin":0.15,"latency_ms":230.0}
+{"id":"synthetic-03","expected":"none","predicted":"none","confidence":0.94,"margin":0.83,"latency_ms":172.5}
+{"id":"synthetic-04","expected":"uncertain","predicted":"uncertain","confidence":0.35,"margin":0.05,"latency_ms":250.0}
+{"id":"synthetic-05","expected":"verification-loop","predicted":"verification-loop","confidence":null,"margin":null,"latency_ms":null}

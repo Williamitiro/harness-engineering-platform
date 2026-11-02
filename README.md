@@ -5,6 +5,20 @@
 
 **Status:** Homologação A1 executada. Os únicos executores de código autorizados são **Codex** e **Claude Code**; o repositório NÃO é um runtime próprio de agentes. Codex atingiu Níveis 1 a 5 de maturidade de skills com oráculo externo aprovado (100%); Claude Code está integrado, com runner preparado e status fatual registrado como BLOCKED (autenticação local pendente). O experimento histórico Gemini/Antigravity permanece como arquivo legado.
 
+## Jev / TypeSafe — pesquisa e piloto offline (02/11/2026)
+
+A classificação semântica **Jev** é candidata complementar ao Harness, não substituta de Codex, Claude Code, QA determinístico ou política de segurança. A comparação de projetos upstream priorizou `jev-code` (MCP/CLI, release v0.5.0) sobre o proxy `jev-classifier` para um primeiro piloto **consultivo**, sem interceptar o tráfego do modelo.
+
+- [Decisão arquitetural](docs/JEV_DECISAO.md) · [Pesquisa comparativa e atividade upstream](docs/JEV_ESTUDO_COMPARATIVO.md)
+- [Protocolo de avaliação e segurança](docs/JEV_PILOTO_PROTOCOLO.md) · [Handoff de trabalho local para Gemini](docs/JEV_HANDOFF_GEMINI.md)
+- Avaliador offline `scripts/jev_offline_eval.py` + política proposta em `config/jev_pilot_policy.json` e fixture **sintética**, sem chamadas ao modelo.
+
+```powershell
+python scripts/jev_offline_eval.py --input benchmarks/jev/fixtures_example.jsonl --policy config/jev_pilot_policy.json
+```
+
+**Aviso:** executar o script offline não significa que Jev foi instalado, chamado, qualificado ou que houve ganho real. Nenhum proxy, API key ou configuração global foi ativado por esta entrega.
+
 ## Comece aqui
 
 - [Relatório de homologação A1 (Codex e Claude Code)](docs/HOMOLOGACAO_A1_CODEX_CLAUDE.md)
