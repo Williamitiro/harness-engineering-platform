@@ -48,18 +48,31 @@ def read_manifest(path: Path) -> dict:
 
 
 def assert_no_symlink(path: Path) -> None:
-    for part in (path, *path.parents):
+    p = path.absolute()
+    for part in (p, *p.parents):
         if part.is_symlink():
             raise GateError(f"symlink path refused: {part}")
+
+
+def cleanup_empty_parents(start_dir: Path, stop_at: Path) -> None:
+    current = start_dir
+    while current != stop_at and current != current.parent:
+        if current.is_dir() and not any(current.iterdir()):
+            current.rmdir()
+            current = current.parent
+        else:
+            break
 
 
 def check_sandbox(target: Path) -> None:
     if not target.is_dir() or ".poc" not in target.parts:
         raise GateError("destination must be an existing directory below .poc/")
     assert_no_symlink(target)
-    if (target / ".git").exists():
+    git_dir = target / ".git"
+    if git_dir.exists() or git_dir.is_symlink():
         raise GateError("destination may not be a Git checkout")
-    if (target / STATE).exists() and (target / STATE).is_symlink():
+    state_file = target / STATE
+    if state_file.exists() and state_file.is_symlink():
         raise GateError("state symlink refused")
 
 
@@ -73,6 +86,12 @@ def check_source(source: Path, manifest: dict) -> list[dict]:
     )
     if probe.returncode != 0 or probe.stdout.strip().lower() != manifest["ecc"]["commit"].lower():
         raise GateError("ECC source HEAD differs from the pinned commit")
+    status_probe = subprocess.run(
+        ["git", "-C", str(source), "status", "--porcelain"],
+        capture_output=True, text=True, check=False, timeout=10,
+    )
+    if status_probe.returncode != 0 or status_probe.stdout.strip():
+        raise GateError("ECC source worktree has uncommitted modifications or untracked files")
     # Never trust Git HEAD alone: the worktree can contain modified/untracked files.
     result = []
     for name, expected in sorted(manifest["ecc"]["skills"].items()):
@@ -155,12 +174,13 @@ def install(result: dict, target: Path) -> None:
         for dst in reversed(created):
             if dst.exists():
                 dst.unlink()
-            if dst.parent.is_dir() and not any(dst.parent.iterdir()):
-                dst.parent.rmdir()
+            cleanup_empty_parents(dst.parent, target)
+        if (target / STATE).exists():
+            (target / STATE).unlink()
         raise
 
 
-def record_and_paths(target: Path) -> tuple[dict, list[Path]]:
+def record_and_paths(target: Path, manifest: dict | None = None) -> tuple[dict, list[Path]]:
     check_sandbox(target)
     path = target / STATE
     if not path.is_file() or path.is_symlink():
@@ -168,6 +188,9 @@ def record_and_paths(target: Path) -> tuple[dict, list[Path]]:
     record = json.loads(path.read_text(encoding="utf-8"))
     if record.get("schema_version") != 1 or record.get("adapter") not in SUPPORTED:
         raise GateError("unsupported installation record")
+    if manifest is not None:
+        if record.get("ecc_commit", "").lower() != manifest["ecc"]["commit"].lower():
+            raise GateError("installation record commit differs from manifest")
     files = record.get("files")
     if not isinstance(files, list) or len(files) != 2:
         raise GateError("installation record must contain exactly two files")
@@ -190,7 +213,12 @@ def record_and_paths(target: Path) -> tuple[dict, list[Path]]:
         names.add(expected_name)
         dst = target / rel_path
         assert_no_symlink(dst)
-        if not dst.is_file() or digest(dst.read_bytes()) != item.get("sha256"):
+        sha = item.get("sha256")
+        if not isinstance(sha, str) or len(sha) != 64:
+            raise GateError("invalid sha256 in installation record")
+        if manifest is not None and sha.lower() != manifest["ecc"]["skills"].get(expected_name, "").lower():
+            raise GateError(f"installation record hash does not match manifest for {expected_name}")
+        if not dst.is_file() or digest(dst.read_bytes()) != sha.lower():
             raise GateError(f"managed file missing or modified: {dst}")
         destinations.append(dst)
     if names != ALLOWED:
@@ -198,15 +226,11 @@ def record_and_paths(target: Path) -> tuple[dict, list[Path]]:
     return record, destinations
 
 
-def remove(target: Path) -> None:
-    _, paths = record_and_paths(target)  # No partial removal on a mismatch.
+def remove(target: Path, manifest: dict | None = None) -> None:
+    _, paths = record_and_paths(target, manifest=manifest)  # No partial removal on a mismatch.
     for dst in paths:
         dst.unlink()
-        if dst.parent.is_dir() and not any(dst.parent.iterdir()):
-            dst.parent.rmdir()
-        parent = dst.parent.parent
-        if parent.is_dir() and not any(parent.iterdir()):
-            parent.rmdir()
+        cleanup_empty_parents(dst.parent, target)
     (target / STATE).unlink()
 
 
@@ -221,12 +245,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--apply", action="store_true", help="explicit opt-in for writes")
     args = parser.parse_args(argv)
     try:
+        assert_no_symlink(args.target)
         target = args.target.resolve(strict=True)
+        assert_no_symlink(target)
+        manifest = read_manifest(args.manifest) if args.manifest.exists() else None
         if args.action in ("plan", "install"):
             if args.source is None:
                 raise GateError("--source required for plan/install")
+            assert_no_symlink(args.source)
             source = args.source.resolve(strict=True)
-            spec = plan(source, target, args.adapter, read_manifest(args.manifest))
+            assert_no_symlink(source)
+            if manifest is None:
+                raise GateError("manifest file missing")
+            spec = plan(source, target, args.adapter, manifest)
             if args.action == "install":
                 if not args.apply:
                     raise GateError("install needs --apply")
@@ -234,13 +265,13 @@ def main(argv: list[str] | None = None) -> int:
                 spec["status"] = "FILES_INSTALLED_RUNTIME_NOT_VERIFIED"
             print(json.dumps(spec, indent=2))
         elif args.action == "verify":
-            rec, paths = record_and_paths(target)
+            rec, paths = record_and_paths(target, manifest=manifest)
             print(json.dumps({"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
                               "adapter": rec["adapter"], "verified_files": len(paths)}, indent=2))
         else:
             if not args.apply:
                 raise GateError("remove needs --apply")
-            remove(target)
+            remove(target, manifest=manifest)
             print(json.dumps({"status": "REMOVED_EXACT_OWNED_FILES"}))
         return 0
     except (GateError, FileNotFoundError, OSError, ValueError, subprocess.TimeoutExpired) as exc:

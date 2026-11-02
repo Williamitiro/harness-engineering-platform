@@ -1,11 +1,13 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +60,18 @@ class LifecycleTests(unittest.TestCase):
         h.remove(self.target)
         self.assertFalse((self.target / h.STATE).exists())
         self.assertFalse(any(self.target.rglob("SKILL.md")))
+        # Ensure no empty adapter directory is orphaned
+        self.assertFalse((self.target / ".claude").exists())
+
+    def test_exact_roundtrip_cleans_empty_adapter_directories(self):
+        for adapter, dir_name in (("codex", ".agents"), ("claude", ".claude")):
+            target = Path(self.tmp.name) / ".poc" / f"roundtrip-{adapter}"
+            target.mkdir(parents=True)
+            p = h.plan(self.source, target, adapter, self.manifest)
+            h.install(p, target)
+            self.assertTrue((target / dir_name).exists())
+            h.remove(target)
+            self.assertFalse((target / dir_name).exists(), f"{dir_name} was left behind for {adapter}")
 
     def test_collision_prevents_all_writes(self):
         dst = self.target / ".agents" / "skills" / "tdd-workflow" / "SKILL.md"
@@ -91,6 +105,38 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaises(h.GateError):
             h.plan(self.source, self.target, "codex", self.manifest)
 
+    def test_checkout_dirty_refused(self):
+        # Adding an uncommitted file makes the worktree dirty
+        untracked = self.source / "skills" / "untracked.txt"
+        untracked.write_text("dirty")
+        with self.assertRaises(h.GateError) as ctx:
+            h.check_source(self.source, self.manifest)
+        self.assertIn("uncommitted modifications or untracked files", str(ctx.exception))
+
+    def test_ancestor_symlink_refused(self):
+        symlink_base = Path(self.tmp.name) / "symlink_container"
+        symlink_base.mkdir()
+        symlink_dir = symlink_base / "link_target"
+        try:
+            os.symlink(self.target, symlink_dir, target_is_directory=True)
+        except OSError:
+            self.skipTest("Symlinks not permitted in this test environment")
+        child_in_symlink = symlink_dir / "child"
+        with self.assertRaises(h.GateError) as ctx:
+            h.assert_no_symlink(child_in_symlink)
+        self.assertIn("symlink path refused", str(ctx.exception))
+
+    def test_partial_interruption_rolls_back_cleanly(self):
+        p = h.plan(self.source, self.target, "codex", self.manifest)
+        # Patch json.dump to raise an error during STATE file writing (after skill files written)
+        with patch("json.dump", side_effect=RuntimeError("simulated crash during write")):
+            with self.assertRaises(RuntimeError):
+                h.install(p, self.target)
+        # Confirm complete rollback: no files, no state, no orphan directories
+        self.assertFalse((self.target / h.STATE).exists())
+        self.assertFalse(any(self.target.rglob("SKILL.md")))
+        self.assertFalse((self.target / ".agents").exists())
+
     def test_record_path_traversal_refused(self):
         h.install(h.plan(self.source, self.target, "codex", self.manifest), self.target)
         state_file = self.target / h.STATE
@@ -99,6 +145,24 @@ class LifecycleTests(unittest.TestCase):
         state_file.write_text(json.dumps(rec))
         with self.assertRaises(h.GateError):
             h.remove(self.target)
+
+    def test_tampered_state_hash_mismatch_refused(self):
+        h.install(h.plan(self.source, self.target, "codex", self.manifest), self.target)
+        state_file = self.target / h.STATE
+        rec = json.loads(state_file.read_text())
+        rec["files"][0]["sha256"] = "0" * 64
+        state_file.write_text(json.dumps(rec))
+        with self.assertRaises(h.GateError):
+            h.record_and_paths(self.target, manifest=self.manifest)
+
+    def test_tampered_record_commit_refused(self):
+        h.install(h.plan(self.source, self.target, "codex", self.manifest), self.target)
+        state_file = self.target / h.STATE
+        rec = json.loads(state_file.read_text())
+        rec["ecc_commit"] = "f" * 40
+        state_file.write_text(json.dumps(rec))
+        with self.assertRaises(h.GateError):
+            h.record_and_paths(self.target, manifest=self.manifest)
 
 
 if __name__ == "__main__":

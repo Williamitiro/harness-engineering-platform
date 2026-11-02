@@ -17,12 +17,14 @@ jobs:
       - name: Python runtime
         run: python3 --version
       - name: Compile tools
-        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py
+        run: python3 -m py_compile scripts/harnessctl.py scripts/audit_legacy.py scripts/harness_eval.py
       - name: Offline isolated unit tests
         run: python3 -m unittest discover -s tests -v
       - name: Audit historical CSV arithmetic without changing evidence
         run: |
           python3 scripts/audit_legacy.py docs/evidence/HE_AG_001_RESULTADOS.csv --expected-input 419019 > /tmp/legacy-audit.json
           python3 -c 'import json; x=json.load(open("/tmp/legacy-audit.json")); assert x["run_count"] == 9; assert x["aggregates"]["input_tokens"] == 438919; assert x["aggregates"]["total_tokens"] == 467124; assert x["by_condition"]["C"]["skills_executed"] == 0'
-      - name: Ensure no runtime benchmark was executed
-        run: echo "CI validates tool code and historic CSV arithmetic only. A1/runtime = NOT_RUN."
+      - name: Ensure dry-run evaluation succeeds offline
+        run: python3 scripts/harness_eval.py --client codex --condition A --dry-run
+      - name: Ensure no live runtime LLM benchmark was executed in CI
+        run: echo "CI validates tool code, offline dry-run and historic CSV arithmetic only. Live runtime LLM = NOT_RUN in CI."

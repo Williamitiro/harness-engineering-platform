@@ -40,6 +40,19 @@ class LegacyAuditTests(unittest.TestCase):
                 "x,T2,B,10,1,11,1,1,FALSE,FALSE\n")
             self.assertTrue(any("duplicate" in a for a in audit_mod.audit(p)["anomalies"]))
 
+    def test_anomalies_detected(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "anomalous.csv"
+            p.write_text(
+                "run_id,task_id,condition,input_tokens,output_tokens,total_tokens,accepted_tests,passed_tests,skill_invocation,skill_execution\n"
+                "r1,T1,A,10,1,99,2,5,FALSE,FALSE\n"
+                "r2,T2,UNKNOWN,10,1,11,2,1,FALSE,FALSE\n")
+            result = audit_mod.audit(p)
+            anomalies = " ".join(result["anomalies"])
+            self.assertIn("token row mismatch", anomalies)
+            self.assertIn("test count invalid", anomalies)
+            self.assertIn("unknown condition", anomalies)
+
 
 if __name__ == "__main__":
     unittest.main()

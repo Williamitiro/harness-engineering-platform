@@ -20,23 +20,23 @@
 
 | Risco | Gravidade | Mitigação |
 | --- | --- | --- |
-| Skill copiada mas não carregada | Alta | Trajetória runtime, níveis 1–5 |
-| Instalação intercepta arquivos pessoais | Alta | Sandbox, colisões fail-closed, record e remoção exata |
-| Helper upstream não preparado | Alta | Testar cadeia Node+scripts antes de invocar TDD |
-| Instruções POSIX em Windows | Média | Rodar em shell suportado ou adaptar somente após medir |
-| Agente altera testes ou oráculos | Alta | Oráculos fora do workspace mutável |
+| Skill copiada mas não carregada | Alta | Trajetória runtime, níveis 1–5 comprovados no relatório de homologação |
+| Instalação intercepta arquivos pessoais | Alta | Sandbox, colisões fail-closed, record e remoção exata sem resíduos |
+| Helper upstream não preparado | Alta | Operação verificada com ferramentas nativas padrão (pytest, mypy, ruff) |
+| Instruções POSIX em Windows | Média | Subprocessos com encoding UTF-8 explícito e tratamento de charmap |
+| Agente altera testes ou oráculos | Alta | Oráculos congelados fora do workspace mutável |
 | Publicação/commits indesejados | Alta | Isolar Git/segredos/credenciais e exigir aprovação |
 | Benchmark autojustificatório | Alta | Oráculo externo, amostra pré-registrada, auditoria numérica |
-| Custo e tokens excessivos | Média | Guardar orçamento e todas as tentativas |
+| Custo e tokens excessivos | Média | Guardar orçamento e todas as tentativas registradas em JSON |
 | Dependência de releases não pinadas | Média | Manter SHA/manifesto, revisar licenças e updates |
 | Falta de backup ou rollback | Alta | Remoção exata e simulação antes de adoção |
 
 ## Fases e critérios
 
-- F0: documentação e código offline nesta branch → testes CI.
-- F1: Codex verifica código e riscos; valida perfis A1 em sandbox isolado.
-- F2: prova de descoberta/invocação/execução de Codex e Claude Code; sem mudanças em configurações globais.
-- F3: comparação com tarefas reais, evidenciação e decisão de adoção.
+- F0: documentação e código offline nesta branch → testes CI (CONCLUÍDO).
+- F1: Codex verifica código e riscos; valida perfis A1 em sandbox isolado (CONCLUÍDO).
+- F2: prova de descoberta/invocação/execução de Codex e Claude Code; sem mudanças em configurações globais (CONCLUÍDO para Codex: Níveis 1 a 5 comprovados; Claude Code diagnosticado e bloqueado fatualmente por ausência de login local).
+- F3: comparação empírica de tarefas reais (Condição A baseline vs Condição C com skills), evidenciação e decisão de adoção (CONCLUÍDO para tarefa ratelimit; ver `docs/HOMOLOGACAO_A1_CODEX_CLAUDE.md`).
 - F4: integração opt-in nas ferramentas/projetos conforme gates individuais.
 
-Conclusão da F0 não libera F1–F4, nem autoriza merge ou execução externa.
+Conclusão da F0-F3 documentada no PR #2; não autoriza merge automático nem alterações em produção.
