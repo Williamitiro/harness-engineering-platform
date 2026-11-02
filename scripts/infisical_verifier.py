@@ -139,13 +139,21 @@ def check_environment(project_id: str | None = None) -> dict[str, Any]:
 def check_secret_presence(var_name: str = SECRET_VAR_NAME) -> dict[str, Any]:
     """Sanitized presence check. NEVER exposes secret value."""
     val = os.environ.get(var_name)
+    if (val is None or len(val.strip()) == 0) and var_name == SECRET_VAR_NAME:
+        alt_val = os.environ.get("OPENROUTER_API_KEY")
+        if alt_val is not None and len(alt_val.strip()) > 0:
+            val = alt_val
+            var_name = "OPENROUTER_API_KEY"
     if val is not None and len(val.strip()) > 0:
+        val_clean = val.strip()
+        provider_hint = "openrouter" if (val_clean.startswith("sk-or-") or var_name == "OPENROUTER_API_KEY") else "typesafe"
         return {
             "variable_name": var_name,
             "status": "PRESENTE",
             "available_to_process": True,
-            "char_length": len(val.strip()),
+            "char_length": len(val_clean),
             "format": "REDACTED",
+            "provider_hint": provider_hint,
         }
     return {
         "variable_name": var_name,

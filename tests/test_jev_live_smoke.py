@@ -150,6 +150,38 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
         self.assertEqual(safe_failure_code(JevAdapterError("MCP initialize rejected")), "MCP_INITIALIZE_FAILED")
         self.assertEqual(safe_failure_code(ValueError("malicious-secret")), "LOCAL_RUNTIME_ERROR")
 
+    def test_openrouter_prefix_auto_routes_to_openrouter(self):
+        parent = {"TYPESAFE_API_KEY": "sk-or-v1-synthetic-test-key", "PATH": "example-path"}
+        env = isolated_child_env(parent)
+        self.assertEqual(env["JEV_CODE_PROVIDER"], "openrouter")
+        self.assertEqual(env["OPENROUTER_API_KEY"], "sk-or-v1-synthetic-test-key")
+        self.assertEqual(env["TYPESAFE_API_KEY"], "sk-or-v1-synthetic-test-key")
+        self.assertEqual(env["JEV_CODE_MAX_RETRIES"], "0")
+
+    def test_openrouter_key_in_parent_env(self):
+        parent = {"OPENROUTER_API_KEY": "sk-or-v1-synthetic-test-key"}
+        env = isolated_child_env(parent)
+        self.assertEqual(env["JEV_CODE_PROVIDER"], "openrouter")
+        self.assertEqual(env["OPENROUTER_API_KEY"], "sk-or-v1-synthetic-test-key")
+
+    def test_native_typesafe_key_does_not_set_openrouter(self):
+        parent = {"TYPESAFE_API_KEY": "ts_live_synthetic_key"}
+        env = isolated_child_env(parent)
+        self.assertNotIn("JEV_CODE_PROVIDER", env)
+        self.assertNotIn("OPENROUTER_API_KEY", env)
+        self.assertEqual(env["TYPESAFE_API_KEY"], "ts_live_synthetic_key")
+
+    def test_explicit_provider_respected(self):
+        parent = {"TYPESAFE_API_KEY": "sk-or-v1-test", "JEV_CODE_PROVIDER": "typesafe"}
+        env = isolated_child_env(parent)
+        self.assertEqual(env["JEV_CODE_PROVIDER"], "typesafe")
+        self.assertNotIn("OPENROUTER_API_KEY", env)
+
+    def test_unsupported_provider_raises_preflight(self):
+        parent = {"TYPESAFE_API_KEY": "key", "JEV_CODE_PROVIDER": "unsupported_xyz"}
+        with self.assertRaisesRegex(SmokePreflightError, "Unsupported JEV_CODE_PROVIDER"):
+            isolated_child_env(parent)
+
 
 if __name__ == "__main__":
     unittest.main()

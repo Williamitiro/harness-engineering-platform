@@ -1,6 +1,6 @@
 # HE-JEV-006 — Autorização de piloto real e escopo tecnicamente seguro
 
-**Data:** 2026-11-02. **PR:** #2 (Draft). **Estado:** `BILLING_AUTHORIZED_BY_OWNER / SECRET_PRESENT_LOCAL / ONE_CALL_SMOKE_PREPARED / MODEL_BENCHMARK_NOT_RUN`.
+**Data:** 2026-11-02. **PR:** #2 (Draft). **Estado:** `BILLING_AUTHORIZED_BY_OWNER / SECRET_PRESENT_LOCAL / PROVIDER_RESPONSE_OBSERVED / ONE_CALL_SMOKE_VERIFIED / MODEL_BENCHMARK_NOT_RUN`.
 
 ## Autorização e escopo
 
@@ -75,3 +75,54 @@ Códigos possíveis:
 ### Limite de tentativa de rede
 
 O runner fixa `JEV_CODE_MAX_RETRIES=0` e `JEV_CODE_TIMEOUT_MS=30000` no subprocesso MCP para evitar retries HTTP automáticos da camada `jev-code` no teste diagnóstico. Isso limita a uma solicitação lógica sem retries configurados pelo Jev; **não permite inferir cobrança** e não valida comportamento de qualquer intermediário externo. O script não grava a chave.
+
+
+## HE-JEV-006b — Resolução da causa raiz de AUTH_REJECTED (roteamento OpenRouter vs TypeSafe Direct)
+
+A execução do teste diagnóstico resultou em `SMOKE_FAILED: code=AUTH_REJECTED`.
+
+### Causa raiz técnica
+
+1. A chave armazenada pelo operador no Infisical é originária do **OpenRouter** (prefixo `sk-or-`), injetada sob o nome de variável `TYPESAFE_API_KEY`.
+2. O pacote upstream `@french-castle/jev-code` v0.5.0 estabelece que a variável de ambiente decide o provedor padrão, e não realiza roteamento automático baseado apenas no formato da credencial:
+   - `TYPESAFE_API_KEY` sem `JEV_CODE_PROVIDER` direciona chamadas para `https://api.typesafe.ai`.
+   - O endpoint da TypeSafe espera credenciais nativas (`ts_...` ou `apikey_...`) e rejeita credenciais com formato `sk-or-...` retornando `HTTP 401 Unauthorized`.
+   - O utilitário `doctor` do pacote apontou explicitamente:
+     `TYPESAFE_API_KEY looks like an OpenRouter key (sk-or-…) but is sent to TypeSafe, as set. If it belongs to OpenRouter, move it to OPENROUTER_API_KEY.`
+
+### Correção de engenharia
+
+1. **Auto-roteamento inteligente e seguro no `isolated_child_env` (`scripts/jev_live_smoke.py`):**
+   - Suporta tanto `TYPESAFE_API_KEY` quanto `OPENROUTER_API_KEY`.
+   - Quando a credencial fornecida possui o prefixo `sk-or-` e nenhum provedor explícito for declarado, o ambiente isolado do processo filho MCP configura automaticamente `JEV_CODE_PROVIDER=openrouter` e espelha a credencial em `OPENROUTER_API_KEY`.
+   - Preserva `typesafe` direto quando a chave for nativa (`ts_...` ou `apikey_...`).
+   - Respeita integralmente overrides declarados em `JEV_CODE_PROVIDER` (`typesafe`, `openrouter`, `vercel`).
+2. **Suporte no verificador sanitizado (`scripts/infisical_verifier.py`):**
+   - Detecta `OPENROUTER_API_KEY` e reporta `provider_hint` sem expor valores ou dados confidenciais.
+3. **Cobertura de testes automatizados:**
+   - Adicionados testes unitários em `tests/test_jev_live_smoke.py` validando auto-roteamento, precedência de chave, providers explícitos e rejeição de providers inválidos.
+
+### Resultado confirmado em execução real
+
+Execução realizada via `pwsh -NoProfile -File .\scripts\run_jev_live_smoke.ps1`:
+```json
+{
+  "G1_verified": false,
+  "benchmark_evidence": false,
+  "cost_usd": null,
+  "decision_status": "SUCCESS",
+  "label": "software-development",
+  "latency_ms": 880.07,
+  "model": "typesafe/jev-1.14-20261014",
+  "model_quality_proven": false,
+  "scope": "ONE_CALL_SMOKE_ONLY_NOT_A_BENCHMARK",
+  "status": "PROVIDER_RESPONSE_OBSERVED",
+  "task_kind": "fixed_public_prompt",
+  "tokens_in": 399,
+  "tokens_out": 36,
+  "upstream": "@french-castle/jev-code",
+  "upstream_version": "0.5.0"
+}
+```
+
+O gate `PROVIDER_RESPONSE_OBSERVED` foi alcançado com sucesso. O modelo servido via OpenRouter (`typesafe/jev-1.14-20261014`) classificou a tarefa com decisão `auto` (`decision_status: SUCCESS`, label `software-development`) em 880ms.
