@@ -223,7 +223,7 @@ class JEVLiveSmokeOfflineTests(unittest.TestCase):
 
     def test_unsupported_provider_raises_preflight(self):
         parent = {"TYPESAFE_API_KEY": "key", "JEV_CODE_PROVIDER": "unsupported_xyz"}
-        with self.assertRaisesRegex(SmokePreflightError, "Unsupported JEV_CODE_PROVIDER"):
+        with self.assertRaisesRegex(SmokePreflightError, "Unsupported provider for Jev System One"):
             isolated_child_env(parent)
 
 
