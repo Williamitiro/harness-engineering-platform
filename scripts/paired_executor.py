@@ -17,9 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.jev_adapter import JevMcpClient
+from scripts.jev_http import JevHttpClient
 from scripts.jev_collector import load_tasks
-from scripts.jev_live_smoke import isolated_child_env, verify_package
 from scripts import mxc_g1_preflight
 from scripts.jev_evaluator import load_ground_truth, load_policy, evaluate_domain
 
@@ -110,7 +109,7 @@ def run_pairs(tasks, native, jev, model, checkpoint=None):
             if checkpoint: checkpoint(result)
             suggestion = jev.classify(task['input_text'], task['candidate_labels'], timeout_s=30)
             fallback = not auto_accept(suggestion, task['candidate_labels'])
-            record['jev_suggestion'] = {k: suggestion.get(k) for k in ('label', 'model', 'execution_status', 'latency_ms', 'tokens_in', 'tokens_out', 'cost_usd')}
+            record['jev_suggestion'] = {k: suggestion.get(k) for k in ('label', 'predicted_label', 'confidence', 'margin', 'model', 'execution_status', 'latency_ms', 'tokens_in', 'tokens_out', 'cost_usd')}
             if checkpoint: checkpoint(result)
             final = suggestion
             if fallback:
@@ -122,7 +121,16 @@ def run_pairs(tasks, native, jev, model, checkpoint=None):
                         'jev_model': suggestion.get('model'), 'fallback': fallback,
                         'fallback_requested_model': model if fallback else None,
                         'latency_ms': round((time.monotonic() - started) * 1000, 2),
-                        'tokens_in': None, 'tokens_out': None, 'cost_usd': None,
+                        'tokens_in': (suggestion.get('tokens_in') if not fallback else
+                                      sum([suggestion['tokens_in'], final['tokens_in']])
+                                      if type(suggestion.get('tokens_in')) is int and type(final.get('tokens_in')) is int else None),
+                        'tokens_out': (suggestion.get('tokens_out') if not fallback else
+                                       sum([suggestion['tokens_out'], final['tokens_out']])
+                                       if type(suggestion.get('tokens_out')) is int and type(final.get('tokens_out')) is int else None),
+                        'cost_usd': (suggestion.get('cost_usd') if not fallback else
+                                     round(suggestion['cost_usd'] + final['cost_usd'], 10)
+                                     if type(suggestion.get('cost_usd')) in (int, float) and
+                                        type(final.get('cost_usd')) in (int, float) else None),
                         'jev_usage': {k: suggestion.get(k) for k in ('tokens_in', 'tokens_out', 'cost_usd')},
                         'fallback_usage': {k: final.get(k) for k in ('tokens_in', 'tokens_out', 'cost_usd')} if fallback else None}
             if checkpoint: checkpoint(result)
@@ -157,49 +165,14 @@ def score_pairs(result):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=('preflight', 'diagnose-jev', 'pilot'))
+    parser.add_argument('mode', choices=('preflight', 'pilot'))
     parser.add_argument('--max-tasks', type=int, choices=(1, 2, 3), default=3)
     parser.add_argument('--model')
-    parser.add_argument('--package-entry', type=Path,
-                        default=Path(tempfile.gettempdir()) / 'harness-jev-smoke-050/node_modules/@french-castle/jev-code/dist/cli.js')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if args.mode == 'preflight':
         # Explicitly does not instantiate JEV, inject Infisical, or start a model turn.
         return mxc_g1_preflight.main(['--native-broker', '--diagnose-startup'])
-    if args.mode == 'diagnose-jev':
-        # Operator-only startup reproduction. It creates no model turn and
-        # sends NO tools/call to Jev (its upstream API client is lazy).
-        if not args.model:
-            parser.error('diagnose-jev requires --model')
-        parent = dict(os.environ)
-        parent['JEV_CODE_PROVIDER'] = 'openrouter'
-        try:
-            jev_env = isolated_child_env(parent)
-            entry = verify_package(args.package_entry)
-            node = shutil.which('node', path=jev_env.get('PATH'))
-            if node is None:
-                raise RuntimeError('NODE_MISSING')
-        except (RuntimeError, ValueError, OSError, KeyError) as exc:
-            print(json.dumps({'status': 'ABORTED', 'stage': 'local_startup_prerequisites',
-                              'code': error_code(exc), 'paid_calls': 0}))
-            return 1
-
-        def probe(report, native):
-            client = None
-            try:
-                native.prepare(args.model)  # Creates thread metadata, no inference.
-                client = JevMcpClient([node, str(entry), 'mcp'], jev_env, entry.parent.parent)
-                with client:
-                    report['jev_startup'] = {'status': 'MCP_INITIALIZED', 'diagnostic': client.startup_diagnostic()}
-                report['paid_calls'] = 0
-            except (RuntimeError, ValueError, OSError, KeyError) as exc:
-                report['jev_startup'] = {'status': 'ABORTED', 'code': error_code(exc),
-                                         'diagnostic': client.startup_diagnostic() if client else None}
-                report['pilot_status'] = 'ABORTED'
-                report['paid_calls'] = 0
-
-        return mxc_g1_preflight.main(['--native-broker', '--diagnose-startup'], probe)
     if not args.model or not args.output:
         parser.error('pilot requires explicit --model and a new --output file')
     output = args.output.absolute()
@@ -211,18 +184,13 @@ def main():
     initial = {'status': 'PREPARING', 'records': [], 'logical_calls': {'A': 0, 'J': 0, 'fallback': 0},
                'retries': 0, 'phase': 'credentials_and_package', 'cost_usd': None}
     save_receipt(output, initial)
-    # Prepare trusted MCP only; no npx/download and no secret sent to native Codex.
-    parent = dict(os.environ)
-    parent['JEV_CODE_PROVIDER'] = 'openrouter'
+    # Direct OpenRouter Decisions HTTP; the key remains only in this supervisor.
+    # No Node.js, MCP subprocess, external package or sandbox credential injection.
     try:
-        jev_env = isolated_child_env(parent)
-        entry = verify_package(args.package_entry)
-        node = shutil.which('node', path=jev_env.get('PATH'))
-        if node is None:
-            raise RuntimeError('NODE_MISSING')
+        jev_client = JevHttpClient.from_environment(os.environ)
         tasks = [valid_task(t) for t in load_tasks(ROOT / 'benchmarks/jev/tasks/tasks_all.jsonl')[:args.max_tasks]]
     except (RuntimeError, ValueError, OSError, KeyError) as exc:
-        initial.update(status='ABORTED', error={'stage': initial['phase'], 'code': error_code(exc)})
+        initial.update(status='ABORTED', error={'stage': 'credentials_and_tasks', 'code': error_code(exc)})
         save_receipt(output, initial)
         print(json.dumps({'status': 'ABORTED', 'error': initial['error'], 'output': str(output)}))
         return 1
@@ -231,18 +199,14 @@ def main():
         initial.update(phase='native_session_prepare', g1_fixture=report['fixture'])
         save_receipt(output, initial)
         result = initial
-        jev = None
         try:
-            native.prepare(args.model)  # free: no turn/start, no inference
-            initial['phase'] = 'jev_initialize'
+            native.prepare(args.model)  # no model turn yet
+            initial['phase'] = 'jev_http_dispatch'
             save_receipt(output, initial)
-            jev = JevMcpClient([node, str(entry), 'mcp'], jev_env, entry.parent.parent)
-            with jev:
-                result = run_pairs(tasks, native, jev, args.model, lambda data: save_receipt(output, data))
+            result = run_pairs(tasks, native, jev_client, args.model,
+                               lambda data: save_receipt(output, data))
         except (RuntimeError, ValueError, OSError, KeyError) as exc:
             result.update(status='ABORTED', error={'stage': initial['phase'], 'code': error_code(exc)})
-            if initial['phase'] == 'jev_initialize' and jev is not None:
-                result['jev_startup_diagnostic'] = jev.startup_diagnostic()
         result.update(scope='CLASSIFICATION_ONLY_NOT_CODE_QUALITY', g1_fixture=report['fixture'])
         if native.diagnostic_file is not None:
             result['private_native_diagnostic_directory'] = str(native.diagnostic_file.parent)
