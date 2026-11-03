@@ -81,6 +81,58 @@ class ProjectLifecycleTests(unittest.TestCase):
             self.attach()
         self.assertEqual(before, self.snapshot())
 
+    def test_preserve_contract_installs_only_skills_and_removes_exactly(self):
+        contract = self.repo / "AGENTS.md"
+        contract.write_bytes(b"Project-specific rules must remain unchanged.\n")
+        before = self.snapshot()
+        plan = h.inspect_project(self.repo, "codex", preserve_contract=True)
+        self.assertEqual(plan["status"], "COMPATIBLE_NOT_RUNTIME_VERIFIED")
+        self.assertEqual({c["path"] for c in plan["changes"]}, {
+            ".agents/skills/tdd-workflow/SKILL.md", ".agents/skills/verification-loop/SKILL.md", h.PROJECT_STATE})
+        self.assertEqual(h.attach_project(self.repo, self.source, self.manifest, preserve_contract=True)["status"],
+                         "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
+        record = h.verify_project(self.repo, self.manifest)
+        self.assertEqual(record["contract_policy"], "preserve-existing")
+        self.assertEqual(len(record["files"]), 2)
+        self.assertNotIn("AGENTS.md", {item["path"] for item in record["files"]})
+        self.assertEqual(h.attach_project(self.repo, self.source, self.manifest, preserve_contract=True)["status"],
+                         "ALREADY_ATTACHED")
+        h.remove_project(self.repo, self.manifest)
+        self.assertEqual(before, self.snapshot())
+
+    def test_preserve_contract_requires_existing_file_and_does_not_bypass_skill_collision(self):
+        with self.assertRaises(h.GateError):
+            h.attach_project(self.repo, self.source, self.manifest, preserve_contract=True)
+        (self.repo / "AGENTS.md").write_text("keep rules")
+        skill = self.repo / ".agents/skills/other/SKILL.md"
+        skill.parent.mkdir(parents=True)
+        skill.write_text("keep other skill")
+        before = self.snapshot()
+        with self.assertRaises(h.GateError):
+            h.attach_project(self.repo, self.source, self.manifest, preserve_contract=True)
+        self.assertEqual(before, self.snapshot())
+
+    def test_preserved_contract_can_be_edited_without_becoming_owned(self):
+        contract = self.repo / "AGENTS.md"
+        contract.write_text("original rules")
+        h.attach_project(self.repo, self.source, self.manifest, preserve_contract=True)
+        contract.write_text("human-updated rules")
+        h.verify_project(self.repo, self.manifest)
+        h.remove_project(self.repo, self.manifest)
+        self.assertEqual(contract.read_text(), "human-updated rules")
+
+    def test_record_policy_cannot_be_changed_to_claim_existing_contract(self):
+        (self.repo / "AGENTS.md").write_text("keep rules")
+        h.attach_project(self.repo, self.source, self.manifest, preserve_contract=True)
+        path = self.repo / h.PROJECT_STATE
+        record = json.loads(path.read_text())
+        record["contract_policy"] = "create-new"
+        path.write_text(json.dumps(record))
+        before = self.snapshot()
+        with self.assertRaises(h.GateError):
+            h.remove_project(self.repo, self.manifest)
+        self.assertEqual(before, self.snapshot())
+
     def test_modified_missing_or_forged_record_prevents_partial_remove(self):
         self.attach()
         record_file = self.repo / ".harness/manifest.json"

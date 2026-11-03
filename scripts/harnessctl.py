@@ -265,7 +265,7 @@ def remove(target: Path, manifest: dict | None = None) -> None:
     (target / STATE).unlink()
 
 
-def inspect_project(repo: Path, client: str) -> dict:
+def inspect_project(repo: Path, client: str, preserve_contract: bool = False) -> dict:
     """Inspect only fixed integration paths, never target file contents or Git config.
 
     A .git marker is structural evidence only, including worktree gitfiles. Do
@@ -286,8 +286,10 @@ def inspect_project(repo: Path, client: str) -> dict:
     assert_no_symlink(marker)
     if not (marker.is_dir() or marker.is_file()):
         raise GateError("--repo must contain a .git directory or worktree marker")
+    if preserve_contract and not (repo / "AGENTS.md").is_file():
+        raise GateError("--preserve-contract requires an existing regular AGENTS.md")
 
-    destinations = ["AGENTS.md", *[
+    destinations = ([] if preserve_contract else ["AGENTS.md"]) + [*[
         f"{SUPPORTED[client]}/{name}/SKILL.md" for name in sorted(ALLOWED)
     ], ".harness/manifest.json"]
     # Conservatively block third-party skill directories and prior state. No
@@ -301,6 +303,8 @@ def inspect_project(repo: Path, client: str) -> dict:
         try:
             assert_no_symlink(path)
             exists = path.exists()
+            if preserve_contract and rel == "AGENTS.md" and path.is_file():
+                continue  # Existing project rules are neither read nor owned.
             container = rel in (".agents", SUPPORTED[client])
             # An empty native skills directory is compatible; any pre-existing
             # skill requires an explicit compatibility decision by the operator.
@@ -322,6 +326,7 @@ def inspect_project(repo: Path, client: str) -> dict:
         "status": ("BLOCKED_PATH" if any(b["status"] == "BLOCKED_PATH" for b in blockers)
                    else "BLOCKED_COLLISION" if blockers else "COMPATIBLE_NOT_RUNTIME_VERIFIED"),
         "repo": str(repo), "client": client, "read_only": True,
+        "contract_policy": "preserve-existing" if preserve_contract else "create-new",
         "compatibility": {"repository": "GIT_MARKER_ONLY", "client_layout": SUPPORTED[client],
                           "client_runtime": "NOT_PROBED", "ownership": "NOT_CLAIMED"},
         "changes": changes, "blockers": blockers,
@@ -358,8 +363,9 @@ def owned_bytes(path: Path, limit: int = 262144) -> bytes:
     return data
 
 
-def project_hashes(manifest: dict) -> dict[str, str]:
-    return {"AGENTS.md": digest(owned_bytes(ROOT / "templates/AGENTS.md")), **{
+def project_hashes(manifest: dict, preserve_contract: bool = False) -> dict[str, str]:
+    contract = {} if preserve_contract else {"AGENTS.md": digest(owned_bytes(ROOT / "templates/AGENTS.md"))}
+    return {**contract, **{
         f"{SUPPORTED['codex']}/{name}/SKILL.md": sha.lower()
         for name, sha in sorted(manifest["ecc"]["skills"].items())}}
 
@@ -471,7 +477,14 @@ def remove_package(repo: Path, state: str, record: dict) -> None:
 
 def verify_project(repo: Path, manifest: dict) -> dict:
     repo = project_root(repo)
-    record = validate_record(repo, PROJECT_STATE, project_hashes(manifest), "harness-project")
+    initial = json.loads(owned_bytes(repo / PROJECT_STATE))
+    if not isinstance(initial, dict) or initial.get("contract_policy", "create-new") not in ("create-new", "preserve-existing"):
+        raise GateError("unsupported project contract policy")
+    policy = initial.get("contract_policy", "create-new")
+    record = validate_record(repo, PROJECT_STATE,
+                             project_hashes(manifest, preserve_contract=policy == "preserve-existing"), "harness-project")
+    if record.get("contract_policy", "create-new") != policy:
+        raise GateError("ownership contract policy changed during verification")
     notice = record.get("license_notice")
     if (record.get("client") != "codex" or record.get("ecc_commit") != manifest["ecc"]["commit"]
             or not isinstance(notice, str) or digest(notice.encode("utf-8")) != manifest["ecc"].get("license_sha256")):
@@ -479,28 +492,31 @@ def verify_project(repo: Path, manifest: dict) -> dict:
     return record
 
 
-def attach_project(repo: Path, source: Path, manifest: dict) -> dict:
+def attach_project(repo: Path, source: Path, manifest: dict, preserve_contract: bool = False) -> dict:
     repo = project_root(repo)
     if (repo / PROJECT_STATE).exists():
-        verify_project(repo, manifest)
+        record = verify_project(repo, manifest)
+        if (record.get("contract_policy", "create-new") == "preserve-existing") != preserve_contract:
+            raise GateError("installed contract policy differs; verify or remove before changing modes")
         return {"status": "ALREADY_ATTACHED", "runtime_execution": "NOT_RUN"}
-    inspection = inspect_project(repo, "codex")
+    inspection = inspect_project(repo, "codex", preserve_contract=preserve_contract)
     if inspection["blockers"]:
         raise GateError(f"{inspection['status']}: review project-plan; no files overwritten")
     skills = check_source(source.absolute(), manifest)
     notice = owned_bytes(source / "LICENSE")
     if digest(notice) != manifest["ecc"].get("license_sha256"):
         raise GateError("ECC license differs from approved hash")
-    files = {"AGENTS.md": owned_bytes(ROOT / "templates/AGENTS.md")}
+    files = {} if preserve_contract else {"AGENTS.md": owned_bytes(ROOT / "templates/AGENTS.md")}
     for skill in skills:
         raw = owned_bytes(Path(skill["source"]))
         if digest(raw) != skill["sha256"]:
             raise GateError("source changed since validation")
         files[f"{SUPPORTED['codex']}/{skill['name']}/SKILL.md"] = raw
     # Recheck paths and collisions after source verification and before writing.
-    if inspect_project(repo, "codex")["blockers"]:
+    if inspect_project(repo, "codex", preserve_contract=preserve_contract)["blockers"]:
         raise GateError("project changed since inspection")
     record = {"schema_version": 1, "kind": "harness-project", "client": "codex",
+              "contract_policy": "preserve-existing" if preserve_contract else "create-new",
               "ecc_commit": manifest["ecc"]["commit"], "license_notice": notice.decode("utf-8"),
               "runtime_execution": "NOT_RUN"}
     write_package(repo, files, PROJECT_STATE, record)
@@ -527,7 +543,10 @@ def lifecycle_main(argv: list[str]) -> int:
     parser.add_argument("--client", choices=("codex",), default="codex")
     parser.add_argument("--source", type=Path, help="existing pinned ECC checkout; required on first attach")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--preserve-contract", action="store_true", help="attach skills only; never own existing AGENTS.md")
     args = parser.parse_args(argv)
+    if args.preserve_contract and args.action != "project-attach":
+        parser.error("--preserve-contract is only valid for project-attach")
     try:
         manifest = read_manifest(ROOT / "config/approved_skills.json")
         if args.action == "project-attach":
@@ -535,7 +554,7 @@ def lifecycle_main(argv: list[str]) -> int:
                 raise GateError("attach needs --apply; inspect project-plan first")
             if args.source is None:
                 raise GateError("attach needs --source pointing to the pinned ECC checkout")
-            result = attach_project(args.repo, args.source, manifest)
+            result = attach_project(args.repo, args.source, manifest, preserve_contract=args.preserve_contract)
         elif args.action == "project-verify":
             verify_project(args.repo, manifest)
             result = {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "runtime_execution": "NOT_RUN"}
@@ -648,9 +667,10 @@ def project_main(argv: list[str]) -> int:
     parser.add_argument("action", choices=("project-doctor", "project-plan"))
     parser.add_argument("--repo", type=Path, required=True, help="explicit repository root (absolute or relative)")
     parser.add_argument("--client", choices=("codex",), required=True)
+    parser.add_argument("--preserve-contract", action="store_true", help="plan skills only, preserving existing AGENTS.md")
     args = parser.parse_args(argv)
     try:
-        result = inspect_project(args.repo, args.client)
+        result = inspect_project(args.repo, args.client, preserve_contract=args.preserve_contract)
         if args.action == "project-plan":
             root = Path(__file__).resolve().parents[1]
             manifest_path = root / "config" / "approved_skills.json"
@@ -658,7 +678,7 @@ def project_main(argv: list[str]) -> int:
             manifest = read_manifest(manifest_path)
             result["pinned_ecc_commit"] = manifest["ecc"]["commit"]
             result["approved_skill_sha256"] = manifest["ecc"]["skills"]
-            result["contract_source"] = "templates/AGENTS.md"
+            result["contract_source"] = None if args.preserve_contract else "templates/AGENTS.md"
             if not result["blockers"]:
                 result["status"] = "PLANNED_NOT_INSTALLED"
         print(json.dumps(result, indent=2))

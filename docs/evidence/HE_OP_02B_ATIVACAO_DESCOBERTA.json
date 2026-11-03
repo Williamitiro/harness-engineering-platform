@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-11-03T02:23:50.047688+00:00",
+  "harness_source_sha": "e77ba76743f90f5361f34e7caf4fa8f0ec4503d3",
+  "personal_installation": {
+    "client": "codex",
+    "status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "files": [
+      {
+        "path": ".agents/skills/setup-harness/SKILL.md",
+        "sha256": "f2715d7c3b789227e06a04c6f36c279f6aee3bb02f1f7575d701d2628d198d35"
+      },
+      {
+        "path": ".agents/skills/setup-harness/harness-location.json",
+        "sha256": "4a0dcc55463718cdc89a81600b4c960014f968865d35987ef2276c5222077a87"
+      },
+      {
+        "path": ".agents/skills/setup-harness/agents/openai.yaml",
+        "sha256": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
+      }
+    ],
+    "runtime_discovery": "DISCOVERED"
+  },
+  "native_metadata_probe": {
+    "client_version": "codex-cli 0.166.0",
+    "workspace_kind": "empty_git_fixture",
+    "rpc_methods": [
+      "initialize",
+      "skills/list"
+    ],
+    "model_turns_started": 0,
+    "models_called": false,
+    "runtime_discovery": "DISCOVERED",
+    "matches": [
+      {
+        "name": "setup-harness",
+        "path": "C:\\Users\\itiro\\.agents\\skills\\setup-harness\\SKILL.md",
+        "scope": "user",
+        "enabled": true
+      }
+    ],
+    "skill_parse_error_count": 0
+  },
+  "invocation": {
+    "installed_skill_read_in_current_session": true,
+    "new_native_model_turn": "NOT_RUN"
+  },
+  "selected_project": {
+    "repo": "C:\\dev\\plataforma-metalurgica",
+    "head": "31e4c261678c418ca76004560c0c6019c39cf6c0",
+    "working_tree_clean": true,
+    "project_plan_exit_code": 2,
+    "project_plan_status": "BLOCKED_COLLISION",
+    "blockers": [
+      {
+        "path": "AGENTS.md",
+        "status": "BLOCKED_COLLISION"
+      }
+    ],
+    "existing_contract_sha256": "215c05c39b74c85240d28340dc9d0632a08cc04d033f6c2d02e230990a9c8287",
+    "files_written": []
+  },
+  "models_called": false,
+  "benchmark_executed": false,
+  "finance": {
+    "api_billed_usd": null,
+    "subscription_quota_observed": null
+  },
+  "gate_he_op_02b": "PARTIAL_DISCOVERY_OBSERVED_INVOCATION_PENDING",
+  "gate_he_op_03": "BLOCKED_COLLISION"
+}
