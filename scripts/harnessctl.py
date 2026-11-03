@@ -56,7 +56,7 @@ def assert_no_symlink(path: Path) -> None:
         # Windows junctions are not symlinks; refuse every reparse point too.
         try:
             attrs = getattr(part.lstat(), "st_file_attributes", 0)
-        except FileNotFoundError:
+        except (FileNotFoundError, NotADirectoryError):
             continue
         if attrs & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0):
             raise GateError(f"reparse path refused: {part}")
