@@ -1,6 +1,7 @@
 # HARNESS ENGINEERING — SPEC CANÔNICA, PLANO DE RELEASES E ACEITE PARA USO DIÁRIO (V1)
 
 **Estado:** ESPECIFICAÇÃO NORMATIVA / implementação multi-repositório e benchmark de programação PENDENTES.  
+**Implementação de arquivos:** HE-OP-01 e HE-OP-02 concluídos offline para Codex; código/instalador HE-OP-02B concluídos offline, descoberta/invocação nativa ainda NOT_RUN. [HE-OP-02](HE_OP_02_SETUP_RELATORIO.md) e [HE-OP-02B](HE_OP_02B_BOOTSTRAP_RELATORIO.md) registram comandos, evidências e limites. R1 diário e R2 continuam PENDENTES.
 **Corte das evidências:** 02/11/2026. **Branch de trabalho:** `codex/he-jev-007a`, [PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4), ainda Draft e não integrado em `main`.  
 **Fonte de entrada integral, preservada sem atualizar afirmações antigas:** [dossiê dos 12 repositórios](reference/CONSOLIDADO_REPOSITORIOS_HARNESS_ENGINEERING_2026-11-02.md).  
 **Autoria operacional:** Harness Engineering; executor de código Codex primeiro, Claude Code depois. Revisão independente antes de merge e de alegar ganhos.
@@ -65,7 +66,7 @@ sem acesso do agente ao gabarito. JEV só via HTTPS direto quando habilitado.
 - Contratos já existentes não são sobrescritos. A primeira versão pode **bloquear colisão** e emitir instruções de ajuste manual; composição/merge estruturado só em release específico, depois de testes de regressão.
 - Não é necessário instalar Python ou Infisical **dentro** de cada projeto. O setup requer apenas Python funcional na máquina onde já roda o Harness; execução nativa de Codex/Claude exige suas CLIs/sessões normalmente disponíveis. Infisical é requerido só para operações que acessem segredos, não para a cópia de skills.
 
-**Interface do operador quando R1 estiver implementado** (exemplos PROPOSTOS, não executáveis nesta revisão):
+**Interface do operador:** o CLI Codex abaixo está implementado; a invocação da skill exige instalação pessoal aprovada e descoberta na sessão nativa, ainda não homologadas:
 
 ```powershell
 # Uma vez por agente/dispositivo: instalar a skill pessoal setup-harness
@@ -74,7 +75,7 @@ $setup-harness               # dentro de Codex, ação explícita
 # ou /setup-harness           # dentro de Claude Code
 # ou sem skill, diretamente no PowerShell:
 python C:\dev\harness-engineering\scripts\harnessctl.py project-plan --repo . --client codex
-python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo . --client codex --apply
+python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo . --client codex --source C:\caminho\ecc-pinado --apply
 python C:\dev\harness-engineering\scripts\harnessctl.py project-verify --repo .
 ```
 
@@ -82,14 +83,14 @@ python C:\dev\harness-engineering\scripts\harnessctl.py project-verify --repo .
 
 **Regra de distribuição:** cada projeto recebe **arquivos pequenos** e pinados. Não copiar toda a árvore do Harness nem seus scripts de benchmark, gabaritos, tokens ou servidor dentro de cada projeto. As skills podem ser copiadas (padrão mais simples); alterações são atualizadas mediante `plan` e aprovação. Não pressupor que links simbólicos funcionam ou que ambos clientes descobrem arquivos iguais; adaptar os destinos nativos por cliente.
 
-**Regras de conflito:** se `AGENTS.md`, `CLAUDE.md`, `.agents/skills` ou `.claude/skills` já contêm arquivos de terceiros, não sobrescrever, não concatenar automaticamente e não reivindicar ownership. Apresentar plano/diff e escolher modo compatível por projeto. A limpeza remove apenas bytes que o manifesto comprovar serem propriedade da instalação, recusando arquivo modificado. Instalador atual `harnessctl.py` é restrito a `.poc/`; **os comandos de projeto abaixo são PROPOSTOS, ainda não implementados**.
+**Regras de conflito:** se `AGENTS.md`, `CLAUDE.md`, `.agents/skills` ou `.claude/skills` já contêm arquivos de terceiros, não sobrescrever, não concatenar automaticamente e não reivindicar ownership. Apresentar plano/diff e escolher modo compatível por projeto. A limpeza remove apenas bytes que o manifesto comprovar serem propriedade da instalação, recusando arquivo modificado. O lifecycle legado continua restrito a `.poc/`; **os comandos `project-*` abaixo estão implementados para Codex**, com instalação explícita e fonte ECC pinada existente. Lifecycle de projeto Claude permanece R3.
 
-**Interface proposta, sem criar novo binário:**
+**Interface implementada para Codex, sem criar novo binário:**
 
 ```powershell
 python C:\dev\harness-engineering\scripts\harnessctl.py project-doctor --repo C:\dev\projeto-A --client codex
 python C:\dev\harness-engineering\scripts\harnessctl.py project-plan --repo C:\dev\projeto-A --client codex
-python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo C:\dev\projeto-A --client codex --apply
+python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo C:\dev\projeto-A --client codex --source C:\caminho\ecc-pinado --apply
 python C:\dev\harness-engineering\scripts\harnessctl.py project-verify --repo C:\dev\projeto-A
 python C:\dev\harness-engineering\scripts\harnessctl.py project-remove --repo C:\dev\projeto-A --apply
 ```
@@ -232,9 +233,9 @@ Aplicar a mesma regra a Harbor, Cloudflare, EGM, Skill Manager e memória: não 
 | ID | Release | Arquivos/capacidade | Teste obrigatório | Encerramento |
 | --- | --- | --- | --- | --- |
 | HE-OP-00 | R0 | esta SPEC, dossiê original, README indexando canônico; status do PR | links abrem, revisão contra HEAD, CI não afetado | **DOCUMENTAÇÃO** |
-| HE-OP-01 | R1 | estender `scripts/harnessctl.py` com `project-doctor` + `project-plan`; leitura do projeto sem escrita | repo externo fixture, arquivos existentes, path/symlink/sem secrets | **NEXT TO IMPLEMENT** |
-| HE-OP-02 | R1 | `project-attach/verify/remove` + manifesto ownership | aplica, reaplica, recusa colisão, detecta alteração e reverte exato | R1 arquivo |
-| HE-OP-02B | R1 | skill pessoal `setup-harness` para Codex/Claude como acionador de `harnessctl.py`, mais instalador opt-in da própria skill | Codex descobre `$setup-harness` em repo vazio após instalação pessoal aprovada; sem hook global nem operação inesperada | R1 bootstrap |
+| HE-OP-01 | R1 | estender `scripts/harnessctl.py` com `project-doctor` + `project-plan`; leitura do projeto sem escrita | repo externo fixture, arquivos existentes, path/symlink/sem secrets | **CONCLUÍDO OFFLINE** |
+| HE-OP-02 | R1 | `project-attach/verify/remove` + manifesto ownership | aplica, reaplica, recusa colisão, detecta alteração e reverte exato | **CONCLUÍDO OFFLINE — Codex** |
+| HE-OP-02B | R1 | skill pessoal `setup-harness` para Codex/Claude como acionador de `harnessctl.py`, mais instalador opt-in da própria skill | Codex descobre `$setup-harness` em repo vazio após instalação pessoal aprovada; sem hook global nem operação inesperada | **CÓDIGO/TESTES OFFLINE CONCLUÍDOS; descoberta nativa NOT_RUN** |
 | HE-OP-03 | R1 | operação Codex em projeto controlado com skill selecionada e verificador externo | descoberta + invocação + comportamento + QA, sem dados de origem vazados | R1 diário |
 | HE-BENCH-01 | R2 | adaptar `harness_eval.py` e runners nativos ao formato A/B de programação; corpus pré-registrado | dois patches de software avaliados, sem JEV; mesmo SHA inicial | R2 runner |
 | HE-BENCH-02 | R2 | telemetria/aggregator/relatório por tarefa e condição | custo parcial null, quota separada, regressões, medidas observadas | R2 medição |
@@ -244,7 +245,7 @@ Aplicar a mesma regra a Harbor, Cloudflare, EGM, Skill Manager e memória: não 
 | HE-OPT-01 | R4 | JEV em perfil de roteamento opt-in | decisão J0/J1, custo e falso positivo, sem segredos | só ativar com ganho |
 | HE-OPT-02 | R5+ | Cloudflare/EGM/Warp + candidatos R6 | comparar baseline, licença, integração reversível | um PR por módulo |
 
-O agente deve preferir arquivos existentes; os nomes `project-*` são proposta de interface, não executáveis ainda. **Não partir desta SPEC para imediatamente instalar 12 repos ou executar N=30.**
+O agente deve preferir arquivos existentes; os comandos `project-*` estão implementados para Codex, sem homologar automaticamente uso diário ou outro cliente. **Não partir desta SPEC para imediatamente instalar 12 repos ou executar N=30.**
 
 ## 10. Release gates (objetivos e verificáveis)
 

@@ -30,6 +30,15 @@ def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def git_probe(repo: Path, *args: str) -> subprocess.CompletedProcess:
+    """Local Git metadata only: no hooks, fsmonitor, inherited Git overrides or credentials."""
+    env = {key: value for key, value in os.environ.items()
+           if key.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATHEXT"}}
+    return subprocess.run(
+        ["git", "--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null",
+         "-C", str(repo), *args], capture_output=True, text=True, timeout=10, env=env, check=False)
+
+
 def read_manifest(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("schema_version") != 1 or not isinstance(data.get("ecc"), dict):
@@ -94,16 +103,10 @@ def check_source(source: Path, manifest: dict) -> list[dict]:
     if not source.is_dir():
         raise GateError("ECC source checkout not found")
     assert_no_symlink(source)
-    probe = subprocess.run(
-        ["git", "-C", str(source), "rev-parse", "--verify", "HEAD"],
-        capture_output=True, text=True, check=False, timeout=10,
-    )
+    probe = git_probe(source, "rev-parse", "--verify", "HEAD")
     if probe.returncode != 0 or probe.stdout.strip().lower() != manifest["ecc"]["commit"].lower():
         raise GateError("ECC source HEAD differs from the pinned commit")
-    status_probe = subprocess.run(
-        ["git", "-C", str(source), "status", "--porcelain"],
-        capture_output=True, text=True, check=False, timeout=10,
-    )
+    status_probe = git_probe(source, "status", "--porcelain", "--ignore-submodules=all")
     if status_probe.returncode != 0 or status_probe.stdout.strip():
         raise GateError("ECC source worktree has uncommitted modifications or untracked files")
     # Never trust Git HEAD alone: the worktree can contain modified/untracked files.
@@ -318,16 +321,10 @@ def project_root(repo: Path) -> Path:
     """Validate a real Git root for lifecycle operations, without running hooks."""
     inspect_project(repo, "codex")  # structural/path validation, no content reads
     repo = repo.absolute()
-    env = {key: value for key, value in os.environ.items()
-           if key.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATHEXT"}}
-    command = ["git", "--no-optional-locks", "-c", "core.fsmonitor=false",
-               "-c", "core.hooksPath=/dev/null", "-C", str(repo)]
-    result = subprocess.run(command + ["rev-parse", "--show-toplevel"],
-                            capture_output=True, text=True, timeout=10, env=env, check=False)
+    result = git_probe(repo, "rev-parse", "--show-toplevel")
     if result.returncode or Path(result.stdout.strip()).resolve() != repo.resolve():
         raise GateError("--repo must be the root of a valid Git worktree")
-    status = subprocess.run(command + ["status", "--porcelain", "--untracked-files=no", "--ignore-submodules=all"],
-                            capture_output=True, text=True, timeout=10, env=env, check=False)
+    status = git_probe(repo, "status", "--porcelain", "--untracked-files=no", "--ignore-submodules=all")
     if status.returncode:
         raise GateError("Git status could not be inspected")
     return repo
@@ -524,6 +521,100 @@ def lifecycle_main(argv: list[str]) -> int:
         return 2
 
 
+def bootstrap_package(home: Path, client: str) -> tuple[Path, dict[str, bytes], str]:
+    if client not in SUPPORTED or ".." in home.parts:
+        raise GateError("invalid bootstrap client or home path")
+    home = home.absolute()
+    assert_no_symlink(home)
+    if not home.is_dir():
+        raise GateError("personal home must be an existing directory")
+    folder = f"{SUPPORTED[client]}/setup-harness"
+    location = {"schema_version": 1, "client": client,
+                "harnessctl": str(ROOT / "scripts/harnessctl.py"),
+                "ecc_source": str(ROOT / ".poc/ecc-pinned"),
+                "project_client_supported": client == "codex"}
+    files = {f"{folder}/SKILL.md": owned_bytes(ROOT / "skills/setup-harness/SKILL.md"),
+             f"{folder}/harness-location.json": (json.dumps(location, indent=2) + "\n").encode("utf-8")}
+    if client == "codex":
+        files[f"{folder}/agents/openai.yaml"] = owned_bytes(ROOT / "skills/setup-harness/agents/openai.yaml")
+    state = f"{folder}/.harness-bootstrap.json"
+    for rel in [*files, state]:
+        assert_no_symlink(home / rel)
+    return home, files, state
+
+
+def verify_setup_skill(home: Path, client: str) -> dict:
+    home, files, state = bootstrap_package(home, client)
+    record = validate_record(home, state, {p: digest(raw) for p, raw in files.items()}, "harness-bootstrap")
+    if record.get("client") != client:
+        raise GateError("bootstrap ownership client mismatch")
+    return record
+
+
+def plan_setup_skill(home: Path, client: str) -> dict:
+    home, files, state = bootstrap_package(home, client)
+    if (home / state).exists():
+        verify_setup_skill(home, client)
+        return {"status": "ALREADY_INSTALLED", "runtime_discovery": "NOT_RUN"}
+    folder = (home / state).parent
+    if folder.exists():
+        raise GateError("BLOCKED_COLLISION: personal setup-harness directory already exists")
+    for rel in package_dirs([*files, state]):
+        path = home / rel
+        if path.exists() and not path.is_dir():
+            raise GateError("BLOCKED_COLLISION: personal skill ancestor is not a directory")
+    return {"status": "PLANNED_NOT_INSTALLED", "client": client, "home": str(home),
+            "files": [*files, state], "runtime_discovery": "NOT_RUN",
+            "project_client_supported": client == "codex"}
+
+
+def install_setup_skill(home: Path, client: str) -> dict:
+    result = plan_setup_skill(home, client)
+    if result["status"] == "ALREADY_INSTALLED":
+        return result
+    home, files, state = bootstrap_package(home, client)
+    write_package(home, files, state, {"schema_version": 1, "kind": "harness-bootstrap", "client": client})
+    return {"status": "FILES_INSTALLED_RUNTIME_NOT_VERIFIED", "client": client,
+            "runtime_discovery": "NOT_RUN", "project_client_supported": client == "codex"}
+
+
+def remove_setup_skill(home: Path, client: str, apply: bool = False) -> dict:
+    home, files, state = bootstrap_package(home, client)
+    record = verify_setup_skill(home, client)
+    if not apply:
+        return {"status": "PLANNED_NOT_REMOVED", "files": [*files, state]}
+    remove_package(home, state, record)
+    return {"status": "REMOVED_EXACT_OWNED_FILES"}
+
+
+def bootstrap_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Opt-in personal setup-harness skill installation; no project writes")
+    parser.add_argument("action", choices=("setup-skill-plan", "setup-skill-install", "setup-skill-verify", "setup-skill-remove"))
+    parser.add_argument("--client", choices=tuple(SUPPORTED), required=True)
+    parser.add_argument("--home", type=Path, help="personal home; defaults to the current user's home")
+    parser.add_argument("--apply", action="store_true")
+    args = parser.parse_args(argv)
+    home = args.home if args.home is not None else Path.home()
+    try:
+        if args.action == "setup-skill-plan":
+            result = plan_setup_skill(home, args.client)
+        elif args.action == "setup-skill-install":
+            if not args.apply:
+                raise GateError("personal installation needs --apply; inspect setup-skill-plan first")
+            result = install_setup_skill(home, args.client)
+        elif args.action == "setup-skill-verify":
+            verify_setup_skill(home, args.client)
+            result = {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "runtime_discovery": "NOT_RUN"}
+        else:
+            result = remove_setup_skill(home, args.client, apply=args.apply)
+        print(json.dumps(result, indent=2))
+        return 0
+    except (GateError, OSError, ValueError, KeyError, TypeError) as exc:
+        reason = str(exc) if isinstance(exc, GateError) else "personal skill operation blocked"
+        print(json.dumps({"status": "BLOCKED", "reason": reason}), file=sys.stderr)
+        return 2
+
+
 def project_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Read-only Codex project metadata inspection; never installs files")
     parser.add_argument("action", choices=("project-doctor", "project-plan"))
@@ -557,9 +648,13 @@ def main(argv: list[str] | None = None) -> int:
         return project_main(argv)
     if argv and argv[0] in ("project-attach", "project-verify", "project-remove"):
         return lifecycle_main(argv)
+    if argv and argv[0] in ("setup-skill-plan", "setup-skill-install", "setup-skill-verify", "setup-skill-remove"):
+        return bootstrap_main(argv)
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
-        "Use project-plan --help for their separate options."))
+        "Lifecycle: project-attach / project-verify / project-remove. "
+        "Personal bootstrap: setup-skill-plan / setup-skill-install / setup-skill-verify / setup-skill-remove. "
+        "Use COMMAND --help for their separate options."))
     parser.add_argument("action", choices=("plan", "install", "verify", "remove"))
     parser.add_argument("--source", type=Path, help="pre-fetched ECC Git checkout at pinned commit")
     parser.add_argument("--target", type=Path, required=True, help="existing disposable .poc/ directory")
