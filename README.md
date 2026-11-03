@@ -4,7 +4,7 @@
 >
 > **Leia primeiro:** [SPEC de uso diário + benchmark de agentes obrigatório](docs/HARNESS_SPEC_CANONICA_USO_DIARIO_E_BENCHMARK_V1.md). O [dossiê original dos 12 repositórios](docs/reference/CONSOLIDADO_REPOSITORIOS_HARNESS_ENGINEERING_2026-11-02.md) está preservado como referência histórica.
 >
-> **Pareto V1:** R1 = pacote nativo e reversível de regras/skills por projeto; **R2 = benchmark real de programação, custo, latência e qualidade como gate obrigatório**, avaliando reutilização de Harbor; R3 = Claude Code; R4–R6 = JEV opcional e demais integrações seletivas. A primeira tarefa autorizada a implementar é **HE-OP-01**, descrita no §11 da SPEC; comandos `project-*` ainda são propostos.
+> **Pareto V1:** R1 = pacote nativo e reversível de regras/skills por projeto; **R2 = benchmark real de programação, custo, latência e qualidade como gate obrigatório**, avaliando reutilização de Harbor; R3 = Claude Code; R4–R6 = JEV opcional e demais integrações seletivas. **HE-OP-01 implementado e testado offline:** `project-doctor` e `project-plan` somente-leitura para Codex. `project-attach/verify/remove` continuam propostos; R1/R2 ainda não concluídos. Veja [auditoria e evidências HE-OP-01](docs/HE_OP_01_AUDITORIA_2026-11-02.md).
 >
 > **Status comprovado:** JEV remoto **já funciona via API HTTPS** no supervisor Python e o piloto A×J de três *classificações* concluiu; **NÃO** equivale a benchmark de desenvolvimento nem a economia comprovada. PR #4 continua Draft. Registros/afirmações anteriores sobre falha Node/MCP ou benchmark sintético **estão superados** quando divergirem da SPEC. Codex e Claude Code permanecem runtimes nativos; nenhum outro projeto é modificado automaticamente.
 >

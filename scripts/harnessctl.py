@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline, allowlisted ECC skill lifecycle for disposable A1 sandboxes.
+"""Offline ECC lifecycle for .poc/ and read-only Codex project inspection.
 
 No network, installer, model call, or production write. Python 3.12+ stdlib only.
 Discovery/invocation/runtime execution are intentionally NOT claimed here.
@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 
@@ -52,6 +53,13 @@ def assert_no_symlink(path: Path) -> None:
     for part in (p, *p.parents):
         if part.is_symlink():
             raise GateError(f"symlink path refused: {part}")
+        # Windows junctions are not symlinks; refuse every reparse point too.
+        try:
+            attrs = getattr(part.lstat(), "st_file_attributes", 0)
+        except FileNotFoundError:
+            continue
+        if attrs & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0):
+            raise GateError(f"reparse path refused: {part}")
 
 
 def cleanup_empty_parents(start_dir: Path, stop_at: Path) -> None:
@@ -238,8 +246,105 @@ def remove(target: Path, manifest: dict | None = None) -> None:
     (target / STATE).unlink()
 
 
+def inspect_project(repo: Path, client: str) -> dict:
+    """Inspect only fixed integration paths, never target file contents or Git config.
+
+    A .git marker is structural evidence only, including worktree gitfiles. Do
+    not invoke Git, a client, hooks, or read the gitfile to resolve another path.
+    No ownership or runtime compatibility is inferred from existing files.
+    """
+    if client != "codex":
+        raise GateError("project inspection supports only codex")
+    if ".." in repo.parts:
+        raise GateError("--repo must not contain parent traversal")
+    # Accept the explicit --repo . documented by SPEC §2.1. Do not resolve
+    # links here: the existing ancestor checks must see and refuse them.
+    repo = repo.absolute()
+    assert_no_symlink(repo)
+    if not repo.is_dir():
+        raise GateError("--repo must be an existing repository directory")
+    marker = repo / ".git"
+    assert_no_symlink(marker)
+    if not (marker.is_dir() or marker.is_file()):
+        raise GateError("--repo must contain a .git directory or worktree marker")
+
+    destinations = ["AGENTS.md", *[
+        f"{SUPPORTED[client]}/{name}/SKILL.md" for name in sorted(ALLOWED)
+    ], ".harness/manifest.json"]
+    # Conservatively block third-party skill directories and prior state. No
+    # recursive inventory, existing-file hashes, content reads or ownership claims.
+    watched = ["AGENTS.md", ".agents", SUPPORTED[client], ".harness", STATE]
+    watched += [f"{SUPPORTED[client]}/{name}" for name in sorted(ALLOWED)]
+    watched += destinations
+    blockers = []
+    for rel in dict.fromkeys(watched):
+        path = repo / rel
+        try:
+            assert_no_symlink(path)
+            exists = path.exists()
+            container = rel in (".agents", SUPPORTED[client])
+            # An empty native skills directory is compatible; any pre-existing
+            # skill requires an explicit compatibility decision by the operator.
+            collision = exists and (not container or not path.is_dir() or (
+                rel == SUPPORTED[client] and next(path.iterdir(), None) is not None))
+            if collision:
+                blockers.append({"path": rel, "status": "BLOCKED_COLLISION"})
+        except (GateError, OSError):
+            blockers.append({"path": rel, "status": "BLOCKED_PATH"})
+
+    changes = []
+    for rel in destinations:
+        affecting = [b["status"] for b in blockers
+                     if rel == b["path"] or rel.startswith(b["path"] + "/")]
+        action = ("BLOCKED_PATH" if "BLOCKED_PATH" in affecting else
+                  "BLOCKED_COLLISION" if affecting else "WOULD_CREATE")
+        changes.append({"path": rel, "action": action})
+    return {
+        "status": ("BLOCKED_PATH" if any(b["status"] == "BLOCKED_PATH" for b in blockers)
+                   else "BLOCKED_COLLISION" if blockers else "COMPATIBLE_NOT_RUNTIME_VERIFIED"),
+        "repo": str(repo), "client": client, "read_only": True,
+        "compatibility": {"repository": "GIT_MARKER_ONLY", "client_layout": SUPPORTED[client],
+                          "client_runtime": "NOT_PROBED", "ownership": "NOT_CLAIMED"},
+        "changes": changes, "blockers": blockers,
+        "source_validation": "NOT_RUN", "runtime_discovery": "NOT_RUN",
+        "runtime_invocation": "NOT_RUN", "runtime_execution": "NOT_RUN",
+    }
+
+
+def project_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Read-only Codex project metadata inspection; never installs files")
+    parser.add_argument("action", choices=("project-doctor", "project-plan"))
+    parser.add_argument("--repo", type=Path, required=True, help="explicit repository root (absolute or relative)")
+    parser.add_argument("--client", choices=("codex",), required=True)
+    args = parser.parse_args(argv)
+    try:
+        result = inspect_project(args.repo, args.client)
+        if args.action == "project-plan":
+            root = Path(__file__).resolve().parents[1]
+            manifest_path = root / "config" / "approved_skills.json"
+            assert_no_symlink(manifest_path)
+            manifest = read_manifest(manifest_path)
+            result["pinned_ecc_commit"] = manifest["ecc"]["commit"]
+            result["approved_skill_sha256"] = manifest["ecc"]["skills"]
+            result["contract_source"] = "templates/AGENTS.md"
+            if not result["blockers"]:
+                result["status"] = "PLANNED_NOT_INSTALLED"
+        print(json.dumps(result, indent=2))
+        return 2 if result["blockers"] else 0
+    except (GateError, OSError, ValueError) as exc:
+        # Do not echo OS exceptions, filenames from directory listings or contents.
+        reason = str(exc) if isinstance(exc, GateError) else "project inspection failed"
+        print(json.dumps({"status": "BLOCKED", "reason": reason}), file=sys.stderr)
+        return 2
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("project-doctor", "project-plan"):
+        return project_main(argv)
+    parser = argparse.ArgumentParser(description=__doc__, epilog=(
+        "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
+        "Use project-plan --help for their separate options."))
     parser.add_argument("action", choices=("plan", "install", "verify", "remove"))
     parser.add_argument("--source", type=Path, help="pre-fetched ECC Git checkout at pinned commit")
     parser.add_argument("--target", type=Path, required=True, help="existing disposable .poc/ directory")
