@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 from scripts.codex_native_broker import NativeBroker, BrokerError
 from scripts.jev_adapter import JevMcpClient, JevAdapterError
-from scripts.paired_executor import auto_accept, run_pairs, valid_task, save_receipt
+from scripts.paired_executor import auto_accept, run_pairs, valid_task, save_receipt, score_pairs
 from scripts import mxc_g1_preflight
 
 TASK = {'task_id': 'artificial', 'domain': 'test', 'input_text': 'ARTIFICIAL',
@@ -51,6 +51,35 @@ class PairedExecutorTests(unittest.TestCase):
         self.assertEqual(result['exit_code'], 12)
         self.assertEqual(result['stderr_categories'], ['NODE_MODULE_MISSING'])
         self.assertNotIn('artificial-secret', json.dumps(result))
+
+    def test_pilot_cost_is_unknown_if_any_fallback_cost_is_missing(self):
+        # The old evaluator sums partial known costs, misleadingly labelled total.
+        records = []
+        for i, amount in enumerate((0.000018858, None, None)):
+            records.append({
+                'task_id': f'skill-0{i + 1}', 'domain': 'skills',
+                'A': {'label': 'a', 'cost_usd': None, 'latency_ms': 5},
+                'J': {'label': 'a', 'cost_usd': amount, 'latency_ms': 4},
+            })
+        mocked_evaluation = {'count': 3, 'micro_accuracy': 1.0,
+                             'mean_latency_ms': 4, 'total_cost_usd': 0.000018858}
+        with patch('scripts.paired_executor.load_ground_truth', return_value={}), \
+             patch('scripts.paired_executor.load_policy', return_value={}), \
+             patch('scripts.paired_executor.evaluate_domain', return_value=mocked_evaluation):
+            quality = score_pairs({'records': records})
+        self.assertIsNone(quality['A']['total_cost_usd'])
+        self.assertEqual(quality['A']['cost_observed_count'], 0)
+        self.assertIsNone(quality['J']['total_cost_usd'])
+        self.assertEqual(quality['J']['known_cost_subtotal_usd'], 0.000018858)
+        self.assertEqual(quality['J']['cost_observed_count'], 1)
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / 'pilot.json'
+            save_receipt(output, {'status': 'COMPLETED', 'records': records,
+                                  'logical_calls': {'A': 3, 'J': 3, 'fallback': 2},
+                                  'quality': quality})
+            markdown = output.with_suffix('.md').read_text()
+            self.assertIn('1/3', markdown)
+            self.assertIn('Subtotal USD conhecido', markdown)
 
     def test_native_final_response_and_observed_usage(self):
         native = NativeBroker(Path('codex.exe'), [], {}, Path.cwd())
