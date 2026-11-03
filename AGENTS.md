@@ -7,7 +7,7 @@ Leia **antes de planejar, editar, auditar ou executar releases**:
 - [Manual](docs/MANUAL_HARNESS_V1.md) e [protocolo de avaliação](docs/PROTOCOLO_VALIDACAO.md) para invariantes e metodologia.
 
 ## Ordem de execução
-- **R1 é a primeira implementação:** `HE-OP-01` (doctor + plan somente-leitura por repositório), depois attach/verify/remove, depois Codex em projeto real **autorizado**.
+- **R1 é a primeira implementação:** `HE-OP-01` (doctor + plan somente-leitura por repositório), depois attach/verify/remove (`HE-OP-02`) e a skill pessoal **`setup-harness`** como bootstrap de uma vez por agente/dispositivo (`HE-OP-02B`, SPEC §2.1), depois Codex em projeto real **autorizado**. O bootstrap invoca o CLI central; não instalar MCP ou hook global.
 - **R2 é obrigatório para declarar V1 pronta:** benchmark de engenharia de software A/B com agente nativo, oráculo independente, custos/tempo/tokens e auditoria da alternativa Harbor. Nunca substituir essa prova pelo piloto JEV de classificação.
 - R3 Claude, R4 roteamento JEV e R5–R6 ferramentas adicionais só após gates correspondentes; não instalar 12 upstreams por relevância.
 - Não criar novo framework, runtime, MCP ou Node para a API JEV; `scripts/jev_http.py` já usa OpenRouter diretamente.
