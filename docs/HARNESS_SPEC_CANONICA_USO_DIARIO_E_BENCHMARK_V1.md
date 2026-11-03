@@ -52,6 +52,34 @@ Benchmark roda no Harness (supervisor confiável), contra cópia descartável,
 sem acesso do agente ao gabarito. JEV só via HTTPS direto quando habilitado.
 ```
 
+### 2.1. Bootstrap simples: a skill pessoal `setup-harness` (DECISÃO R1)
+
+**Decisão de produto:** distribuir um **bootstrap único** no escopo pessoal de cada executor, de modo que a skill possa ser descoberta **antes** de o repositório novo conter qualquer configuração Harness. A skill é uma instrução que invoca a CLI central `harnessctl.py`; **não duplica** código, skills, gabaritos, chaves, runtime, scripts de benchmark ou servidor MCP em cada projeto.
+
+- Codex: instalar opcionalmente **uma vez** a skill em `~/.agents/skills/setup-harness/SKILL.md` (escopo USER conforme documentação de skills Codex). Invocation explícita `$setup-harness`; instalação pessoal só com autorização do operador.
+- Claude Code: instalar opcionalmente **uma vez** em `~/.claude/skills/setup-harness/SKILL.md` (escopo pessoal Claude). Invocation explícita, normalmente `/setup-harness`; testar descoberta na versão instalada. Não alterar `~/.claude` sem autorização.
+- Alternativa **sem instalar skill pessoal**: comando Python direto no terminal a partir de qualquer repositório, passando `--repo` explícito. Não depende de agentes, MCP, Node, hooks ou daemon. Essa é a rota de recuperação/automação confiável.
+- A skill detecta contexto **apenas** para sugerir `--repo`; nunca escolhe silenciosamente outro repositório, não altera arquivos automaticamente e não dispara ao `git init` sem solicitação. "Preparação automática" significa um comando/skill, **não** um hook invasivo.
+- Setup lê `git status`, identifica arquivos `AGENTS.md`, `CLAUDE.md` e skills presentes, verifica conflitos, gera plano, pede autorização para copiar **apenas** arquivos selecionados, verifica integridade e registra ownership no manifesto `.harness/manifest.json`. No uso diário, skills nativas são lidas pelo executor, não via servidor central. Copiar arquivos é suficiente para instalar **regras/skills locais**, mas **não** torna o cliente JEV HTTP uma ferramenta interativa automática em sessões Codex/Claude; ela continua no supervisor Python até existir caso de uso e adaptador aprovado.
+- Atualizar em novos releases = `project-plan` de atualização → diff aprovado → `project-attach`/equivalente com hash → `project-verify`; `project-remove` limpa apenas os arquivos declarados e inalterados. Sem `git pull` implícito, `curl | bash`, `npx` ou symlink obrigatório.
+- Contratos já existentes não são sobrescritos. A primeira versão pode **bloquear colisão** e emitir instruções de ajuste manual; composição/merge estruturado só em release específico, depois de testes de regressão.
+- Não é necessário instalar Python ou Infisical **dentro** de cada projeto. O setup requer apenas Python funcional na máquina onde já roda o Harness; execução nativa de Codex/Claude exige suas CLIs/sessões normalmente disponíveis. Infisical é requerido só para operações que acessem segredos, não para a cópia de skills.
+
+**Interface do operador quando R1 estiver implementado** (exemplos PROPOSTOS, não executáveis nesta revisão):
+
+```powershell
+# Uma vez por agente/dispositivo: instalar a skill pessoal setup-harness
+# Em qualquer projeto novo:
+$setup-harness               # dentro de Codex, ação explícita
+# ou /setup-harness           # dentro de Claude Code
+# ou sem skill, diretamente no PowerShell:
+python C:\dev\harness-engineering\scripts\harnessctl.py project-plan --repo . --client codex
+python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo . --client codex --apply
+python C:\dev\harness-engineering\scripts\harnessctl.py project-verify --repo .
+```
+
+**Gate adicional R1:** teste de ponta a ponta "repo novo vazio" (plan/copy/verify/detach) e "repo já existente com regras" (no overwrite), incluindo uma execução de `$setup-harness` após instalação pessoal **aprovada**, uma sessão Codex que descubra skill de projeto e rollback exato. Só depois afirmar setup diário pronto.
+
 **Regra de distribuição:** cada projeto recebe **arquivos pequenos** e pinados. Não copiar toda a árvore do Harness nem seus scripts de benchmark, gabaritos, tokens ou servidor dentro de cada projeto. As skills podem ser copiadas (padrão mais simples); alterações são atualizadas mediante `plan` e aprovação. Não pressupor que links simbólicos funcionam ou que ambos clientes descobrem arquivos iguais; adaptar os destinos nativos por cliente.
 
 **Regras de conflito:** se `AGENTS.md`, `CLAUDE.md`, `.agents/skills` ou `.claude/skills` já contêm arquivos de terceiros, não sobrescrever, não concatenar automaticamente e não reivindicar ownership. Apresentar plano/diff e escolher modo compatível por projeto. A limpeza remove apenas bytes que o manifesto comprovar serem propriedade da instalação, recusando arquivo modificado. Instalador atual `harnessctl.py` é restrito a `.poc/`; **os comandos de projeto abaixo são PROPOSTOS, ainda não implementados**.
