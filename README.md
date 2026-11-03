@@ -1,5 +1,16 @@
 # Harness Engineering — integração seletiva, verificável e reutilizável
 
+> ## SPEC CANÔNICA — EXECUÇÃO POR RELEASES (atualizado em 02/11/2026)
+>
+> **Leia primeiro:** [SPEC de uso diário + benchmark de agentes obrigatório](docs/HARNESS_SPEC_CANONICA_USO_DIARIO_E_BENCHMARK_V1.md). O [dossiê original dos 12 repositórios](docs/reference/CONSOLIDADO_REPOSITORIOS_HARNESS_ENGINEERING_2026-11-02.md) está preservado como referência histórica.
+>
+> **Pareto V1:** R1 = pacote nativo e reversível de regras/skills por projeto; **R2 = benchmark real de programação, custo, latência e qualidade como gate obrigatório**, avaliando reutilização de Harbor; R3 = Claude Code; R4–R6 = JEV opcional e demais integrações seletivas. A primeira tarefa autorizada a implementar é **HE-OP-01**, descrita no §11 da SPEC; comandos `project-*` ainda são propostos.
+>
+> **Status comprovado:** JEV remoto **já funciona via API HTTPS** no supervisor Python e o piloto A×J de três *classificações* concluiu; **NÃO** equivale a benchmark de desenvolvimento nem a economia comprovada. PR #4 continua Draft. Registros/afirmações anteriores sobre falha Node/MCP ou benchmark sintético **estão superados** quando divergirem da SPEC. Codex e Claude Code permanecem runtimes nativos; nenhum outro projeto é modificado automaticamente.
+>
+---
+
+
 > **Estado revisado HE-JEV-001:** implementação offline e CI são reais; o suposto ganho Jev 100% vs. 73,3% foi calculado sobre previsões inventadas em fixtures sintéticas, sem chamadas a modelos. Não é benchmark comparativo. Ver [auditoria independente](docs/AUDITORIA_HE_JEV_001_2026-11-02.md).
 
 > **Segurança e decisão atual (02/11/2026):** resultado A/C antigo é CONTAMINADO (baseline leu solução anterior do Git pai); o runner original NÃO isolava o sistema. Corrigida a execução offline e introduzido bloqueio por padrão de chamadas live sem ambiente previamente isolado. Veja [errata](docs/AUDITORIA_CORRECOES_2026-11-02.md) e [JEV](docs/JEV_DECISAO.md). CI verde será requisito do HEAD novo. Não adotar skills em projeto real apenas com esses dados.
