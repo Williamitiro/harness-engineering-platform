@@ -18,6 +18,8 @@ import sys
 SUPPORTED = {"codex": ".agents/skills", "claude": ".claude/skills"}
 STATE = ".harness-install-record.json"
 ALLOWED = {"tdd-workflow", "verification-loop"}
+ROOT = Path(__file__).resolve().parents[1]
+PROJECT_STATE = ".harness/manifest.json"
 
 
 class GateError(RuntimeError):
@@ -108,6 +110,7 @@ def check_source(source: Path, manifest: dict) -> list[dict]:
     result = []
     for name, expected in sorted(manifest["ecc"]["skills"].items()):
         source_file = source / "skills" / name / "SKILL.md"
+        assert_no_symlink(source_file)
         if not source_file.is_file() or source_file.is_symlink():
             raise GateError(f"source skill missing or linked: {name}")
         raw = source_file.read_bytes()
@@ -311,6 +314,216 @@ def inspect_project(repo: Path, client: str) -> dict:
     }
 
 
+def project_root(repo: Path) -> Path:
+    """Validate a real Git root for lifecycle operations, without running hooks."""
+    inspect_project(repo, "codex")  # structural/path validation, no content reads
+    repo = repo.absolute()
+    env = {key: value for key, value in os.environ.items()
+           if key.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATHEXT"}}
+    command = ["git", "--no-optional-locks", "-c", "core.fsmonitor=false",
+               "-c", "core.hooksPath=/dev/null", "-C", str(repo)]
+    result = subprocess.run(command + ["rev-parse", "--show-toplevel"],
+                            capture_output=True, text=True, timeout=10, env=env, check=False)
+    if result.returncode or Path(result.stdout.strip()).resolve() != repo.resolve():
+        raise GateError("--repo must be the root of a valid Git worktree")
+    status = subprocess.run(command + ["status", "--porcelain", "--untracked-files=no", "--ignore-submodules=all"],
+                            capture_output=True, text=True, timeout=10, env=env, check=False)
+    if status.returncode:
+        raise GateError("Git status could not be inspected")
+    return repo
+
+
+def owned_bytes(path: Path, limit: int = 262144) -> bytes:
+    assert_no_symlink(path)
+    try:
+        info = path.stat()
+    except (FileNotFoundError, NotADirectoryError) as exc:
+        raise GateError("managed file missing") from exc
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > limit:
+        raise GateError("managed file must be regular, bounded and not hardlinked")
+    with path.open("rb") as handle:
+        data = handle.read(limit + 1)
+    if len(data) > limit:
+        raise GateError("managed file exceeds size limit")
+    return data
+
+
+def project_hashes(manifest: dict) -> dict[str, str]:
+    return {"AGENTS.md": digest(owned_bytes(ROOT / "templates/AGENTS.md")), **{
+        f"{SUPPORTED['codex']}/{name}/SKILL.md": sha.lower()
+        for name, sha in sorted(manifest["ecc"]["skills"].items())}}
+
+
+def package_dirs(files: list[str]) -> set[str]:
+    return {p.as_posix() for rel in files for p in Path(rel).parents if p != Path(".")}
+
+
+def validate_record(repo: Path, state: str, expected: dict[str, str], kind: str) -> dict:
+    record = json.loads(owned_bytes(repo / state))
+    if not isinstance(record, dict) or record.get("schema_version") != 1 or record.get("kind") != kind:
+        raise GateError("unsupported ownership record")
+    entries = record.get("files")
+    if not isinstance(entries, list) or len(entries) != len(expected):
+        raise GateError("ownership file list differs from the approved package")
+    found = {}
+    for item in entries:
+        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+            raise GateError("invalid ownership entry")
+        rel = item["path"]
+        if rel not in expected or rel in found or item.get("sha256") != expected[rel]:
+            raise GateError("ownership path or hash differs from the approved package")
+        found[rel] = item["sha256"]
+    directories = record.get("created_dirs")
+    allowed_dirs = package_dirs([*expected, state])
+    if (not isinstance(directories, list) or any(not isinstance(d, str) or d not in allowed_dirs for d in directories)
+            or len(set(directories)) != len(directories)):
+        raise GateError("unsafe directory ownership")
+    # Validate the complete record before opening any of its target files.
+    for rel, sha in found.items():
+        if digest(owned_bytes(repo / rel)) != sha:
+            raise GateError(f"managed file missing or modified: {rel}")
+    for rel in directories:
+        assert_no_symlink(repo / rel)
+    return record
+
+
+def write_package(repo: Path, files: dict[str, bytes], state: str, record: dict) -> dict:
+    """Exclusive creation; rollback only files/directories created by this call."""
+    dirs = sorted(package_dirs([*files, state]), key=lambda p: (len(Path(p).parts), p))
+    for rel in [*dirs, *files, state]:
+        assert_no_symlink(repo / rel)
+    if any((repo / rel).exists() for rel in [*files, state]):
+        raise GateError("BLOCKED_COLLISION: destination already exists")
+    record["created_dirs"] = [rel for rel in dirs if not (repo / rel).exists()]
+    record["files"] = [{"path": rel, "sha256": digest(raw)} for rel, raw in files.items()]
+    payloads = {**files, state: (json.dumps(record, indent=2) + "\n").encode("utf-8")}
+    created, made_dirs = [], []
+    try:
+        for rel in record["created_dirs"]:
+            path = repo / rel
+            assert_no_symlink(path)
+            path.mkdir()
+            made_dirs.append(path)
+        for rel, raw in payloads.items():
+            path = repo / rel
+            assert_no_symlink(path)
+            with path.open("xb") as handle:
+                created.append(path)
+                handle.write(raw)
+    except Exception:
+        for path in reversed(created):
+            path.unlink()
+        for path in reversed(made_dirs):
+            path.rmdir()
+        raise
+    return record
+
+
+def remove_package(repo: Path, state: str, record: dict) -> None:
+    # Keep originals in memory until all removals succeed. Never touch unowned files.
+    originals = {item["path"]: owned_bytes(repo / item["path"]) for item in record["files"]}
+    originals[state] = owned_bytes(repo / state)
+    deleted = []
+    try:
+        for rel in originals:
+            path = repo / rel
+            assert_no_symlink(path)
+            if owned_bytes(path) != originals[rel]:
+                raise GateError("managed file changed during removal")
+            path.unlink()
+            deleted.append(rel)
+    except Exception:
+        for rel in deleted:
+            with (repo / rel).open("xb") as handle:
+                handle.write(originals[rel])
+        raise
+    for rel in sorted(record["created_dirs"], key=lambda p: (len(Path(p).parts), p), reverse=True):
+        path = repo / rel
+        assert_no_symlink(path)
+        if path.is_dir() and next(path.iterdir(), None) is None:
+            path.rmdir()
+
+
+def verify_project(repo: Path, manifest: dict) -> dict:
+    repo = project_root(repo)
+    record = validate_record(repo, PROJECT_STATE, project_hashes(manifest), "harness-project")
+    notice = record.get("license_notice")
+    if (record.get("client") != "codex" or record.get("ecc_commit") != manifest["ecc"]["commit"]
+            or not isinstance(notice, str) or digest(notice.encode("utf-8")) != manifest["ecc"].get("license_sha256")):
+        raise GateError("ownership pin, client or license differs from approved package")
+    return record
+
+
+def attach_project(repo: Path, source: Path, manifest: dict) -> dict:
+    repo = project_root(repo)
+    if (repo / PROJECT_STATE).exists():
+        verify_project(repo, manifest)
+        return {"status": "ALREADY_ATTACHED", "runtime_execution": "NOT_RUN"}
+    inspection = inspect_project(repo, "codex")
+    if inspection["blockers"]:
+        raise GateError(f"{inspection['status']}: review project-plan; no files overwritten")
+    skills = check_source(source.absolute(), manifest)
+    notice = owned_bytes(source / "LICENSE")
+    if digest(notice) != manifest["ecc"].get("license_sha256"):
+        raise GateError("ECC license differs from approved hash")
+    files = {"AGENTS.md": owned_bytes(ROOT / "templates/AGENTS.md")}
+    for skill in skills:
+        raw = owned_bytes(Path(skill["source"]))
+        if digest(raw) != skill["sha256"]:
+            raise GateError("source changed since validation")
+        files[f"{SUPPORTED['codex']}/{skill['name']}/SKILL.md"] = raw
+    # Recheck paths and collisions after source verification and before writing.
+    if inspect_project(repo, "codex")["blockers"]:
+        raise GateError("project changed since inspection")
+    record = {"schema_version": 1, "kind": "harness-project", "client": "codex",
+              "ecc_commit": manifest["ecc"]["commit"], "license_notice": notice.decode("utf-8"),
+              "runtime_execution": "NOT_RUN"}
+    write_package(repo, files, PROJECT_STATE, record)
+    return {"status": "FILES_INSTALLED_RUNTIME_NOT_VERIFIED", "runtime_execution": "NOT_RUN"}
+
+
+def remove_project(repo: Path, manifest: dict, apply: bool = True) -> dict:
+    repo = project_root(repo)
+    if not (repo / PROJECT_STATE).exists():
+        # Do not treat linked or conflicting state paths as an absent installation.
+        assert_no_symlink(repo / PROJECT_STATE)
+        return {"status": "ALREADY_REMOVED"}
+    record = verify_project(repo, manifest)
+    if not apply:
+        return {"status": "PLANNED_NOT_REMOVED", "files": [x["path"] for x in record["files"]]}
+    remove_package(repo, PROJECT_STATE, record)
+    return {"status": "REMOVED_EXACT_OWNED_FILES"}
+
+
+def lifecycle_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Explicit Codex project lifecycle; never overwrites existing files")
+    parser.add_argument("action", choices=("project-attach", "project-verify", "project-remove"))
+    parser.add_argument("--repo", required=True, type=Path)
+    parser.add_argument("--client", choices=("codex",), default="codex")
+    parser.add_argument("--source", type=Path, help="existing pinned ECC checkout; required on first attach")
+    parser.add_argument("--apply", action="store_true")
+    args = parser.parse_args(argv)
+    try:
+        manifest = read_manifest(ROOT / "config/approved_skills.json")
+        if args.action == "project-attach":
+            if not args.apply:
+                raise GateError("attach needs --apply; inspect project-plan first")
+            if args.source is None:
+                raise GateError("attach needs --source pointing to the pinned ECC checkout")
+            result = attach_project(args.repo, args.source, manifest)
+        elif args.action == "project-verify":
+            verify_project(args.repo, manifest)
+            result = {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "runtime_execution": "NOT_RUN"}
+        else:
+            result = remove_project(args.repo, manifest, apply=args.apply)
+        print(json.dumps(result, indent=2))
+        return 0
+    except (GateError, OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
+        reason = str(exc) if isinstance(exc, GateError) else "project lifecycle blocked; no raw contents emitted"
+        print(json.dumps({"status": "BLOCKED", "reason": reason}), file=sys.stderr)
+        return 2
+
+
 def project_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Read-only Codex project metadata inspection; never installs files")
     parser.add_argument("action", choices=("project-doctor", "project-plan"))
@@ -342,6 +555,8 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] in ("project-doctor", "project-plan"):
         return project_main(argv)
+    if argv and argv[0] in ("project-attach", "project-verify", "project-remove"):
+        return lifecycle_main(argv)
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
         "Use project-plan --help for their separate options."))
