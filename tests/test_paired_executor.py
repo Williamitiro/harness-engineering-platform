@@ -65,7 +65,7 @@ class PairedExecutorTests(unittest.TestCase):
                              'mean_latency_ms': 4, 'total_cost_usd': 0.000018858}
         with patch('scripts.paired_executor.load_ground_truth', return_value={}), \
              patch('scripts.paired_executor.load_policy', return_value={}), \
-             patch('scripts.paired_executor.evaluate_domain', return_value=mocked_evaluation):
+             patch('scripts.paired_executor.evaluate_domain', side_effect=lambda *args: dict(mocked_evaluation)):
             quality = score_pairs({'records': records})
         self.assertIsNone(quality['A']['total_cost_usd'])
         self.assertEqual(quality['A']['cost_observed_count'], 0)
