@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -175,6 +176,79 @@ class ProjectLifecycleTests(unittest.TestCase):
         with patch.object(Path, "unlink", fail_second), self.assertRaises(OSError):
             h.remove_project(self.repo, self.manifest)
         self.assertEqual(before, self.snapshot())
+
+    def test_save_after_verification_blocks_removal_without_losing_edit(self):
+        self.attach()
+        real_verify = h.verify_project
+        def save_after_verify(*args):
+            record = real_verify(*args)
+            (self.repo / "AGENTS.md").write_bytes(b"new human edit")
+            return record
+        with patch.object(h, "verify_project", side_effect=save_after_verify):
+            with self.assertRaises(h.GateError):
+                h.remove_project(self.repo, self.manifest)
+        self.assertEqual((self.repo / "AGENTS.md").read_bytes(), b"new human edit")
+        self.assertTrue((self.repo / h.PROJECT_STATE).is_file())
+        self.assertTrue((self.repo / ".agents/skills/tdd-workflow/SKILL.md").is_file())
+
+    def test_save_during_removal_restores_previously_deleted_files(self):
+        self.attach()
+        contract = (self.repo / "AGENTS.md").read_bytes()
+        edited = self.repo / ".agents/skills/tdd-workflow/SKILL.md"
+        real_unlink = Path.unlink
+        def save_after_first_unlink(path, *args, **kwargs):
+            result = real_unlink(path, *args, **kwargs)
+            if path == self.repo / "AGENTS.md":
+                edited.write_bytes(b"new human edit")
+            return result
+        with patch.object(Path, "unlink", save_after_first_unlink), self.assertRaises(h.GateError):
+            h.remove_project(self.repo, self.manifest)
+        self.assertEqual((self.repo / "AGENTS.md").read_bytes(), contract)
+        self.assertEqual(edited.read_bytes(), b"new human edit")
+        self.assertTrue((self.repo / h.PROJECT_STATE).is_file())
+
+    def test_directory_cleanup_failure_restores_files_record_and_directories(self):
+        self.attach()
+        before = self.snapshot()
+        dirs_before = {p.relative_to(self.repo) for p in self.repo.rglob("*") if p.is_dir()}
+        real_rmdir = Path.rmdir
+        # Fail late, after other directories have already been removed.
+        def fail_harness(path, *args, **kwargs):
+            if path == self.repo / ".harness":
+                raise PermissionError("directory busy")
+            return real_rmdir(path, *args, **kwargs)
+        with patch.object(Path, "rmdir", fail_harness), self.assertRaises(PermissionError):
+            h.remove_project(self.repo, self.manifest)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(dirs_before, {p.relative_to(self.repo) for p in self.repo.rglob("*") if p.is_dir()})
+        h.verify_project(self.repo, self.manifest)
+        self.assertEqual(h.remove_project(self.repo, self.manifest)["status"], "REMOVED_EXACT_OWNED_FILES")
+
+    def test_git_filters_are_neutralized_without_executing_their_commands(self):
+        tracked = self.repo / "tracked.txt"
+        tracked.write_text("original")
+        git(self.repo, "add", "tracked.txt")
+        # Force content comparison instead of relying on timestamp precision.
+        oid = git(self.repo, "rev-parse", ":tracked.txt")
+        (self.repo / ".gitattributes").write_text("*.txt filter=canary\n")
+        script = self.root / "filter_canary.py"
+        marker = self.root / "filter_ran"
+        script.write_text(f"from pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n")
+        command = f'"{Path(sys.executable).as_posix()}" "{script.as_posix()}"'
+        for kind in ("clean", "process"):
+            with self.subTest(kind=kind):
+                git(self.repo, "config", f"filter.canary.{kind}", command)
+                git(self.repo, "update-index", "--cacheinfo", f"100644,{oid},tracked.txt")
+                # Positive control: native Git really invokes this harmless canary.
+                subprocess.run(["git", "-C", str(self.repo), "status", "--porcelain", "--untracked-files=no"],
+                               capture_output=True, check=False, timeout=10)
+                self.assertTrue(marker.exists())
+                marker.unlink()
+                config_before = (self.repo / ".git/config").read_bytes()
+                self.assertEqual(h.project_root(self.repo), self.repo)
+                self.assertFalse(marker.exists())
+                self.assertEqual(config_before, (self.repo / ".git/config").read_bytes())
+                git(self.repo, "config", "--unset", f"filter.canary.{kind}")
 
     def test_cli_requires_apply_and_removal_preview_is_read_only(self):
         before = self.snapshot()

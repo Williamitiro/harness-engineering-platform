@@ -31,12 +31,25 @@ def digest(data: bytes) -> str:
 
 
 def git_probe(repo: Path, *args: str) -> subprocess.CompletedProcess:
-    """Local Git metadata only: no hooks, fsmonitor, inherited Git overrides or credentials."""
+    """Local metadata only; disable filter commands for status without changing config."""
     env = {key: value for key, value in os.environ.items()
            if key.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATHEXT"}}
+    command = ["git", "--no-optional-locks", "-c", "core.fsmonitor=false",
+               "-c", "core.hooksPath=/dev/null", "-C", str(repo)]
+    if args and args[0] == "status":
+        # Reading configuration names cannot invoke clean/process filters. Never
+        # read/print their command values; override all drivers in this child only.
+        filters = subprocess.run(
+            [*command, "config", "--null", "--name-only", "--get-regexp", r"^filter\..*\.(clean|process)$"],
+            capture_output=True, text=True, timeout=10, env=env, check=False)
+        if filters.returncode not in (0, 1):
+            raise GateError("Git filter configuration could not be inspected")
+        drivers = {key.rsplit(".", 1)[0] for key in filters.stdout.split("\0") if key}
+        for driver in sorted(drivers):
+            for setting, value in (("clean", ""), ("process", ""), ("required", "false")):
+                command.extend(["-c", f"{driver}.{setting}={value}"])
     return subprocess.run(
-        ["git", "--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null",
-         "-C", str(repo), *args], capture_output=True, text=True, timeout=10, env=env, check=False)
+        [*command, *args], capture_output=True, text=True, timeout=10, env=env, check=False)
 
 
 def read_manifest(path: Path) -> dict:
@@ -418,9 +431,17 @@ def write_package(repo: Path, files: dict[str, bytes], state: str, record: dict)
 
 def remove_package(repo: Path, state: str, record: dict) -> None:
     # Keep originals in memory until all removals succeed. Never touch unowned files.
-    originals = {item["path"]: owned_bytes(repo / item["path"]) for item in record["files"]}
-    originals[state] = owned_bytes(repo / state)
-    deleted = []
+    state_bytes = owned_bytes(repo / state)
+    if json.loads(state_bytes) != record:
+        raise GateError("ownership record changed since verification")
+    originals = {}
+    for item in record["files"]:
+        raw = owned_bytes(repo / item["path"])
+        if digest(raw) != item["sha256"]:
+            raise GateError("managed file changed since verification")
+        originals[item["path"]] = raw
+    originals[state] = state_bytes
+    deleted, removed_dirs = [], []
     try:
         for rel in originals:
             path = repo / rel
@@ -429,16 +450,23 @@ def remove_package(repo: Path, state: str, record: dict) -> None:
                 raise GateError("managed file changed during removal")
             path.unlink()
             deleted.append(rel)
+        for rel in sorted(record["created_dirs"], key=lambda p: (len(Path(p).parts), p), reverse=True):
+            path = repo / rel
+            assert_no_symlink(path)
+            if path.is_dir() and next(path.iterdir(), None) is None:
+                path.rmdir()
+                removed_dirs.append(rel)
     except Exception:
+        # Directory cleanup is part of the transaction. Rebuild only directories
+        # actually removed by this call, parents first, then restore exclusive files.
+        for rel in sorted(removed_dirs, key=lambda p: (len(Path(p).parts), p)):
+            path = repo / rel
+            assert_no_symlink(path)
+            path.mkdir()
         for rel in deleted:
             with (repo / rel).open("xb") as handle:
                 handle.write(originals[rel])
         raise
-    for rel in sorted(record["created_dirs"], key=lambda p: (len(Path(p).parts), p), reverse=True):
-        path = repo / rel
-        assert_no_symlink(path)
-        if path.is_dir() and next(path.iterdir(), None) is None:
-            path.rmdir()
 
 
 def verify_project(repo: Path, manifest: dict) -> dict:

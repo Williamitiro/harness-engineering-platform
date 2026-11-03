@@ -110,6 +110,34 @@ class SetupSkillTests(unittest.TestCase):
             h.install_setup_skill(self.home, "codex")
         self.assertEqual(list(self.home.iterdir()), [])
 
+    def test_save_after_bootstrap_verification_is_preserved(self):
+        h.install_setup_skill(self.home, "codex")
+        skill = self.home / ".agents/skills/setup-harness/SKILL.md"
+        real_verify = h.verify_setup_skill
+        def save_after_verify(*args):
+            record = real_verify(*args)
+            skill.write_bytes(b"human edit")
+            return record
+        with patch.object(h, "verify_setup_skill", side_effect=save_after_verify), self.assertRaises(h.GateError):
+            h.remove_setup_skill(self.home, "codex", apply=True)
+        self.assertEqual(skill.read_bytes(), b"human edit")
+        self.assertTrue((skill.parent / ".harness-bootstrap.json").is_file())
+
+    def test_failed_personal_directory_cleanup_keeps_removal_retryable(self):
+        h.install_setup_skill(self.home, "codex")
+        before = {p.relative_to(self.home): p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        real_rmdir = Path.rmdir
+        def fail_namespace(path, *args, **kwargs):
+            if path == self.home / ".agents":
+                raise PermissionError("directory busy")
+            return real_rmdir(path, *args, **kwargs)
+        with patch.object(Path, "rmdir", fail_namespace), self.assertRaises(PermissionError):
+            h.remove_setup_skill(self.home, "codex", apply=True)
+        self.assertEqual(before, {p.relative_to(self.home): p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+        h.verify_setup_skill(self.home, "codex")
+        h.remove_setup_skill(self.home, "codex", apply=True)
+        self.assertEqual(list(self.home.iterdir()), [])
+
 
 if __name__ == "__main__":
     unittest.main()
