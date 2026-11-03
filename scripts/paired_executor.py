@@ -47,11 +47,13 @@ def save_receipt(output, result):
         lines += ['', 'Falha: ' + json.dumps(result['error'])]
     if result.get('quality'):
         lines += ['', 'Avaliação aritmética pelo avaliador existente, no supervisor após coleta:',
-                  '| Condição | Casos pareados | Acerto | Latência média ms | Custo USD observado |',
-                  '|---|---|---|---|---|']
+                  '| Condição | Casos pareados | Acerto | Latência média ms | Custo total USD | Subtotal USD conhecido | Custos observados |',
+                  '|---|---|---|---|---|---|---|']
         for condition, quality in result['quality'].items():
             lines.append('| ' + ' | '.join(str(v) for v in (
-                condition, quality['count'], quality['micro_accuracy'], quality['mean_latency_ms'], quality['total_cost_usd'])) + ' |')
+                condition, quality['count'], quality['micro_accuracy'], quality['mean_latency_ms'],
+                quality['total_cost_usd'], quality['known_cost_subtotal_usd'],
+                str(quality['cost_observed_count']) + '/' + str(quality['count']))) + ' |')
     if result.get('evaluation_error'):
         lines += ['', 'Avaliação não concluída: ' + result['evaluation_error']]
     lines += ['', 'Funcionou: ' + ('coleta pareada concluída' if result['status'] == 'COMPLETED' else 'ver etapas concluídas e resultados parciais acima'),
@@ -159,7 +161,22 @@ def score_pairs(result):
         rows = [{'task_id': r['task_id'], 'domain': r['domain'],
                  'parsed_decision': {'label': r[condition]['label']},
                  'observed_metrics': r[condition]} for r in paired]
-        quality[condition] = evaluate_domain(rows, truths, policy)
+        result_for_condition = evaluate_domain(rows, truths, policy)
+        # The historical evaluator sums available observations, even when some
+        # cases have cost=None. Do NOT call a partial sum "total cost".
+        observed_costs = [
+            float(value) for r in paired
+            for value in [r[condition].get('cost_usd')]
+            if type(value) in (float, int) and math.isfinite(value) and value >= 0
+        ]
+        result_for_condition['cost_observed_count'] = len(observed_costs)
+        result_for_condition['known_cost_subtotal_usd'] = (
+            round(sum(observed_costs), 12) if observed_costs else None
+        )
+        result_for_condition['total_cost_usd'] = (
+            round(sum(observed_costs), 12) if len(observed_costs) == len(paired) else None
+        )
+        quality[condition] = result_for_condition
     return quality
 
 
