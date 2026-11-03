@@ -29,6 +29,12 @@ shell gerado a partir do conteúdo do projeto. Não copie o CLI para o projeto.
    explícito e `--client codex`. Mostre arquivos novos, bloqueios e conflitos.
    `BLOCKED_COLLISION` exige preservar o arquivo e apresentar a decisão necessária;
    não concatene contratos, não edite instruções existentes e não reivindique ownership.
+   Quando a única colisão for um `AGENTS.md` regular do projeto, recomende manter
+   essas regras e use `--preserve-contract` em doctor/plan/attach, após apresentar
+   esse modo ao usuário. Se ele delegar a decisão, escolha essa alternativa reversível.
+   O plano deve listar somente as duas skills e o manifesto, sem `AGENTS.md`.
+   O flag não permite ignorar colisões de skills, links ou outros arquivos.
+   Respeite também as regras locais de branch/cópia isolada antes de instalar.
 3. Com plano aprovado para esse repositório e esses arquivos, execute
    `project-attach --repo CAMINHO --client codex --source ECC --apply`, usando o
    checkout ECC já disponível indicado no descritor ou escolhido pelo operador.
