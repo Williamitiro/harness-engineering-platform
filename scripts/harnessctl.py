@@ -801,6 +801,18 @@ def lifecycle_main(argv: list[str]) -> int:
 # --- Machine layer (HE-R1-02): workflow skills once per computer, per detected tool ---
 
 MACHINE_STATE = ".harness-machine.json"
+MACHINE_SKILL_NAMES = sorted(ALLOWED | {"setup-harness"})
+# Approved setup-harness versions installed by the old setup-skill-* bootstrap (HE-OP-02B/03),
+# LF and CRLF checkouts. Only these are migrated or removed automatically.
+LEGACY_BOOTSTRAP_SKILL_SHA = {
+    "694da9570afcca1d79bcaeb092990cf6e7a87ee9d087e85d09c7baac8cf8cfea",
+    "05300ed9051d001a5cfb79494a6e020f31ea6c471a81c031ab58a007fab8d9f9",
+    "f2715d7c3b789227e06a04c6f36c279f6aee3bb02f1f7575d701d2628d198d35",
+}
+LEGACY_BOOTSTRAP_YAML_SHA = {
+    "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94",
+    "3bf863a8856d04a6a1c4f23b3aae6cbf5388544129662c55cc733c2d9c23bbbf",
+}
 
 
 def read_adapters(path: Path) -> dict:
@@ -862,6 +874,7 @@ def machine_roots(home: Path, adapters: dict) -> tuple[Path, list[dict], list[st
 
 
 def machine_payload(catalog: dict) -> tuple[dict[str, bytes], str]:
+    """Bundled ECC skills {name: SKILL.md bytes} and the MIT notice."""
     skills = check_source(VENDORED, catalog)
     notice = owned_bytes(VENDORED / "LICENSE")
     if digest(notice) != catalog["ecc"].get("license_sha256"):
@@ -869,35 +882,128 @@ def machine_payload(catalog: dict) -> tuple[dict[str, bytes], str]:
     return {s["name"]: owned_bytes(Path(s["source"])) for s in skills}, notice.decode("utf-8")
 
 
-def root_package(root: str, skills: dict[str, bytes]) -> tuple[dict[str, bytes], str]:
-    return {f"{root}/{name}/SKILL.md": raw for name, raw in sorted(skills.items())}, f"{root}/{MACHINE_STATE}"
+def setup_skill_files() -> dict[str, bytes]:
+    """setup-harness for the machine package (HE-R1-04): no fixed client."""
+    descriptor = {"schema_version": 2, "harnessctl": str(ROOT / "scripts/harnessctl.py")}
+    return {"setup-harness/SKILL.md": owned_bytes(ROOT / "skills/setup-harness/SKILL.md"),
+            "setup-harness/agents/openai.yaml": owned_bytes(ROOT / "skills/setup-harness/agents/openai.yaml"),
+            "setup-harness/harness-location.json": (json.dumps(descriptor, indent=2) + "\n").encode("utf-8")}
 
 
-def verify_machine_root(home: Path, root: dict, skills: dict[str, bytes], catalog: dict) -> dict:
-    files, state = root_package(root["root"], skills)
-    record = validate_record(home, state, {p: digest(raw) for p, raw in files.items()}, "harness-machine")
-    if record.get("adapter") != root["adapter"] or record.get("ecc_commit") != catalog["ecc"]["commit"]:
+def machine_files(catalog: dict) -> tuple[dict[str, bytes], str]:
+    skills, notice = machine_payload(catalog)
+    return {**{f"{name}/SKILL.md": raw for name, raw in sorted(skills.items())}, **setup_skill_files()}, notice
+
+
+def root_package(root: str, files: dict[str, bytes]) -> tuple[dict[str, bytes], str]:
+    return {f"{root}/{rel}": raw for rel, raw in sorted(files.items())}, f"{root}/{MACHINE_STATE}"
+
+
+def classify_machine_root(home: Path, root: dict, files: dict[str, bytes], catalog: dict) -> tuple[str, dict]:
+    """CURRENT, or UPGRADE when an older package is intact and only lacks newer files."""
+    expected, state = root_package(root["root"], files)
+    record = json.loads(owned_bytes(home / state))
+    if (not isinstance(record, dict) or record.get("kind") != "harness-machine"
+            or record.get("adapter") != root["adapter"] or record.get("ecc_commit") != catalog["ecc"]["commit"]):
         raise GateError("machine ownership adapter or pin mismatch")
+    entries = record.get("files")
+    if not isinstance(entries, list) or not entries:
+        raise GateError("invalid machine ownership record")
+    seen = set()
+    for item in entries:
+        rel = item.get("path") if isinstance(item, dict) else None
+        if rel not in expected or rel in seen:
+            raise GateError("machine ownership record lists an unknown or duplicated path")
+        seen.add(rel)
+        if item.get("sha256") != digest(expected[rel]):
+            if rel.endswith("harness-location.json"):
+                try:
+                    other = json.loads(owned_bytes(home / rel)).get("harnessctl")
+                except (GateError, ValueError, AttributeError):
+                    other = None
+                raise GateError(f"installed by another Harness checkout ({other}); run machine-* from there")
+            raise GateError(f"installed file differs from this Harness version: {rel}")
+        if digest(owned_bytes(home / rel)) != item["sha256"]:
+            raise GateError(f"managed file missing or modified: {rel}")
+    dirs = record.get("created_dirs")
+    if not isinstance(dirs, list) or any(d not in package_dirs([*expected, state]) for d in dirs):
+        raise GateError("unsafe directory ownership")
+    return ("CURRENT" if seen == set(expected) else "UPGRADE"), record
+
+
+def legacy_bootstrap_state(root: str) -> str:
+    return f"{root}/setup-harness/.harness-bootstrap.json"
+
+
+def verify_legacy_bootstrap(home: Path, root: str) -> dict:
+    """Old setup-skill-* install: verified against its own record plus frozen approved versions."""
+    state = legacy_bootstrap_state(root)
+    record = json.loads(owned_bytes(home / state))
+    folder = f"{root}/setup-harness"
+    allowed = {f"{folder}/SKILL.md", f"{folder}/harness-location.json", f"{folder}/agents/openai.yaml"}
+    if not isinstance(record, dict) or record.get("kind") != "harness-bootstrap":
+        raise GateError("unsupported bootstrap ownership record")
+    entries = record.get("files")
+    paths = [i.get("path") for i in entries if isinstance(i, dict)] if isinstance(entries, list) else []
+    required = {f"{folder}/SKILL.md", f"{folder}/harness-location.json"}
+    if len(paths) != len(entries or []) or len(set(paths)) != len(paths) or not required <= set(paths) \
+            or not set(paths) <= allowed:
+        raise GateError("bootstrap ownership file list differs from the approved package")
+    current = setup_skill_files()
+    approved = {f"{folder}/SKILL.md": LEGACY_BOOTSTRAP_SKILL_SHA | {digest(current["setup-harness/SKILL.md"])},
+                f"{folder}/agents/openai.yaml": LEGACY_BOOTSTRAP_YAML_SHA
+                | {digest(current["setup-harness/agents/openai.yaml"])}}
+    for item in entries:
+        rel = item["path"]
+        if digest(owned_bytes(home / rel)) != item.get("sha256"):
+            raise GateError(f"managed file missing or modified: {rel}")
+        if rel in approved and item["sha256"] not in approved[rel]:
+            raise GateError(f"unknown setup-harness version, not removed automatically: {rel}")
+    descriptor = json.loads(owned_bytes(home / f"{folder}/harness-location.json"))
+    if not isinstance(descriptor, dict) or descriptor.get("schema_version") not in (1, 2):
+        raise GateError("unsupported bootstrap descriptor")
+    dirs = record.get("created_dirs")
+    if not isinstance(dirs, list) or any(d not in package_dirs([*allowed, state]) for d in dirs):
+        raise GateError("unsafe directory ownership")
     return record
 
 
 def machine_plan(home: Path, catalog: dict, adapters: dict) -> dict:
     home, roots, skipped = machine_roots(home, adapters)
-    skills, _ = machine_payload(catalog)
-    planned, installed = [], []
+    files, _ = machine_files(catalog)
+    planned, installed, migrations = [], [], []
     for root in (r for r in roots if r["mode"] == "copy"):
-        files, state = root_package(root["root"], skills)
+        expected, state = root_package(root["root"], files)
+        owned = set()
         if (home / state).exists():
-            verify_machine_root(home, root, skills, catalog)
-            installed.append(root["adapter"])
-            continue
-        for name in skills:
-            if (home / root["root"] / name).exists() or is_link(home / root["root"] / name):
-                raise GateError(f"BLOCKED_COLLISION: {root['root']}/{name} already exists and is not Harness-owned")
-        planned += [*files, state]
+            status, record = classify_machine_root(home, root, files, catalog)
+            if status == "CURRENT":
+                installed.append(root["adapter"])
+                continue
+            migrations.append({"adapter": root["adapter"], "action": "UPGRADE_PACKAGE"})
+            owned = {i["path"] for i in record["files"]}
+        new_names = {Path(rel).relative_to(root["root"]).parts[0] for rel in expected if rel not in owned}
+        for name in sorted(new_names):
+            path = home / root["root"] / name
+            if not (path.exists() or is_link(path)):
+                continue
+            if any(rel.startswith(f"{root['root']}/{name}/") for rel in owned):
+                continue
+            if name == "setup-harness" and (home / legacy_bootstrap_state(root["root"])).is_file():
+                verify_legacy_bootstrap(home, root["root"])
+                migrations.append({"adapter": root["adapter"], "action": "MIGRATE_BOOTSTRAP"})
+                continue
+            raise GateError(f"BLOCKED_COLLISION: {root['root']}/{name} already exists and is not Harness-owned")
+        planned += [*expected, state]
     return {"status": "PLANNED_NOT_INSTALLED" if planned else "ALREADY_INSTALLED", "home": str(home),
             "roots": roots, "skipped": skipped, "files": planned, "already_installed": installed,
-            "runtime_discovery": "NOT_RUN"}
+            "migrations": migrations, "runtime_discovery": "NOT_RUN"}
+
+
+def snapshot_package(home: Path, record: dict) -> tuple[dict[str, bytes], dict]:
+    files = {i["path"]: owned_bytes(home / i["path"]) for i in record["files"]}
+    base = {k: v for k, v in record.items() if k not in ("files", "created_dirs")}
+    return files, base
 
 
 def machine_install(home: Path, catalog: dict, adapters: dict) -> dict:
@@ -905,42 +1011,58 @@ def machine_install(home: Path, catalog: dict, adapters: dict) -> dict:
     if result["status"] == "ALREADY_INSTALLED":
         return result
     home = Path(result["home"])
-    skills, notice = machine_payload(catalog)
-    done = []
+    files, notice = machine_files(catalog)
+    actions = {(m["adapter"], m["action"]) for m in result["migrations"]}
+    removed, done = [], []  # packages removed by this call (to restore) / packages written (to undo)
     try:
-        for root in (r for r in result["roots"] if r["mode"] == "copy" and r["adapter"] not in result["already_installed"]):
-            files, state = root_package(root["root"], skills)
-            record = write_package(home, files, state, {
+        for root in (r for r in result["roots"]
+                     if r["mode"] == "copy" and r["adapter"] not in result["already_installed"]):
+            expected, state = root_package(root["root"], files)
+            if (root["adapter"], "MIGRATE_BOOTSTRAP") in actions:
+                lstate = legacy_bootstrap_state(root["root"])
+                lrecord = verify_legacy_bootstrap(home, root["root"])
+                snap = snapshot_package(home, lrecord)
+                remove_package(home, lstate, lrecord)
+                removed.append((lstate, *snap))
+            if (root["adapter"], "UPGRADE_PACKAGE") in actions:
+                _, old = classify_machine_root(home, root, files, catalog)
+                snap = snapshot_package(home, old)
+                remove_package(home, state, old)
+                removed.append((state, *snap))
+            record = write_package(home, expected, state, {
                 "schema_version": 1, "kind": "harness-machine", "adapter": root["adapter"],
                 "ecc_commit": catalog["ecc"]["commit"], "license_notice": notice})
             done.append((state, record))
     except Exception:
         for state, record in reversed(done):  # all roots or none from this call
             remove_package(home, state, record)
+        for state, old_files, base in reversed(removed):
+            write_package(home, old_files, state, base)
         raise
     return {"status": "FILES_INSTALLED_RUNTIME_NOT_VERIFIED", "roots": result["roots"],
-            "skipped": result["skipped"], "runtime_discovery": "NOT_RUN"}
+            "skipped": result["skipped"], "migrations": result["migrations"], "runtime_discovery": "NOT_RUN"}
 
 
 def machine_verify(home: Path, catalog: dict, adapters: dict) -> dict:
     home, roots, skipped = machine_roots(home, adapters)
-    skills, _ = machine_payload(catalog)
+    files, _ = machine_files(catalog)
     for root in (r for r in roots if r["mode"] == "copy"):
-        if not (home / root_package(root["root"], skills)[1]).exists():
+        if not (home / root_package(root["root"], files)[1]).exists():
             raise GateError(f"NOT_INSTALLED: {root['adapter']} detected but machine-install not applied")
-        verify_machine_root(home, root, skills, catalog)
+        if classify_machine_root(home, root, files, catalog)[0] != "CURRENT":
+            raise GateError(f"UPGRADE_AVAILABLE: {root['adapter']} has an older package; run machine-install --apply")
     return {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "roots": roots, "skipped": skipped,
             "runtime_discovery": "NOT_RUN"}
 
 
 def machine_remove(home: Path, catalog: dict, adapters: dict, apply: bool = False) -> dict:
     home, roots, _ = machine_roots(home, adapters)
-    skills, _ = machine_payload(catalog)
+    files, _ = machine_files(catalog)
     owned = []
     for root in (r for r in roots if r["mode"] == "copy"):
-        state = root_package(root["root"], skills)[1]
+        state = root_package(root["root"], files)[1]
         if (home / state).exists():
-            owned.append((state, verify_machine_root(home, root, skills, catalog)))
+            owned.append((state, classify_machine_root(home, root, files, catalog)[1]))
     if not owned:
         return {"status": "ALREADY_REMOVED"}
     if not apply:
@@ -1051,7 +1173,7 @@ def machine_main(argv: list[str]) -> int:
         else:
             if args.home is not None:
                 raise GateError("discovery uses the real tool configuration; --home is not supported")
-            names = sorted(catalog["ecc"]["skills"])
+            names = MACHINE_SKILL_NAMES
             result = {"codex": match_discovery(codex_skill_listing(), names),
                       "claude": "MANUAL_CHECK_REQUIRED: open a new Claude Code session and list skills",
                       "model_turns_started": 0}
@@ -1087,7 +1209,9 @@ def bootstrap_package(home: Path, client: str) -> tuple[Path, dict[str, bytes], 
 
 def verify_setup_skill(home: Path, client: str) -> dict:
     home, files, state = bootstrap_package(home, client)
-    record = validate_record(home, state, {p: digest(raw) for p, raw in files.items()}, "harness-bootstrap")
+    # Accept the approved old versions too, so an install made before the HE-R1-04 rewrite
+    # stays verifiable and removable (deprecated path; machine-install migrates it).
+    record = verify_legacy_bootstrap(home, SUPPORTED[client])
     if record.get("client") != client:
         raise GateError("bootstrap ownership client mismatch")
     return record

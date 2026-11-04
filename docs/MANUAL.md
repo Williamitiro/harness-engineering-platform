@@ -7,8 +7,8 @@ Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harne
 >
 > | Passo | Claude Code | Codex |
 > |---|---|---|
-> | 1. Instalar no computador | ✅ skills de trabalho (`tdd-workflow`, `verification-loop`); 🔧 `setup-harness` | ✅ skills de trabalho; ✅ `setup-harness` (versão antiga, já instalada nesta máquina) |
-> | 2. Preparar um repositório | ✅ pelos comandos (§3.3); 🔧 pelo `/setup-harness` | ✅ pelos comandos (§3.3); 🔧 pelo `$setup-harness` novo |
+> | 1. Instalar no computador | ✅ funciona; ⏳ a `setup-harness` nova entra quando o código chegar a `C:\dev\harness-engineering` | igual |
+> | 2. Preparar um repositório | ✅ pelos comandos (§3.3); ⏳ `/setup-harness` depois da ativação acima | ✅ pelos comandos (§3.3); ⏳ `$setup-harness` novo depois da ativação |
 > | 3. Trabalhar | ✅ normal | ✅ normal |
 > | 4. Medir se ajuda (benchmark) | ⏳ ainda não existe | ⏳ ainda não existe |
 >
@@ -39,8 +39,10 @@ faz essa entrega é a skill **`setup-harness`**, e você só precisa chamá-la.
 
 ## 2. Instalar no computador (uma vez só)
 
-Faça isto uma vez em cada computador que você usa. **Neste computador já foi feito em 03/11/2026.** Hoje o passo
-instala as skills de trabalho; a `setup-harness` entra no mesmo comando na próxima etapa (🔧).
+Faça isto uma vez em cada computador que você usa. O mesmo comando instala as três skills (`setup-harness`,
+`tdd-workflow`, `verification-loop`) e, se encontrar uma instalação antiga do Harness, atualiza sozinho, sem tocar em
+skills suas. **Rode sempre a partir de `C:\dev\harness-engineering`**: a `setup-harness` guarda o endereço de quem a
+instalou.
 
 **2.1. Ter a pasta do Harness.** Neste computador ela já existe em `C:\dev\harness-engineering`. Num computador
 novo, abra o PowerShell e rode:
@@ -176,6 +178,8 @@ seção "Rodar o benchmark".
 | O agente não conhece `/setup-harness` | o passo 2 não foi feito, ou o chat foi aberto antes dele | refaça o passo 2.3 e reabra o chat |
 | "BLOCKED_COLLISION" | já existe um arquivo com o mesmo nome no projeto | normal: o setup para em vez de sobrescrever; leia a opção que ele propõe |
 | "harnessctl não encontrado" | a pasta `C:\dev\harness-engineering` foi movida ou apagada | coloque-a de volta (passo 2.1) e refaça o passo 2.2 |
+| "installed by another Harness checkout" | o Harness foi instalado a partir de outra pasta | rode os comandos a partir da pasta indicada na mensagem, ou remova de lá e reinstale a partir de `C:\dev\harness-engineering` |
+| "UPGRADE_AVAILABLE" | há uma versão nova do Harness | refaça o passo 2.2: ele atualiza sozinho |
 | O agente não usa as skills | elas são opcionais e o agente decide quando usar | cite o nome da skill no pedido |
 | Quero ver o estado técnico | — | [ESTADO.md](ESTADO.md) |
 

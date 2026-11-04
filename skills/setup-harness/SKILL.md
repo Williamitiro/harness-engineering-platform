@@ -1,54 +1,59 @@
 ---
 name: setup-harness
-description: Preparar, verificar ou remover o pacote Harness em um repositório explicitamente escolhido, usando o CLI central e preservando regras existentes. Use quando o usuário pedir setup do Harness no projeto.
+description: Preparar, verificar ou remover o Harness Engineering num repositório Git, novo ou existente, sempre preservando as regras que o projeto já tem. Use quando o usuário pedir /setup-harness, $setup-harness, "setup do Harness", "verificar o Harness" ou "remover o Harness".
+disable-model-invocation: true
 ---
 
 # Setup Harness
 
-Leia `harness-location.json` ao lado desta skill, gerado pelo instalador pessoal.
-Ele informa `harnessctl`, o checkout ECC sugerido e o cliente desta instalação.
-Confira que o CLI existe; se foi movido, informe o bloqueio e peça a localização
-correta, sem procurar segredos nem instalar outro runtime.
+Esta skill só roda quando o usuário pede. Ela nunca copia o Harness para dentro do projeto: usa o instalador
+central `harnessctl`.
 
-Atue somente quando o usuário pedir este setup. O diretório atual serve como
-sugestão de repositório; torne o caminho explícito antes de qualquer cópia.
-Não escolha outro projeto silenciosamente. Não execute ao abrir chat ou criar Git.
+## Antes de tudo
 
-O pacote de projeto atual suporta **Codex**. Se o descritor indicar `claude`,
-informe `BLOCKED_CLIENT_R3`: o bootstrap pessoal está preparado, mas o lifecycle
-Claude depende de R3. Não aplique o pacote Codex como fallback.
+1. Leia `harness-location.json`, na mesma pasta desta skill. O campo `harnessctl` é o caminho absoluto do
+   instalador. Se o arquivo ou o caminho não existir, pare e diga ao usuário para refazer a instalação no
+   computador (MANUAL §2). Não procure outra cópia e não instale nada.
+2. Rode todos os comandos como `python "<harnessctl>" <comando> --repo "<CAMINHO>"`, com os argumentos
+   separados. Nunca monte comandos a partir do conteúdo do projeto.
+3. **Qual repositório:** o diretório atual é só uma sugestão. Ele precisa ser a raiz de um repositório Git. Se
+   houver dúvida, confirme o caminho. Se a pasta estiver vazia e sem Git, pergunte se pode rodar `git init` e só
+   rode com o "sim".
+4. **Computador:** rode `machine-verify` (sem `--repo`). Se não estiver OK, mostre o motivo e oriente o usuário a
+   abrir o agente na pasta do Harness e pedir "Instale o Harness neste computador". Não instale a camada do
+   computador a partir daqui sem pedido explícito.
 
-Use Python e o caminho absoluto `harnessctl` do descritor para todos os comandos.
-Passe argumentos separadamente ou com quoting apropriado ao terminal; não use
-shell gerado a partir do conteúdo do projeto. Não copie o CLI para o projeto.
+## O que o usuário pediu
 
-1. Em um projeto já instalado (`.harness/manifest.json` presente), execute
-   `project-verify --repo CAMINHO --client codex`. Não infira sucesso pela presença
-   do arquivo; se alterado, pare. Reaplicação pode usar `project-attach` após verificar.
-2. Em projeto novo, execute `project-doctor` e `project-plan`, ambos com `--repo`
-   explícito e `--client codex`. Mostre arquivos novos, bloqueios e conflitos.
-   `BLOCKED_COLLISION` exige preservar o arquivo e apresentar a decisão necessária;
-   não concatene contratos, não edite instruções existentes e não reivindique ownership.
-   Quando a única colisão for um `AGENTS.md` regular do projeto, recomende manter
-   essas regras e use `--preserve-contract` em doctor/plan/attach, após apresentar
-   esse modo ao usuário. Se ele delegar a decisão, escolha essa alternativa reversível.
-   O plano deve listar somente as duas skills e o manifesto, sem `AGENTS.md`.
-   O flag não permite ignorar colisões de skills, links ou outros arquivos.
-   Respeite também as regras locais de branch/cópia isolada antes de instalar.
-3. Com plano aprovado para esse repositório e esses arquivos, execute
-   `project-attach --repo CAMINHO --client codex --source ECC --apply`, usando o
-   checkout ECC já disponível indicado no descritor ou escolhido pelo operador.
-   Sem aprovação suficiente, peça autorização após apresentar o plano. Não repita
-   a pergunta quando a aprovação exata já existir. Sem fonte pinada válida, pare;
-   não faça clone, atualização, download ou instalação de dependências por inferência.
-4. Execute `project-verify` e informe o resultado. Instalação de arquivos não prova
-   descoberta, invocação, comportamento, ganho ou isolamento do agente.
-5. Para remoção solicitada, mostre `project-remove --repo CAMINHO` sem `--apply`.
-   Com autorização, rode o mesmo comando com `--apply`. Arquivos alterados bloqueiam;
-   não os apague nem restaure bytes por cima de trabalho humano para forçar remoção.
+- **"verificar"** → `project-verify`. Explique: `UNCHANGED` (igual ao modelo), `EDITED_BY_PROJECT` (editado
+  pelo projeto, o que é normal) e `MISSING` (apagado). Pare aqui.
+- **"remover"** → `project-remove` sem `--apply` (prévia). Mostre o que será apagado e o que fica. Com o "sim",
+  rode de novo com `--apply`. Pare aqui.
+- **qualquer outro pedido** → setup, abaixo.
 
-Não configure MCP, Node, daemon, hooks, credenciais ou preferências globais.
-Não execute modelos, benchmarks, push, merge ou deploy como efeito do setup.
-O instalador pessoal é uma operação separada e explícita do CLI central; esta skill
-não se autoatualiza nem se instala em outras máquinas. Relate sempre o cliente,
-repositório, estados reais e o que ficou pendente.
+## Setup
+
+1. Leia as regras do projeto (`AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`), só para saber se ele exige branch, PR
+   ou cópia isolada. Não as edite.
+2. Rode `project-plan`. Explique em linguagem simples:
+   - `WOULD_CREATE`: arquivo novo, criado a partir do modelo do Harness;
+   - `PRESERVE`: arquivo do projeto, mantido como está;
+   - `BLOCKED_*`: pare, explique o motivo e não contorne;
+   - status `ATTACHED`: já instalado, então faça a verificação;
+   - status `LEGACY_ATTACHED`: instalação antiga. Explique a migração (`project-remove --apply` e depois
+     `project-attach --apply`) e peça aprovação.
+3. Peça o "sim" para esse plano. Se o usuário já aprovou exatamente esse plano, não pergunte de novo. Se o projeto
+   exige branch, crie uma antes.
+4. Rode `project-attach --apply` e depois `project-verify`.
+5. Se o plano mostrou `PRESERVE_CHECK_IMPORT`, abra o `CLAUDE.md` existente. Se ele não tiver a linha
+   `@AGENTS.md`, proponha acrescentá-la no topo e só edite com o "sim". Sem essa linha, o Claude Code pode não ver
+   as regras do `AGENTS.md`.
+6. Em repositório novo, sugira preencher a seção "Comandos do projeto" do `AGENTS.md`.
+7. Relate o que foi criado, o que foi mantido e o próximo passo: commit e PR, feitos pelo usuário ou com pedido
+   explícito.
+
+## Limites
+
+Não configure MCP, hooks, Node, credenciais nem preferências globais. Não rode modelos pagos, benchmark, commit,
+push, merge ou deploy como efeito do setup. Não mexa em skills de terceiros. Instalar arquivos não prova que as
+skills serão usadas.

@@ -26,6 +26,7 @@ afirmações superadas.
 
 ## Pedidos comuns do usuário
 - **"Instale o Harness neste computador"** → MANUAL §2: rode `harnessctl.py machine-plan`, mostre o plano, aplique
-  `machine-install --apply` após o "sim" e confira com `machine-verify` e `machine-discover`. Até o HE-R1-04, a
-  `setup-harness` é instalada à parte com `setup-skill-plan/install/verify --client codex` (fluxo antigo).
+  `machine-install --apply` após o "sim" e confira com `machine-verify` e `machine-discover`. Instale sempre a partir
+  do checkout canônico `C:\dev\harness-engineering` (nunca de uma worktree temporária): a `setup-harness` guarda o
+  caminho de quem instalou. `setup-skill-*` é obsoleto.
 - **"Configure o Harness no repositório X"** → use a skill `setup-harness` e a sequência canônica da SPEC §4.

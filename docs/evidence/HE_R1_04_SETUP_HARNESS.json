@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "HE-R1-04",
+  "observed_at_utc": "2026-11-04T01:41:12+00:00",
+  "harness_base_sha": "7139c004e5ab8361fa8b8836c3ce59347b46356e",
+  "note": "working tree had the uncommitted HE-R1-04 change applied",
+  "migration_trial_on_copy_of_real_installed_bytes": {
+    "source": "C:\\Users\\itiro\\.agents\\skills (setup-harness, tdd-workflow, verification-loop, .harness-machine.json) copied to a temporary home",
+    "plan_migrations": [
+      "UPGRADE_PACKAGE",
+      "MIGRATE_BOOTSTRAP"
+    ],
+    "verify_before": "BLOCKED UPGRADE_AVAILABLE",
+    "verify_after": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "descriptor_schema": 2,
+    "remove": "REMOVED_EXACT_OWNED_FILES",
+    "left_after_remove": [
+      ".agents",
+      ".agents/skills",
+      ".codex"
+    ]
+  },
+  "real_home_activation": "NOT_RUN: descriptor must point to the canonical checkout C:\\dev\\harness-engineering, which does not have this code yet",
+  "new_session_invocation": "NOT_RUN",
+  "cost_usd": null
+}
