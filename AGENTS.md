@@ -1,23 +1,31 @@
-# AGENTS.md — Harness Engineering (instrução local para Codex)
+# AGENTS.md — Harness Engineering
 
-## Fonte canônica
-Leia **antes de planejar, editar, auditar ou executar releases**:
-- [SPEC canônica de uso diário e benchmark](docs/HARNESS_SPEC_CANONICA_USO_DIARIO_E_BENCHMARK_V1.md), especialmente §0 (evidência), §4 (releases), §5 (benchmark), §9 (backlog), §10 (gates) e §11 (primeira ordem de serviço).
-- [Dossiê original de 12 repositórios](docs/reference/CONSOLIDADO_REPOSITORIOS_HARNESS_ENGINEERING_2026-11-02.md). É **fonte histórica**, contém afirmações antigas sobre JEV/Node já superadas pela SPEC.
-- [Manual](docs/MANUAL_HARNESS_V1.md) e [protocolo de avaliação](docs/PROTOCOLO_VALIDACAO.md) para invariantes e metodologia.
+Contrato único para qualquer agente (Codex, Claude Code via `CLAUDE.md`, Cursor, OpenCode…) neste repositório.
 
-## Ordem de execução
-- **R1 é a primeira implementação:** `HE-OP-01` (doctor + plan somente-leitura por repositório), depois attach/verify/remove (`HE-OP-02`) e a skill pessoal **`setup-harness`** como bootstrap de uma vez por agente/dispositivo (`HE-OP-02B`, SPEC §2.1), depois Codex em projeto real **autorizado**. O bootstrap invoca o CLI central; não instalar MCP ou hook global.
-- **R2 é obrigatório para declarar V1 pronta:** benchmark de engenharia de software A/B com agente nativo, oráculo independente, custos/tempo/tokens e auditoria da alternativa Harbor. Nunca substituir essa prova pelo piloto JEV de classificação.
-- R3 Claude, R4 roteamento JEV e R5–R6 ferramentas adicionais só após gates correspondentes; não instalar 12 upstreams por relevância.
-- Não criar novo framework, runtime, MCP ou Node para a API JEV; `scripts/jev_http.py` já usa OpenRouter diretamente.
+## O que ler (e só isso)
+1. [docs/ESTADO.md](docs/ESTADO.md): o que funciona hoje e a próxima entrega.
+2. [docs/SPEC.md](docs/SPEC.md): regras, arquitetura, gates e backlog. **Normativa.**
+3. [docs/MANUAL.md](docs/MANUAL.md): o fluxo que o usuário segue. Mantenha-o coerente com o código.
 
-## Protocolo obrigatório de auditoria
-1. Confirmar `git status --short`, branch, HEAD, remoto e PR antes de editar. Concorrência ou diffs desconhecidos: `BLOCKED` com evidência; nunca `reset --hard` implícito.
-2. Inspecionar recursos nativos e código existente antes de escrever algo novo (*reuse-first*). Diferenciar o que está implementado, testado, proposto e desconhecido.
-3. Alterar **uma entrega de escopo fechado** por vez, com testes direcionados, negativos e suíte offline; CI verde não equivale a benchmark real.
-4. Uma única hipótese/experimento por falha, privilegiando API/CLI direta antes de instalar camada local. Nunca rodar chamadas pagas ou benchmarks sem autorização explícita.
-5. Reportar SHA, arquivos, testes, lacunas, rollback, segurança, métricas reais e próximo ID de backlog. Custos parciais **nunca** são totais; despesas e franquias são grandezas distintas.
-6. Não modificar outros repositórios nem configs globais sem opt-in; sem dump de secrets, merge, deploy, `git push` ou hooks persistentes por inferência.
+**Não leia `docs/historico/`** salvo quando uma tarefa pedir um fato específico de lá. É arquivo morto, com
+afirmações superadas.
 
-Se instruções históricas contradisserem a SPEC sobre status JEV ou prioridade do benchmark, **a SPEC vence**, mantendo evidências originais intactas.
+## Regras de trabalho
+1. Antes de editar: `git status --short`, branch, HEAD, remoto e PR. Divergência ou alteração desconhecida →
+   pare e relate (`BLOCKED`). Nunca use `reset --hard`, force-push ou limpeza destrutiva.
+2. Reuso primeiro: recurso nativo, padrão aberto, API/CLI oficial e só então código novo mínimo. Sem novo runtime,
+   MCP, Node ou daemon.
+3. Uma entrega de escopo fechado por vez (ID do backlog da SPEC §10), com testes positivos e negativos e a suíte
+   offline: `python -W error -m unittest discover -s tests` (com `JEV_REAL_INTEGRATION=0`).
+4. Status sempre com nível de evidência (`PASS`, `FAIL`, `BLOCKED_*`, `NOT_RUN`, `INCONCLUSIVE`). Ausente é `null`,
+   nunca `0`. Arquivo copiado não prova que a skill foi usada.
+5. Ao concluir: atualize `docs/ESTADO.md` (uma linha na tabela + pendências). **Não crie relatórios novos em `docs/`**;
+   evidência bruta vai para `docs/evidence/` (JSON) ou `.poc/` (ignorado).
+6. Exigem autorização explícita do usuário: escrever em outro repositório ou na home, push, merge, deploy, chamadas
+   pagas, instalar dependências ou alterar configuração global.
+
+## Pedidos comuns do usuário
+- **"Instale o Harness neste computador"** → MANUAL §2: rode `harnessctl.py machine-plan`, mostre o plano, aplique
+  com `--apply` após o "sim" e confira com `machine-verify`. Enquanto HE-R1-02 não estiver pronto, diga isso e use
+  `setup-skill-plan/install/verify --client codex` (fluxo antigo, só Codex).
+- **"Configure o Harness no repositório X"** → use a skill `setup-harness` e a sequência canônica da SPEC §4.
