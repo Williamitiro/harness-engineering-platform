@@ -1,2 +1,4 @@
 # Bundled upstream files are hash-pinned: Git must never convert their bytes.
 vendor/** -text
+# Repository templates are compared byte for byte on removal: same bytes on every machine.
+templates/repo/** -text

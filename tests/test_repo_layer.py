@@ -43,6 +43,11 @@ class RepoLayerTests(unittest.TestCase):
     def actions(self, result):
         return {c["path"]: c["action"] for c in result["changes"]}
 
+    def test_templates_have_fixed_bytes_on_every_machine(self):
+        out = git(ROOT, "check-attr", "text", "--", "templates/repo/AGENTS.md", "templates/repo/CLAUDE.md")
+        self.assertEqual(out.count("text: unset"), 2, out)
+        self.assertNotIn(b"\r\n", AGENTS_TEMPLATE + CLAUDE_TEMPLATE)
+
     def test_claude_template_imports_agents_md(self):
         self.assertTrue(CLAUDE_TEMPLATE.startswith(b"@AGENTS.md\n"))
         self.assertNotIn(b"/SKILL.md", AGENTS_TEMPLATE)  # skills by name, never repo paths
