@@ -1,6 +1,6 @@
 # Estado do Harness Engineering
 
-**Atualizado em 03/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
+**Atualizado em 04/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
 Branch de trabalho: `codex/he-jev-007a` ([PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4),
@@ -18,7 +18,7 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | `setup-skill-plan/install/verify/remove` (bootstrap antigo) | ⚠️ obsoleto: ainda verifica e remove as versões antigas aprovadas; `machine-install` migra | testes offline | — |
 | `setup-harness` instalada nesta máquina | ✅ em `~/.agents/skills`; o Claude Code a enxerga pela junction `~/.claude/skills → ~/.agents/skills` | descoberta nativa no Codex 0.166 (`DISCOVERED`) | `evidence/HE_OP_02B_ATIVACAO_DESCOBERTA.json` |
 | Ensaio real na plataforma metalúrgica | ✅ patch com QA específico; ❌ suíte global com 2 falhas preexistentes | `BEHAVIOR_OBSERVED` na mesma sessão; turno novo `NOT_RUN` | `evidence/HE_OP_03_PLATAFORMA_METALURGICA.json`; [PR #216](https://github.com/Williamitiro/plataforma-metalurgica/pull/216) |
-| Instalação permanente na plataforma | ❌ não feita | — | o pacote foi removido após o ensaio |
+| Instalação permanente na plataforma | ✅ HE-R1-05 em PR, **sem merge**: `CLAUDE.md` + manifesto, `AGENTS.md` da plataforma preservado | `project-verify` OK; chat novo: Claude Code e Codex citam a regra de branch da plataforma e veem as 2 skills (`DISCOVERED`); suíte da plataforma 2040 passed, 16 falhas de caminho longo que passam com `--basetemp` curto; tarefa real com as skills `NOT_RUN` | `evidence/HE_R1_05_PLATAFORMA.json`; [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229) |
 | Camada 1 (máquina) para Claude Code + Codex: `machine-plan/install/verify/remove/discover` + `config/adapters.json` | ✅ HE-R1-02 (só as 2 skills ECC; a `setup-harness` entra no HE-R1-04) | 13 testes offline; **instalada nesta máquina**; `DISCOVERED` no Codex (`skills/list`, 0 turnos) e no Claude Code (sessão recebeu as skills) | `evidence/HE_R1_02_MACHINE_DISCOVERY.json`; `tests/test_machine_layer.py` |
 | Benchmark A/B (R2) | ❌ `NOT_RUN` | — | `scripts/harness_eval.py` existe, mas com bugs (§3) |
 | JEV via HTTPS (`jev_http.py`) | ✅ código e testes; smoke de 1 chamada observado | relatado pelo operador | `scripts/jev_http.py` |
@@ -30,14 +30,14 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 
 1. **Revisar e fazer o merge do PR #4.** A `setup-harness` instalada aponta para `C:\dev\harness-engineering\scripts\harnessctl.py`;
    se aquele checkout sair desta branch, ela quebra.
-2. **Plataforma: suíte global verde**, em PR próprio na plataforma. Ordem de serviço pronta para colar na thread:
-   [historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md](historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md).
+2. **Plataforma: revisar e fazer o merge do [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229)**
+   (HE-R1-05). A correção de CRLF já entrou na `main` da plataforma (#224). Achado: com pasta temporária de caminho
+   longo, 16 testes da plataforma falham no Windows; com `--basetemp` curto, passam.
 3. **Checkout canônico em *detached*:** `C:\dev\harness-engineering` está no commit `09b128a` do PR #5 (é de onde
-   a camada do computador foi instalada). Depois do merge, `git switch main` e `git pull` nessa pasta. Depois do merge, volte esse checkout para o `main`
-   (`git switch main` e `git pull`). Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
+   a camada do computador foi instalada). Depois do merge, `git switch main` e `git pull` nessa pasta. Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
    depois `git switch codex/he-jev-007a` e `setup-skill-install --client codex --apply` (volta ao fluxo antigo).
-4. **HE-R1-05:** instalação permanente na plataforma, via PR. HE-R1-01 a HE-R1-04 concluídos no código.
-4. **HE-R2-01 → HE-R2-03:** benchmark.
+4. **Primeira tarefa real na plataforma com as skills**, com revisão externa (critério de aceite do HE-R1-05).
+5. **HE-R2-01 → HE-R2-03:** benchmark.
 
 ## 3. Problemas conhecidos (abertos)
 
