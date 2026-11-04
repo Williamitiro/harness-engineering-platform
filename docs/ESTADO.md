@@ -14,7 +14,7 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Skills ECC versionadas no repositório (fonte padrão do attach) | ✅ HE-R1-01 | 10 testes offline + attach/remove real via CLI | `vendor/ecc/`; `tests/test_vendored_source.py` |
 | `harnessctl project-doctor/plan/attach/verify/remove`: **pacote 2** (só regras do projeto, sem cópia de skills) | ✅ HE-R1-03, serve Claude Code e Codex | 15 testes offline; ensaio: plan real na plataforma (0 escritas), repo novo e clone da plataforma com remoção exata | `scripts/harnessctl.py`; `tests/test_repo_layer.py`; `evidence/HE_R1_03_REPO_LAYER.json` |
 | Pacote 1 (antigo: skills copiadas no repo, `--preserve-contract`) | ⚠️ legado: ainda verifica e remove; `project-attach` responde `LEGACY_ATTACHED` com instrução de migração | testes offline | `tests/test_project_lifecycle.py` |
-| `setup-harness` nova (sem `client` fixo; plano → "sim" → aplicar → verificar; "verificar" e "remover"), dentro do pacote da máquina, com migração do bootstrap antigo e do pacote da máquina antigo | ✅ HE-R1-04; **ativada nesta máquina em 03/11**. Chat novo: **Claude Code PASS** (fluxo completo, `project-verify` OK); **Codex BLOCKED_SANDBOX** (skill carregada, mas o sandbox do Windows nega executar o Python) | 12 testes offline; migração real; Codex `DISCOVERED` 3/3; teste em chat novo nas duas ferramentas | `skills/setup-harness/`; `tests/test_setup_harness_v2.py`; `evidence/HE_R1_04_SETUP_HARNESS.json` |
+| `setup-harness` nova (sem `client` fixo; plano → "sim" → aplicar → verificar; "verificar" e "remover"), dentro do pacote da máquina, com migração do bootstrap antigo e do pacote da máquina antigo | ✅ HE-R1-04 + 04b; **ativada nesta máquina**. Chat novo: **Claude Code PASS**; **Codex PASS** na 3ª execução, depois de corrigir elevação no sandbox e dono do `.git` | 15 testes offline; migração real; `project-verify` OK confirmado à parte nas duas pastas de teste; o Codex usou a `verification-loop` por conta própria depois do setup (`BEHAVIOR_OBSERVED`, 1 execução) | `skills/setup-harness/`; `tests/test_setup_harness_v2.py`; `evidence/HE_R1_04_SETUP_HARNESS.json` |
 | `setup-skill-plan/install/verify/remove` (bootstrap antigo) | ⚠️ obsoleto: ainda verifica e remove as versões antigas aprovadas; `machine-install` migra | testes offline | — |
 | `setup-harness` instalada nesta máquina | ✅ em `~/.agents/skills`; o Claude Code a enxerga pela junction `~/.claude/skills → ~/.agents/skills` | descoberta nativa no Codex 0.166 (`DISCOVERED`) | `evidence/HE_OP_02B_ATIVACAO_DESCOBERTA.json` |
 | Ensaio real na plataforma metalúrgica | ✅ patch com QA específico; ❌ suíte global com 2 falhas preexistentes | `BEHAVIOR_OBSERVED` na mesma sessão; turno novo `NOT_RUN` | `evidence/HE_OP_03_PLATAFORMA_METALURGICA.json`; [PR #216](https://github.com/Williamitiro/plataforma-metalurgica/pull/216) |
@@ -32,11 +32,8 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
    se aquele checkout sair desta branch, ela quebra.
 2. **Plataforma: suíte global verde**, em PR próprio na plataforma. Ordem de serviço pronta para colar na thread:
    [historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md](historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md).
-3. **Corrigir a skill para o Codex** (HE-R1-04b). No Codex, os comandos do `harnessctl` precisam rodar com
-   permissão elevada (fora do sandbox); diante de uma falha do Python, a skill deve dizer isso em vez de mandar
-   reinstalar. Junto: status aceitos explícitos, manifesto na lista `created` e atualização de conteúdo de skill já
-   instalada (hoje só existe atualização por arquivo novo). Depois, repetir o teste do Codex. O checkout
-   `C:\dev\harness-engineering` está em *detached* no commit `e42ccfc` do PR #5. Depois do merge, volte esse checkout para o `main`
+3. **Checkout canônico em *detached*:** `C:\dev\harness-engineering` está no commit `09b128a` do PR #5 (é de onde
+   a camada do computador foi instalada). Depois do merge, `git switch main` e `git pull` nessa pasta. Depois do merge, volte esse checkout para o `main`
    (`git switch main` e `git pull`). Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
    depois `git switch codex/he-jev-007a` e `setup-skill-install --client codex --apply` (volta ao fluxo antigo).
 4. **HE-R1-05:** instalação permanente na plataforma, via PR. HE-R1-01 a HE-R1-04 concluídos no código.
@@ -48,9 +45,8 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 |---|---|---|
 | `tdd-workflow` manda rodar `node $ECC_ROOT/scripts/setup-package-manager.js` (script não incluído) e as duas skills assumem projeto JavaScript (npm, tsc); os exemplos são em bash | em projeto Python ou sem Node, o agente precisa ignorar esses passos e usar o runner do projeto; rendimento menor | decidir no R2 (medir) se vale uma versão adaptada, como mudança revisada |
 | O checkout desta worktree tinha `skills/` com CRLF (autocrlf), o principal com LF | hashes divergentes entre checkouts | `skills/** -text` (HE-R1-04) |
-| Sandbox do Codex no Windows (`workspace-write`, token restrito) responde "Acesso negado" ao Python instalado no perfil do usuário | `$setup-harness` não consegue rodar o `harnessctl` sem permissão elevada | HE-R1-04b (skill orienta a pedir elevação) |
-| Mudar o conteúdo de uma skill já instalada deixa `machine-verify` em erro ("differs from this Harness version"), sem caminho de atualização | atualizar a skill exige remover e reinstalar à mão | HE-R1-04b: atualizar quando o arquivo instalado ainda é idêntico ao que foi gravado |
-| Uma única tentativa de setup no Codex consumiu 152 mil tokens de entrada (142 mil em cache) | custo de contexto alto por tarefa simples | medir no R2 |
+| Sandbox do Codex no Windows nega executar o Python do perfil ("Acesso negado") e um `git init` feito dentro dele deixa o `.git` com outro dono | sem elevação, o `$setup-harness` não funciona no Codex | ✅ HE-R1-04b: a skill roda `harnessctl` e `git init` com permissão elevada; `BLOCKED_GIT_OWNERSHIP` explica o caso |
+| No Codex, cada execução do setup consumiu 150–275 mil tokens de entrada (mais de 90% em cache) | custo de contexto alto para uma tarefa simples | medir no R2 |
 | Projetos com o pacote 1 têm cópia das skills ECC no repositório **e** a cópia da máquina | o Codex lista as duas (escopos `repo` e `user`) | migrar: `project-remove --apply` e depois `project-attach --apply` (nenhum projeto real está no pacote 1 hoje) |
 | `CLAUDE.md` já existente não é lido, então o Harness não sabe se ele importa o `AGENTS.md` | o plano avisa (`PRESERVE_CHECK_IMPORT`); a linha `@AGENTS.md` precisa ser posta à mão | a `setup-harness` (HE-R1-04) orienta o usuário |
 | Claude Code 2.1.268 desta máquina não lê `AGENTS.md` sozinho (só a partir da 2.1.277) | em projeto sem `CLAUDE.md`, o Claude não vê as regras | resolvido pelo pacote 2, que cria `CLAUDE.md` com `@AGENTS.md` |

@@ -83,6 +83,44 @@
         "reasoning_output_tokens": 729
       },
       "cost_usd": null
+    },
+    "codex_after_fixes": {
+      "observed_at_utc": "2026-11-04T02:48:20+00:00",
+      "client_version": "codex-cli 0.166.0",
+      "how": "codex exec --approve-for-me in empty C:\\dev\\teste-harness-codex, prompt '$setup-harness' with pre-approval",
+      "runs": [
+        {
+          "run": 2,
+          "fix": "skill asks for elevated harnessctl (0d5b21f)",
+          "outcome": "BLOCKED_GIT_OWNERSHIP: machine-verify and project-plan OK; git init ran inside the sandbox, .git owned by CodexSandboxOffline, Git refused 'dubious ownership'",
+          "usage": {
+            "input_tokens": 179893,
+            "cached_input_tokens": 167552,
+            "output_tokens": 2287
+          }
+        },
+        {
+          "run": 3,
+          "fix": "git init elevated + explained ownership error (09b128a)",
+          "outcome": "PASS",
+          "flow": [
+            "machine-verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+            "git init (elevated)",
+            "project-plan: PLANNED_NOT_INSTALLED",
+            "project-attach --apply: FILES_INSTALLED_RUNTIME_NOT_VERIFIED",
+            "project-verify: OK"
+          ],
+          "independent_check": "project-verify OK from operator terminal; .git owner GALAXY-BOOK\\itiro",
+          "workflow_skill_behavior": "after setup the agent read the new AGENTS.md, opened verification-loop/SKILL.md and ran a review plus security scan on its own (BEHAVIOR_OBSERVED, one run)",
+          "usage": {
+            "input_tokens": 275165,
+            "cached_input_tokens": 258944,
+            "output_tokens": 2630,
+            "reasoning_output_tokens": 579
+          },
+          "cost_usd": null
+        }
+      ]
     }
   },
   "cost_usd": null
