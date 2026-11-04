@@ -51,7 +51,7 @@
     "claude_code": {
       "observed_at_utc": "2026-11-04T02:35:59+00:00",
       "client_version": "Claude Code 2.1.268",
-      "how": "new desktop session in empty C:\\dev\teste-harness, prompt '/setup-harness' with pre-approval",
+      "how": "new desktop session in empty C:\\dev\\teste-harness, prompt '/setup-harness' with pre-approval",
       "skill": "INVOKED",
       "flow": [
         "machine-verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
@@ -71,7 +71,7 @@
     "codex": {
       "observed_at_utc": "2026-11-04T02:35:59+00:00",
       "client_version": "codex-cli 0.166.0",
-      "how": "codex exec -s workspace-write in empty C:\\dev\teste-harness-codex, prompt '$setup-harness' with pre-approval",
+      "how": "codex exec -s workspace-write in empty C:\\dev\\teste-harness-codex, prompt '$setup-harness' with pre-approval",
       "skill": "INVOKED (SKILL.md and harness-location.json read)",
       "outcome": "BLOCKED_SANDBOX: first command failed, python not found; no files created",
       "root_cause_probe_without_model": "codex sandbox -- <absolute python.exe>: CreateProcessAsUserW failed: 5 (Access denied); Windows restricted-token sandbox cannot execute user-installed Python",
