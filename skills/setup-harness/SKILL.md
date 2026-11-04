@@ -24,7 +24,10 @@ central `harnessctl`.
    ao usuário para aprovar a execução fora do sandbox e **não** mande reinstalar o Harness.
 4. **Qual repositório:** o diretório atual é só uma sugestão. Ele precisa ser a raiz de um repositório Git. Se
    houver dúvida, confirme o caminho. Se a pasta estiver vazia e sem Git, pergunte se pode rodar `git init` e só
-   rode com o "sim".
+   rode com o "sim". Com sandbox, rode o `git init` também **com permissão elevada**: se ele rodar dentro do
+   sandbox, a pasta `.git` fica com outro dono e o Git recusa o repositório depois (`BLOCKED_GIT_OWNERSHIP`,
+   "dubious ownership"). Nesse caso, não altere a configuração do Git; explique e peça ao usuário para decidir.
+   `project-plan` só confere a estrutura; quem valida o Git de verdade é o `project-attach`.
 5. **Computador:** rode `machine-verify` (sem `--repo`). A resposta `FILE_HASHES_OK_RUNTIME_NOT_VERIFIED` quer
    dizer OK. Se vier `BLOCKED`, leia o motivo:
    - `NOT_INSTALLED` ou `UPGRADE_AVAILABLE`: oriente o usuário a abrir o agente na pasta do Harness e pedir

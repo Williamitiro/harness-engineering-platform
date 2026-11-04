@@ -173,6 +173,14 @@ class RepoLayerTests(unittest.TestCase):
             h.repo_attach(self.repo)
         self.assertFalse((self.repo / "AGENTS.md").exists())
 
+    def test_git_ownership_refusal_is_explained(self):
+        refused = subprocess.CompletedProcess([], 128, "", "fatal: detected dubious ownership in repository")
+        with patch.object(h, "git_probe", return_value=refused):
+            with self.assertRaises(h.GateError) as ctx:
+                h.repo_attach(self.repo)
+        self.assertIn("BLOCKED_GIT_OWNERSHIP", str(ctx.exception))
+        self.assertFalse((self.repo / "AGENTS.md").exists())
+
     def test_non_git_directory_refused(self):
         with tempfile.TemporaryDirectory() as plain:
             with self.assertRaises(h.GateError):

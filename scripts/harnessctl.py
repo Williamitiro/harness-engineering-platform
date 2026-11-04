@@ -380,6 +380,12 @@ def project_root(repo: Path) -> Path:
     inspect_project(repo, "codex")  # structural/path validation, no content reads
     repo = repo.absolute()
     result = git_probe(repo, "rev-parse", "--show-toplevel")
+    if result.returncode and "dubious ownership" in (result.stderr or ""):
+        # Typical under a tool sandbox: .git created by the sandbox account, harnessctl
+        # run as the real user. Never add safe.directory or change Git config for the user.
+        raise GateError("BLOCKED_GIT_OWNERSHIP: Git recusou o repositório porque o dono da pasta .git é outro "
+                        "usuário (por exemplo, a conta do sandbox). Rode git init com o mesmo usuário e permissão "
+                        "usados para o harnessctl")
     if result.returncode or Path(result.stdout.strip()).resolve() != repo.resolve():
         raise GateError("--repo must be the root of a valid Git worktree")
     status = git_probe(repo, "status", "--porcelain", "--untracked-files=no", "--ignore-submodules=all")
