@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "id": "HE-R1-03",
+  "observed_at_utc": "2026-11-04T01:22:45+00:00",
+  "harness_base_sha": "1b0625d9734472bb99cd1d0ba3fdb1f577577b89",
+  "note": "working tree had the uncommitted HE-R1-03 change applied",
+  "trials": {
+    "plataforma_metalurgica_real_plan_read_only": {
+      "repo": "C:\\dev\\plataforma-metalurgica",
+      "status": "PLANNED_NOT_INSTALLED",
+      "case": "EXISTING_REPO",
+      "changes": {
+        "AGENTS.md": "PRESERVE",
+        "CLAUDE.md": "WOULD_CREATE",
+        ".harness/manifest.json": "WOULD_CREATE"
+      },
+      "blockers": [],
+      "git_status_lines_before_after": [
+        0,
+        0
+      ],
+      "files_written": 0
+    },
+    "new_empty_repo": {
+      "created": [
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
+      "verify": {
+        "AGENTS.md": "UNCHANGED",
+        "CLAUDE.md": "UNCHANGED"
+      },
+      "after_remove": [
+        ".git"
+      ]
+    },
+    "plataforma_local_clone": {
+      "created": [
+        "CLAUDE.md"
+      ],
+      "preserved": [
+        "AGENTS.md"
+      ],
+      "agents_md_sha256_prefix_before_after": [
+        "215c05c39b74c852",
+        "215c05c39b74c852"
+      ],
+      "removed": [
+        "CLAUDE.md",
+        ".harness/manifest.json"
+      ],
+      "git_status_lines_after_remove": 0
+    }
+  },
+  "runtime_discovery": "NOT_RUN",
+  "cost_usd": null
+}

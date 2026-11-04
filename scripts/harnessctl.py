@@ -576,30 +576,220 @@ def remove_project(repo: Path, manifest: dict, apply: bool = True) -> dict:
     return {"status": "REMOVED_EXACT_OWNED_FILES"}
 
 
+# --- Repository layer, package 2 (HE-R1-03): project rules only, no generic skills ---
+# Rules files belong to the project. The Harness creates them from templates when
+# absent, never reads or rewrites existing ones, and on removal deletes only files
+# it created that are still byte-identical to the approved template.
+
+REPO_RULES = {"AGENTS.md": ROOT / "templates/repo/AGENTS.md", "CLAUDE.md": ROOT / "templates/repo/CLAUDE.md"}
+
+
+def check_repo_path(repo: Path) -> Path:
+    if ".." in repo.parts:
+        raise GateError("--repo must not contain parent traversal")
+    repo = repo.absolute()
+    assert_no_symlink(repo)
+    if not repo.is_dir():
+        raise GateError("--repo must be an existing repository directory")
+    marker = repo / ".git"
+    assert_no_symlink(marker)
+    if not (marker.is_dir() or marker.is_file()):
+        raise GateError("--repo must contain a .git directory or worktree marker")
+    return repo
+
+
+def read_repo_record(repo: Path) -> dict:
+    record = json.loads(owned_bytes(repo / PROJECT_STATE))
+    if not isinstance(record, dict) or record.get("kind") != "harness-project":
+        raise GateError("unsupported project ownership record")
+    return record
+
+
+def repo_inspect(repo: Path) -> dict:
+    """Read-only: path metadata only. Never opens project files except the Harness record."""
+    repo = check_repo_path(repo)
+    blockers, changes = [], []
+    for rel in (".harness", PROJECT_STATE, STATE):
+        try:
+            assert_no_symlink(repo / rel)
+        except GateError:
+            blockers.append({"path": rel, "status": "BLOCKED_PATH"})
+    installed = None
+    if not blockers:
+        if (repo / STATE).exists():
+            blockers.append({"path": STATE, "status": "BLOCKED_COLLISION"})
+        if (repo / PROJECT_STATE).is_file():
+            try:  # the Harness's own record is the only file this inspection opens
+                installed = read_repo_record(repo).get("package", 1)
+            except (GateError, ValueError):
+                blockers.append({"path": PROJECT_STATE, "status": "BLOCKED_COLLISION"})
+        elif (repo / ".harness").exists():
+            blockers.append({"path": ".harness", "status": "BLOCKED_COLLISION"})
+    for name in REPO_RULES:
+        path = repo / name
+        try:
+            assert_no_symlink(path)
+        except GateError:
+            blockers.append({"path": name, "status": "BLOCKED_PATH"})
+            changes.append({"path": name, "action": "BLOCKED_PATH"})
+            continue
+        if not path.exists():
+            changes.append({"path": name, "action": "WOULD_CREATE"})
+        elif path.is_file():
+            changes.append({"path": name, "action": "PRESERVE_CHECK_IMPORT" if name == "CLAUDE.md" else "PRESERVE"})
+        else:
+            blockers.append({"path": name, "status": "BLOCKED_COLLISION"})
+            changes.append({"path": name, "action": "BLOCKED_COLLISION"})
+    if installed is None:
+        changes.append({"path": PROJECT_STATE, "action": "WOULD_CREATE"})
+    case = "NEW_REPO" if all(p.name == ".git" for p in repo.iterdir()) else "EXISTING_REPO"
+    if any(b["status"] == "BLOCKED_PATH" for b in blockers):
+        status = "BLOCKED_PATH"
+    elif blockers:
+        status = "BLOCKED_COLLISION"
+    elif installed == 2:
+        status = "ATTACHED"
+    elif installed is not None:
+        status = "LEGACY_ATTACHED"
+    else:
+        status = "COMPATIBLE_NOT_RUNTIME_VERIFIED"
+    return {"status": status, "case": case, "repo": str(repo), "read_only": True, "package": 2,
+            "compatibility": {"repository": "GIT_MARKER_ONLY", "client_runtime": "NOT_PROBED",
+                              "ownership": "NOT_CLAIMED"},
+            "changes": changes if installed is None else [], "blockers": blockers,
+            "note": "CLAUDE.md existente: confira se contém a linha @AGENTS.md (o Harness não lê nem altera)."
+                    if any(c["action"] == "PRESERVE_CHECK_IMPORT" for c in changes) else None,
+            "runtime_discovery": "NOT_RUN"}
+
+
+def validate_repo_record(record: dict) -> None:
+    files, preserved, dirs = record.get("files"), record.get("preserved"), record.get("created_dirs")
+    if (record.get("package") != 2 or not isinstance(files, list) or not isinstance(preserved, list)
+            or not isinstance(dirs, list) or any(d not in (".harness",) for d in dirs)):
+        raise GateError("invalid package 2 ownership record")
+    paths = []
+    for item in files:
+        if (not isinstance(item, dict) or item.get("path") not in REPO_RULES
+                or not isinstance(item.get("sha256"), str) or len(item["sha256"]) != 64):
+            raise GateError("ownership record lists a path outside the repository package")
+        paths.append(item["path"])
+    if (len(set(paths)) != len(paths) or any(p not in REPO_RULES for p in preserved)
+            or set(paths) & set(preserved)):
+        raise GateError("ownership record paths are duplicated or inconsistent")
+
+
+def created_file_state(repo: Path, item: dict) -> str:
+    path = repo / item["path"]
+    assert_no_symlink(path)
+    if not path.exists():
+        return "MISSING"
+    try:
+        current = digest(owned_bytes(path))
+    except GateError:
+        return "EDITED_BY_PROJECT"  # e.g. grew past the size bound; never owned again
+    template = digest(owned_bytes(REPO_RULES[item["path"]]))
+    return "UNCHANGED" if current == item["sha256"] == template else "EDITED_BY_PROJECT"
+
+
+def repo_attach(repo: Path) -> dict:
+    repo = project_root(repo)
+    inspection = repo_inspect(repo)
+    if inspection["status"] == "ATTACHED":
+        repo_verify(repo)
+        return {"status": "ALREADY_ATTACHED", "package": 2, "runtime_execution": "NOT_RUN"}
+    if inspection["status"] == "LEGACY_ATTACHED":
+        return {"status": "LEGACY_ATTACHED", "package": 1,
+                "migration": "project-remove --apply e depois project-attach --apply (pacote 2 sem cópia de skills)"}
+    if inspection["blockers"]:
+        raise GateError(f"{inspection['status']}: review project-plan; no files written")
+    actions = {c["path"]: c["action"] for c in inspection["changes"]}
+    files = {name: owned_bytes(template) for name, template in REPO_RULES.items() if actions[name] == "WOULD_CREATE"}
+    preserved = [name for name in REPO_RULES if actions[name].startswith("PRESERVE")]
+    if repo_inspect(repo)["changes"] != inspection["changes"]:
+        raise GateError("project changed since inspection")
+    write_package(repo, files, PROJECT_STATE, {
+        "schema_version": 1, "kind": "harness-project", "package": 2,
+        "preserved": preserved, "runtime_execution": "NOT_RUN"})
+    return {"status": "FILES_INSTALLED_RUNTIME_NOT_VERIFIED", "package": 2, "case": inspection["case"],
+            "created": sorted(files), "preserved": preserved, "note": inspection["note"],
+            "runtime_execution": "NOT_RUN"}
+
+
+def repo_verify(repo: Path) -> dict:
+    repo = project_root(repo)
+    record = read_repo_record(repo)
+    if record.get("package", 1) == 1:
+        verify_project(repo, read_manifest(ROOT / "config/approved_skills.json"))
+        return {"status": "OK", "package": 1, "migration": "project-remove --apply e depois project-attach --apply"}
+    validate_repo_record(record)
+    return {"status": "OK", "package": 2, "preserved": record["preserved"],
+            "files": {item["path"]: created_file_state(repo, item) for item in record["files"]}}
+
+
+def repo_remove(repo: Path, apply: bool = False) -> dict:
+    repo = project_root(repo)
+    state = repo / PROJECT_STATE
+    if not state.exists():
+        assert_no_symlink(state)
+        return {"status": "ALREADY_REMOVED"}
+    record = read_repo_record(repo)
+    if record.get("package", 1) == 1:
+        return remove_project(repo, read_manifest(ROOT / "config/approved_skills.json"), apply=apply)
+    validate_repo_record(record)
+    states = {item["path"]: created_file_state(repo, item) for item in record["files"]}
+    delete = [p for p, s in states.items() if s == "UNCHANGED"]
+    kept = [p for p, s in states.items() if s == "EDITED_BY_PROJECT"]
+    if not apply:
+        return {"status": "PLANNED_NOT_REMOVED", "delete": delete + [PROJECT_STATE], "kept": kept}
+    originals = {rel: owned_bytes(repo / rel) for rel in delete}
+    originals[PROJECT_STATE] = owned_bytes(state)
+    deleted, removed_dirs = [], []
+    try:
+        for rel, raw in originals.items():
+            path = repo / rel
+            assert_no_symlink(path)
+            if owned_bytes(path) != raw:
+                raise GateError("file changed during removal")
+            path.unlink()
+            deleted.append(rel)
+        for rel in record["created_dirs"]:
+            path = repo / rel
+            assert_no_symlink(path)
+            if path.is_dir() and next(path.iterdir(), None) is None:
+                path.rmdir()
+                removed_dirs.append(rel)
+    except Exception:
+        for rel in removed_dirs:
+            (repo / rel).mkdir()
+        for rel in deleted:
+            with (repo / rel).open("xb") as handle:
+                handle.write(originals[rel])
+        raise
+    return {"status": "REMOVED_EXACT_OWNED_FILES", "deleted": deleted, "kept": kept}
+
+
 def lifecycle_main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="Explicit Codex project lifecycle; never overwrites existing files")
+    parser = argparse.ArgumentParser(description="Repository layer (package 2): project rules only; never overwrites")
     parser.add_argument("action", choices=("project-attach", "project-verify", "project-remove"))
     parser.add_argument("--repo", required=True, type=Path)
-    parser.add_argument("--client", choices=("codex",), default="codex")
-    parser.add_argument("--source", type=Path,
-                        help="pinned ECC Git checkout; default: the bundled vendor/ecc copy")
+    parser.add_argument("--client", choices=("codex", "claude"), help="informational; the package serves both")
     parser.add_argument("--apply", action="store_true")
-    parser.add_argument("--preserve-contract", action="store_true", help="attach skills only; never own existing AGENTS.md")
+    parser.add_argument("--preserve-contract", action="store_true",
+                        help="kept for compatibility; existing rules are always preserved")
+    # Accepted only so the old installed setup-harness keeps working until HE-R1-04.
+    parser.add_argument("--source", type=Path, help="deprecated and ignored: package 2 copies no skills")
     args = parser.parse_args(argv)
-    if args.preserve_contract and args.action != "project-attach":
-        parser.error("--preserve-contract is only valid for project-attach")
     try:
-        manifest = read_manifest(ROOT / "config/approved_skills.json")
         if args.action == "project-attach":
             if not args.apply:
                 raise GateError("attach needs --apply; inspect project-plan first")
-            source = VENDORED if args.source is None else args.source
-            result = attach_project(args.repo, source, manifest, preserve_contract=args.preserve_contract)
+            result = repo_attach(args.repo)
+            if args.source is not None:
+                result["deprecated"] = "--source ignorado: o pacote 2 não copia skills para o repositório"
         elif args.action == "project-verify":
-            verify_project(args.repo, manifest)
-            result = {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "runtime_execution": "NOT_RUN"}
+            result = repo_verify(args.repo)
         else:
-            result = remove_project(args.repo, manifest, apply=args.apply)
+            result = repo_remove(args.repo, apply=args.apply)
         print(json.dumps(result, indent=2))
         return 0
     except (GateError, OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
@@ -968,23 +1158,18 @@ def bootstrap_main(argv: list[str]) -> int:
 
 
 def project_main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="Read-only Codex project metadata inspection; never installs files")
+    parser = argparse.ArgumentParser(description="Read-only repository inspection (package 2); never installs files")
     parser.add_argument("action", choices=("project-doctor", "project-plan"))
     parser.add_argument("--repo", type=Path, required=True, help="explicit repository root (absolute or relative)")
-    parser.add_argument("--client", choices=("codex",), required=True)
-    parser.add_argument("--preserve-contract", action="store_true", help="plan skills only, preserving existing AGENTS.md")
+    parser.add_argument("--client", choices=("codex", "claude"), help="informational; the package serves both")
+    parser.add_argument("--preserve-contract", action="store_true",
+                        help="kept for compatibility; existing rules are always preserved")
     args = parser.parse_args(argv)
     try:
-        result = inspect_project(args.repo, args.client, preserve_contract=args.preserve_contract)
+        result = repo_inspect(args.repo)
         if args.action == "project-plan":
-            root = Path(__file__).resolve().parents[1]
-            manifest_path = root / "config" / "approved_skills.json"
-            assert_no_symlink(manifest_path)
-            manifest = read_manifest(manifest_path)
-            result["pinned_ecc_commit"] = manifest["ecc"]["commit"]
-            result["approved_skill_sha256"] = manifest["ecc"]["skills"]
-            result["contract_source"] = None if args.preserve_contract else "templates/AGENTS.md"
-            if not result["blockers"]:
+            result["templates"] = {name: str(path.relative_to(ROOT).as_posix()) for name, path in REPO_RULES.items()}
+            if result["status"] == "COMPATIBLE_NOT_RUNTIME_VERIFIED":
                 result["status"] = "PLANNED_NOT_INSTALLED"
         print(json.dumps(result, indent=2))
         return 2 if result["blockers"] else 0

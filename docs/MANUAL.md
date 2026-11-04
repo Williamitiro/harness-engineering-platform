@@ -8,7 +8,7 @@ Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harne
 > | Passo | Claude Code | Codex |
 > |---|---|---|
 > | 1. Instalar no computador | ✅ skills de trabalho (`tdd-workflow`, `verification-loop`); 🔧 `setup-harness` | ✅ skills de trabalho; ✅ `setup-harness` (versão antiga, já instalada nesta máquina) |
-> | 2. Preparar um repositório | 🔧 em implementação | ✅ funciona (com o CLI; ver [ESTADO](ESTADO.md)) |
+> | 2. Preparar um repositório | ✅ pelos comandos (§3.3); 🔧 pelo `/setup-harness` | ✅ pelos comandos (§3.3); 🔧 pelo `$setup-harness` novo |
 > | 3. Trabalhar | ✅ normal | ✅ normal |
 > | 4. Medir se ajuda (benchmark) | ⏳ ainda não existe | ⏳ ainda não existe |
 >
@@ -115,6 +115,25 @@ O comando é o mesmo para projeto novo e projeto antigo. A skill descobre sozinh
 
 > **Regra de ouro:** o setup nunca apaga nem reescreve um arquivo que não foi ele que criou. Se encontrar um
 > conflito, ele **para e pergunta**.
+
+**Os arquivos de regras são do projeto.** Depois de criados, o `AGENTS.md` e o `CLAUDE.md` são seus: edite à
+vontade (por exemplo, a seção "Comandos do projeto"). Se um dia você remover o Harness, ele apaga só os que você
+**não** editou.
+
+### 3.3. Pelos comandos (funciona hoje, sem a skill)
+
+Abra o PowerShell e rode, trocando o caminho pelo do seu projeto, um comando de cada vez:
+
+```bash
+python C:\dev\harness-engineering\scripts\harnessctl.py project-plan --repo C:\dev\meu-projeto
+```
+
+```bash
+python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo C:\dev\meu-projeto --apply
+```
+
+O primeiro só mostra o que faria (`PRESERVE` = mantém o seu arquivo; `WOULD_CREATE` = cria). O segundo aplica. Num
+projeto que exige branch e PR, como a plataforma, rode numa branch nova e faça o PR dos arquivos criados.
 
 ---
 

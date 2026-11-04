@@ -106,24 +106,22 @@ class BundledSourceLifecycleTests(unittest.TestCase):
         self.assertEqual(self.files(), set())
 
 
-class CliDefaultSourceTests(unittest.TestCase):
-    """End to end with the real bundle and catalog: --source is no longer needed."""
+class RealBundleTests(unittest.TestCase):
+    """End to end with the real bundle and catalog. Since HE-R1-03 the CLI repository
+    package no longer copies skills; the bundle feeds the machine layer and the legacy
+    package-1 function, exercised here."""
 
-    def test_project_attach_without_source_uses_bundle_then_removes_exactly(self):
+    def test_legacy_attach_from_real_bundle_then_removes_exactly(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp) / "repo"
             repo.mkdir()
             git(repo, "init", "--quiet")
-            cli = [sys.executable, str(ROOT / "scripts/harnessctl.py")]
-            attach = subprocess.run([*cli, "project-attach", "--repo", str(repo), "--apply"],
-                                    capture_output=True, text=True, timeout=60)
-            self.assertEqual(attach.returncode, 0, attach.stderr)
-            self.assertEqual(json.loads(attach.stdout)["status"], "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
+            catalog = h.read_manifest(ROOT / "config/approved_skills.json")
+            self.assertEqual(h.attach_project(repo, h.VENDORED, catalog)["status"],
+                             "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
             installed = repo / ".agents/skills/tdd-workflow/SKILL.md"
             self.assertEqual(h.digest(installed.read_bytes()), CATALOG["skills"]["tdd-workflow"])
-            remove = subprocess.run([*cli, "project-remove", "--repo", str(repo), "--apply"],
-                                    capture_output=True, text=True, timeout=60)
-            self.assertEqual(remove.returncode, 0, remove.stderr)
+            h.remove_project(repo, catalog)
             self.assertEqual([p.name for p in repo.iterdir()], [".git"])
 
 

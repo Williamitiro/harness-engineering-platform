@@ -45,7 +45,8 @@ upstreams do dossiê, ou tratar classificação JEV como benchmark de programaç
 FONTE (versionada)          C:\dev\harness-engineering
   skills/<nome>/SKILL.md      skills próprias do Harness (setup-harness)
   vendor/ecc/                 cópia byte a byte do ECC pinado: 2 SKILL.md + LICENSE + SOURCE.json (sem conversão de fim de linha)
-  templates/                  AGENTS.md e CLAUDE.md iniciais para repositórios novos
+  templates/repo/             AGENTS.md e CLAUDE.md (pacote 2) criados nos repositórios que não os têm
+  templates/AGENTS.md|CLAUDE.md   versões antigas: pacote 1 legado e condição C do benchmark (hash congelado)
   config/adapters.json        onde cada ferramenta procura skills e regras
   scripts/harnessctl.py       o único instalador
 
@@ -100,9 +101,15 @@ Toda operação do `harnessctl` e da skill `setup-harness` segue estes passos e 
 | ↩ | **Remover** (`remove`) | sim | prévia sem `--apply`; remove só o que o manifesto prova e que está inalterado |
 
 **Repositório existente:** respeitar as regras locais de branch e cópia isolada e entregar por PR. O contrato
-existente nunca é lido para concatenar, sobrescrito ou reivindicado. Preservar é o **padrão** quando `AGENTS.md`
-existe (hoje isso exige a flag `--preserve-contract`). Skills de terceiros, links simbólicos e qualquer outra colisão
-bloqueiam (`BLOCKED_COLLISION`).
+existente nunca é lido, concatenado, sobrescrito ou reivindicado: preservar é sempre o padrão. Skills de terceiros
+em `.agents/skills` ou `.claude/skills` não são tocadas e não bloqueiam. Bloqueiam: link ou junction nos destinos
+(`AGENTS.md`, `CLAUDE.md`, `.harness`), diretório no lugar de um arquivo de regras e `.harness` alheio
+(`BLOCKED_PATH` / `BLOCKED_COLLISION`).
+
+**Propriedade dos arquivos de regras:** criados a partir de `templates/repo/`, passam a ser do projeto. `verify`
+informa `UNCHANGED` ou `EDITED_BY_PROJECT` (editar não é erro). `remove` apaga só o que o Harness criou **e** que
+continua byte a byte igual ao template aprovado; o restante fica. O Harness controla de fato apenas
+`.harness/manifest.json`.
 
 **Repositório novo:** `git init` só com a confirmação do operador; depois, mesma sequência.
 
@@ -203,7 +210,7 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-DOC-01 | R0 | este conjunto de docs; histórico arquivado | links válidos, CI verde |
 | HE-R1-01 | R1 | versionar as 2 skills ECC + LICENSE em `skills/`, com hash; sem depender de `.poc/`; conferir dependências de bash/POSIX e `$CLAUDE_PLUGIN_ROOT` no Windows | instalação numa máquina sem `.poc`; skill legível e utilizável no Windows |
 | HE-R1-02 | R1 | `config/adapters.json` + `machine-plan/install/verify/remove/discover` (Claude Code + Codex), com as 2 skills ECC; só ferramentas detectadas; link de uma raiz só se apontar para outra raiz do Harness | instalar/verificar/remover em home sintética; descoberta real nas duas ferramentas |
-| HE-R1-03 | R1 | camada 2 multi-ferramenta: preservar contrato por padrão, `CLAUDE.md` com `@AGENTS.md`, sem copiar skills genéricas | repo novo e repo existente; remoção exata |
+| HE-R1-03 | R1 | camada 2 (pacote 2) multi-ferramenta: preservar contrato por padrão, `CLAUDE.md` com `@AGENTS.md`, sem copiar skills genéricas; pacote 1 continua verificável e removível | repo novo e repo existente; remoção exata |
 | HE-R1-04 | R1 | `setup-harness` reescrita: detecta a ferramenta (sem `client` fixo), subcomandos verificar/remover; passa a fazer parte do pacote da máquina, com migração do bootstrap antigo (`setup-skill-*`) | descoberta + uso em chat novo no Claude Code e no Codex; a instalação antiga é removida exatamente |
 | HE-R1-05 | R1 | instalação permanente na plataforma metalúrgica (via PR) | tarefa real com QA externo |
 | HE-R2-01 | R2 | corrigir o runner: `stream-json` no Claude, todos os campos no Codex, `null` ≠ 0, versão e modelo registrados | testes offline do parser |

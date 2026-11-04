@@ -36,9 +36,9 @@ class ProjectInspectionTests(unittest.TestCase):
         code, plan = self.cli()
         self.assertEqual(code, 0)
         self.assertEqual(plan["status"], "PLANNED_NOT_INSTALLED")
+        # SPEC V2 (HE-R1-03): repository package holds project rules only; skills live on the machine.
         self.assertEqual({c["path"] for c in plan["changes"]}, {
-            "AGENTS.md", ".agents/skills/tdd-workflow/SKILL.md",
-            ".agents/skills/verification-loop/SKILL.md", ".harness/manifest.json"})
+            "AGENTS.md", "CLAUDE.md", ".harness/manifest.json"})
         self.assertEqual(plan["runtime_discovery"], "NOT_RUN")
         self.assertEqual(self.cli()[1], plan)
         self.assertEqual(before, sorted(p.relative_to(self.repo).as_posix() for p in self.repo.rglob("*")))
@@ -56,27 +56,30 @@ class ProjectInspectionTests(unittest.TestCase):
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("PRIVATE_CANARY_DO_NOT_READ")
         (self.repo / ".env").write_text("PRIVATE_CANARY_DO_NOT_READ")
-        # Only Harness's own allowlist is read. No target file or Git config is opened.
+        # Only the Harness's own record may be opened. No project file or Git config is.
         original = Path.open
+        own_record = self.repo / ".harness/manifest.json"
         def guard(path, *args, **kwargs):
-            if path.is_relative_to(self.repo):
+            if path.is_relative_to(self.repo) and path.absolute() != own_record.absolute():
                 raise AssertionError("target contents accessed")
             return original(path, *args, **kwargs)
         with patch.object(Path, "open", guard), patch.object(h.subprocess, "run", side_effect=AssertionError("process spawned")):
             code, result = self.cli()
         self.assertEqual(code, 2)
         self.assertEqual(result["status"], "BLOCKED_COLLISION")
-        self.assertEqual({b["path"] for b in result["blockers"]}, {
-            "AGENTS.md", ".agents/skills", ".harness", ".harness/manifest.json", h.STATE})
+        # SPEC V2: existing AGENTS.md is preserved and third-party skills are not touched,
+        # so neither blocks; an unknown Harness record and legacy state still do.
+        self.assertEqual({b["path"] for b in result["blockers"]}, {".harness/manifest.json", h.STATE})
+        self.assertEqual({c["path"]: c["action"] for c in result["changes"]}["AGENTS.md"], "PRESERVE")
         self.assertNotIn("PRIVATE_CANARY", json.dumps(result))
-        self.assertTrue(any(c["action"] == "BLOCKED_COLLISION" for c in result["changes"]))
 
     def test_file_in_parent_path_blocks(self):
-        (self.repo / ".agents").write_text("keep")
+        # Package 2 writes under .harness/ (not .agents/): a file in its place must block.
+        (self.repo / ".harness").write_text("keep")
         code, result = self.cli()
         self.assertEqual(code, 2)
         self.assertEqual(result["status"], "BLOCKED_COLLISION")
-        self.assertEqual((self.repo / ".agents").read_text(), "keep")
+        self.assertEqual((self.repo / ".harness").read_text(), "keep")
 
     def test_empty_skill_directory_and_other_client_contract_preserved(self):
         (self.repo / ".agents/skills").mkdir(parents=True)
@@ -127,7 +130,7 @@ class ProjectInspectionTests(unittest.TestCase):
         self.assertEqual(result["status"], "COMPATIBLE_NOT_RUNTIME_VERIFIED")
 
     def test_symlink_root_ancestor_git_and_destination_refused(self):
-        for rel in ("linked-root", "AGENTS.md", ".agents", ".harness", ".git-link"):
+        for rel in ("linked-root", "AGENTS.md", "CLAUDE.md", ".harness", ".git-link"):
             with self.subTest(rel=rel):
                 link = self.repo / rel
                 try:
@@ -149,7 +152,7 @@ class ProjectInspectionTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "Windows junction")
     def test_junction_destination_refused(self):
-        link = self.repo / ".agents"
+        link = self.repo / ".harness"  # package 2 destination
         # Explicit directory junction fixture; no shell or deletion helpers.
         import _winapi
         _winapi.CreateJunction(str(self.repo.parent), str(link))
@@ -158,8 +161,9 @@ class ProjectInspectionTests(unittest.TestCase):
         finally:
             link.rmdir()
 
-    def test_project_options_never_enable_writes_or_claude(self):
-        for extra in (("--apply",), ("--client", "claude"), ("--source", str(self.repo)), ("--target", str(self.repo))):
+    def test_project_options_never_enable_writes(self):
+        # SPEC V2 moved Claude Code into R1, so --client claude is now accepted (see test_repo_layer).
+        for extra in (("--apply",), ("--source", str(self.repo)), ("--target", str(self.repo))):
             with self.subTest(extra=extra), contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as ctx:
                     self.cli("project-plan", *extra)

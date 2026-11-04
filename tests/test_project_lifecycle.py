@@ -305,7 +305,7 @@ class ProjectLifecycleTests(unittest.TestCase):
     def test_cli_requires_apply_and_removal_preview_is_read_only(self):
         before = self.snapshot()
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            code = h.main(["project-attach", "--repo", str(self.repo), "--client", "codex", "--source", str(self.source)])
+            code = h.main(["project-attach", "--repo", str(self.repo), "--client", "codex"])  # no --apply
         self.assertEqual(code, 2)
         self.assertEqual(before, self.snapshot())
         self.attach()
