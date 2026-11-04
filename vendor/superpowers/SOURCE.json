@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/obra/superpowers",
+  "commit": "22f0b463e7a5e579904dd6211a520321035526f7",
+  "license": "MIT",
+  "note": "Byte-identical copy of 4 skill folders at this commit (verified by Git blob SHA). Do not edit. Candidate kit for the R2 benchmark; not installed by harnessctl."
+}

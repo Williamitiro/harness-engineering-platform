@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "id": "HE-R2-02-piloto",
+  "registered": "2026-11-04, antes de qualquer execução",
+  "question": "Um modelo barato com o kit chega mais perto de um modelo forte sem o kit, em tarefas reais da plataforma?",
+  "client": "codex-cli 0.166.0 (codex exec --json --ephemeral --approve-for-me)",
+  "repository": "Williamitiro/plataforma-metalurgica (cópia sem histórico, com um único commit local)",
+  "python": "C:/dev/plataforma-metalurgica/.venv/Scripts/python.exe",
+  "arms": {
+    "A": {"model": "gpt-6-luna", "effort": "medium", "kit": false, "k": 3},
+    "B": {"model": "gpt-6-luna", "effort": "medium", "kit": true, "k": 3},
+    "R": {"model": "gpt-6.1-sol", "effort": "high", "kit": false, "k": 1, "role": "referência (modelo forte, padrão do usuário)"}
+  },
+  "isolation": {
+    "user_skills_disabled_in_all_arms": ["tdd-workflow", "verification-loop", "setup-harness", "coordenacao-claude-codex",
+      "git-lane-checkpoint", "resiplac-vault-capture-global", "reverse-engineer-anything"],
+    "kit_delivery_arm_B": "skills em <ws>/.agents/skills e o bloco benchmarks/r2/kit_rules.md acrescentado ao AGENTS.md da cópia",
+    "proof": "skills/list do app-server com a mesma configuração e cwd, gravado por execução",
+    "leak_audit": "execução inválida se algum comando citar o checkout da plataforma, o Harness ou outra cópia"
+  },
+  "kit_skills": {
+    "karpathy-guidelines": "vendor/karpathy/skills/karpathy-guidelines",
+    "search-first": "vendor/ecc-kit/skills/search-first",
+    "writing-plans": "vendor/superpowers/skills/writing-plans",
+    "subagent-driven-development": "vendor/superpowers/skills/subagent-driven-development",
+    "systematic-debugging": "vendor/superpowers/skills/systematic-debugging",
+    "test-driven-development": "vendor/superpowers/skills/test-driven-development",
+    "verification-loop": "vendor/ecc/skills/verification-loop"
+  },
+  "tasks": {
+    "T1": {
+      "kind": "bug (geometria)",
+      "base_commit": "bab0061c9af8467363d6d688a47ad3c814cd152d",
+      "origin": "correção real 2574979 (26/10/2026)",
+      "prompt": "Ao exportar um contorno com poucos pontos para DXF (por exemplo um retângulo de 10 × 5 mm descrito só pelos 4 cantos), a função `ajustar_arcos` de `src/metalurgia/adapters/dxf_exportacao.py` às vezes troca as retas por um arco que passa pelos cantos, e a peça sai errada. Pior: `desvio_hausdorff` não acusa o erro. Corrija.",
+      "hidden_tests": {"file": "tests/test_dxf.py", "append": "benchmarks/r2/hidden/T1_test_dxf.py"},
+      "regression": "tests/test_dxf.py inteiro"
+    },
+    "T2": {
+      "kind": "funcionalidade pequena com reuso",
+      "base_commit": "2c0660b15b952fb6f5ffe77c52d4b29bb163d67c",
+      "origin": "correção real 67d3215 (04/11/2026)",
+      "prompt": "Uma pasta antiga do FreeCAD (molde pluvial R04) traz `02_dados/planificados.json`, mas não traz `02_dados/desenvolvimentos_<REV>.json`. A oficina (`ler_entrada` em `src/metalurgia/application/oficina.py`) reprova as peças com dobra dizendo \"None no desenvolvimento\". Faça a oficina funcionar com essa pasta e registre em `arquivos_entrada` de qual arquivo as dobras vieram. Quando o arquivo de desenvolvimentos existir, ele continua valendo.",
+      "hidden_tests": {"file": "tests/test_oficina.py", "append": "benchmarks/r2/hidden/T2_test_oficina.py"},
+      "regression": "tests/test_oficina.py inteiro",
+      "reuse_signal": "o diff chama a função já existente `desenvolvimentos` de `metalurgia.adapters.modelo_solidcraft`"
+    },
+    "T3": {
+      "kind": "pergunta (não é pedido de mudança)",
+      "base_commit": "2c0660b15b952fb6f5ffe77c52d4b29bb163d67c",
+      "prompt": "Pergunta, só para eu entender: hoje, se uma pasta antiga do FreeCAD tiver só `02_dados/planificados.json` e não tiver `02_dados/desenvolvimentos_<REV>.json`, o que a oficina faz com as peças dobradas? Vale a pena mudar isso? Qual seria o caminho mais simples?",
+      "accept": "nenhum arquivo alterado e resposta que explica o que acontece hoje",
+      "bonus": "a resposta sugere reaproveitar `modelo_solidcraft.desenvolvimentos`"
+    }
+  },
+  "prompt_suffix": "\n\nPara rodar testes, use `C:/dev/plataforma-metalurgica/.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider <arquivo>`. Trabalhe só nesta pasta.",
+  "metrics": {
+    "primary": ["aceite (testes ocultos passam e o arquivo de teste inteiro continua passando)", "T3: nenhum arquivo alterado"],
+    "pains": ["tokens de entrada (sem cache), de cache e de saída", "comandos executados", "tempo",
+              "arquivos e linhas alterados fora de testes (excesso de engenharia)", "T2: reuso da função existente",
+              "skills lidas (SKILL.md abertos)"]
+  },
+  "verdict_rule": "O kit (B) é adotado só se não piorar o aceite em relação a A e melhorar pelo menos uma métrica de dor (tokens, linhas alteradas, reuso ou T3). Diferença menor que 1 acerto em 3 por tarefa é INCONCLUSIVO. R só situa o teto."
+}
