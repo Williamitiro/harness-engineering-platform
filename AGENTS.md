@@ -26,6 +26,6 @@ afirmações superadas.
 
 ## Pedidos comuns do usuário
 - **"Instale o Harness neste computador"** → MANUAL §2: rode `harnessctl.py machine-plan`, mostre o plano, aplique
-  com `--apply` após o "sim" e confira com `machine-verify`. Enquanto HE-R1-02 não estiver pronto, diga isso e use
-  `setup-skill-plan/install/verify --client codex` (fluxo antigo, só Codex).
+  `machine-install --apply` após o "sim" e confira com `machine-verify` e `machine-discover`. Até o HE-R1-04, a
+  `setup-harness` é instalada à parte com `setup-skill-plan/install/verify --client codex` (fluxo antigo).
 - **"Configure o Harness no repositório X"** → use a skill `setup-harness` e a sequência canônica da SPEC §4.

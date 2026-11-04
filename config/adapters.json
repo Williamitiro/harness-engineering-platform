@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-11-03",
+  "note": "Where each tool looks for skills and rules. Paths are relative to the user home (machine) or the repository root (project). Adding a tool = one entry here plus a discovery test; no tool-specific code.",
+  "adapters": {
+    "codex": {
+      "release": "R1",
+      "detect": [".codex", ".agents"],
+      "machine_skills": ".agents/skills",
+      "project_skills": ".agents/skills",
+      "rules": "AGENTS.md",
+      "discovery": "codex app-server skills/list (no model turn)",
+      "source": "https://learn.chatgpt.com/docs/build-skills"
+    },
+    "claude": {
+      "release": "R1",
+      "detect": [".claude"],
+      "machine_skills": ".claude/skills",
+      "project_skills": ".claude/skills",
+      "rules": "CLAUDE.md",
+      "rules_import": "@AGENTS.md",
+      "discovery": "manual: new session lists the skills (no CLI listing without a model turn in 2.1.268)",
+      "source": "https://code.claude.com/docs/en/skills"
+    }
+  },
+  "served_by_agents_dir_without_install": ["cursor", "opencode", "github-copilot", "gemini-cli"],
+  "documented_not_enabled": {
+    "antigravity": {"release": "R3", "machine_skills": ".gemini/config/skills", "project_skills": ".agents/skills", "rules": "AGENTS.md"}
+  }
+}

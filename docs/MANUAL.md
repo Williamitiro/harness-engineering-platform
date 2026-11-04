@@ -7,7 +7,7 @@ Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harne
 >
 > | Passo | Claude Code | Codex |
 > |---|---|---|
-> | 1. Instalar no computador | 🔧 em implementação | ✅ funciona (versão antiga, só a skill de setup) |
+> | 1. Instalar no computador | ✅ skills de trabalho (`tdd-workflow`, `verification-loop`); 🔧 `setup-harness` | ✅ skills de trabalho; ✅ `setup-harness` (versão antiga, já instalada nesta máquina) |
 > | 2. Preparar um repositório | 🔧 em implementação | ✅ funciona (com o CLI; ver [ESTADO](ESTADO.md)) |
 > | 3. Trabalhar | ✅ normal | ✅ normal |
 > | 4. Medir se ajuda (benchmark) | ⏳ ainda não existe | ⏳ ainda não existe |
@@ -37,9 +37,10 @@ faz essa entrega é a skill **`setup-harness`**, e você só precisa chamá-la.
 
 ---
 
-## 2. Instalar no computador (uma vez só) 🔧
+## 2. Instalar no computador (uma vez só)
 
-Faça isto uma vez em cada computador que você usa.
+Faça isto uma vez em cada computador que você usa. **Neste computador já foi feito em 03/11/2026.** Hoje o passo
+instala as skills de trabalho; a `setup-harness` entra no mesmo comando na próxima etapa (🔧).
 
 **2.1. Ter a pasta do Harness.** Neste computador ela já existe em `C:\dev\harness-engineering`. Num computador
 novo, abra o PowerShell e rode:
@@ -52,12 +53,24 @@ git clone https://github.com/Williamitiro/harness-engineering-platform.git C:\de
 
 > Instale o Harness neste computador.
 
-O agente mostra o que vai copiar e para onde, pede o seu "sim", instala e confere. Se preferir fazer sem o agente,
-o comando equivalente é:
+O agente mostra o que vai copiar e para onde, pede o seu "sim", instala e confere. Ele só instala nas ferramentas
+que encontrar no computador (Claude Code, Codex), e nunca sobrescreve uma skill sua com o mesmo nome. Se preferir
+fazer sem o agente, os comandos são estes, um de cada vez:
+
+```bash
+python C:\dev\harness-engineering\scripts\harnessctl.py machine-plan
+```
 
 ```bash
 python C:\dev\harness-engineering\scripts\harnessctl.py machine-install --apply
 ```
+
+```bash
+python C:\dev\harness-engineering\scripts\harnessctl.py machine-discover
+```
+
+O primeiro mostra o plano sem gravar nada, o segundo instala e o terceiro confirma que o Codex enxerga as skills,
+sem gastar nenhuma resposta do modelo.
 
 **2.3. Conferir.** Feche e abra de novo o Claude Code (ou o Codex), em qualquer pasta, e escreva:
 
@@ -124,6 +137,7 @@ Para forçar o uso de uma skill, cite o nome dela: *"use o tdd-workflow para cor
 | **Conferir** se está tudo certo | `/setup-harness verificar` | compara os arquivos com o recibo e diz OK ou o que mudou |
 | **Atualizar** depois de uma versão nova do Harness | primeiro, na pasta do Harness: `git pull` e o passo 2.2 de novo; depois, em cada repositório: `/setup-harness verificar` | o computador recebe as skills novas; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
 | **Remover** do projeto | `/setup-harness remover` | mostra o que vai apagar (só o que ele criou) e pede confirmação |
+| **Remover do computador** | `python C:\dev\harness-engineering\scripts\harnessctl.py machine-remove` (prévia) e depois o mesmo comando com `--apply` | apaga só as skills que o Harness instalou; se você editou alguma, ele para e não apaga nada |
 
 ---
 

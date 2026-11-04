@@ -11,9 +11,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import queue
+import shutil
 import stat
 import subprocess
 import sys
+import tempfile
+import threading
 
 SUPPORTED = {"codex": ".agents/skills", "claude": ".claude/skills"}
 STATE = ".harness-install-record.json"
@@ -604,6 +608,271 @@ def lifecycle_main(argv: list[str]) -> int:
         return 2
 
 
+# --- Machine layer (HE-R1-02): workflow skills once per computer, per detected tool ---
+
+MACHINE_STATE = ".harness-machine.json"
+
+
+def read_adapters(path: Path) -> dict:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    adapters = data.get("adapters") if isinstance(data, dict) else None
+    if data.get("schema_version") != 1 or not isinstance(adapters, dict) or not adapters:
+        raise GateError("invalid adapter table")
+    for name, entry in adapters.items():
+        rel = entry.get("machine_skills") if isinstance(entry, dict) else None
+        detect = entry.get("detect") if isinstance(entry, dict) else None
+        if (not isinstance(rel, str) or Path(rel).is_absolute() or ".." in Path(rel).parts
+                or not isinstance(detect, list) or not detect
+                or any(not isinstance(d, str) or ".." in Path(d).parts for d in detect)):
+            raise GateError(f"invalid adapter entry: {name}")
+    return data
+
+
+def is_link(path: Path) -> bool:
+    if path.is_symlink():
+        return True
+    try:
+        attrs = getattr(path.lstat(), "st_file_attributes", 0)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    return bool(attrs & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
+
+
+def machine_roots(home: Path, adapters: dict) -> tuple[Path, list[dict], list[str]]:
+    """Resolve one install root per detected tool. A tool root may be a link only
+    when it points exactly at another tool's real root (operator's own junction)."""
+    home = home.absolute()
+    assert_no_symlink(home)
+    if not home.is_dir():
+        raise GateError("home must be an existing directory")
+    copies, links, skipped = [], [], []
+    for name, entry in sorted(adapters["adapters"].items()):
+        rel = entry["machine_skills"]
+        root = home / rel
+        installed = (home / rel / MACHINE_STATE).exists() if not is_link(root) else False
+        if not installed and not any((home / d).exists() for d in entry["detect"]):
+            skipped.append(name)
+            continue
+        assert_no_symlink(root.parent)
+        if is_link(root):
+            links.append({"adapter": name, "root": rel, "mode": "alias"})
+        elif root.exists() and not root.is_dir():
+            raise GateError(f"BLOCKED_COLLISION: {rel} is not a directory")
+        else:
+            copies.append({"adapter": name, "root": rel, "mode": "copy"})
+    if not copies and not links:
+        raise GateError("BLOCKED_NO_SUPPORTED_TOOL: neither Claude Code nor Codex detected in this home")
+    for link in links:
+        target = (home / link["root"]).resolve()
+        match = [c for c in copies if (home / c["root"]).exists() and (home / c["root"]).resolve() == target]
+        if not match:
+            raise GateError(f"BLOCKED_LINK: {link['root']} links outside the Harness skill roots")
+        link["alias_of"] = match[0]["adapter"]
+    return home, copies + links, skipped
+
+
+def machine_payload(catalog: dict) -> tuple[dict[str, bytes], str]:
+    skills = check_source(VENDORED, catalog)
+    notice = owned_bytes(VENDORED / "LICENSE")
+    if digest(notice) != catalog["ecc"].get("license_sha256"):
+        raise GateError("ECC license differs from approved hash")
+    return {s["name"]: owned_bytes(Path(s["source"])) for s in skills}, notice.decode("utf-8")
+
+
+def root_package(root: str, skills: dict[str, bytes]) -> tuple[dict[str, bytes], str]:
+    return {f"{root}/{name}/SKILL.md": raw for name, raw in sorted(skills.items())}, f"{root}/{MACHINE_STATE}"
+
+
+def verify_machine_root(home: Path, root: dict, skills: dict[str, bytes], catalog: dict) -> dict:
+    files, state = root_package(root["root"], skills)
+    record = validate_record(home, state, {p: digest(raw) for p, raw in files.items()}, "harness-machine")
+    if record.get("adapter") != root["adapter"] or record.get("ecc_commit") != catalog["ecc"]["commit"]:
+        raise GateError("machine ownership adapter or pin mismatch")
+    return record
+
+
+def machine_plan(home: Path, catalog: dict, adapters: dict) -> dict:
+    home, roots, skipped = machine_roots(home, adapters)
+    skills, _ = machine_payload(catalog)
+    planned, installed = [], []
+    for root in (r for r in roots if r["mode"] == "copy"):
+        files, state = root_package(root["root"], skills)
+        if (home / state).exists():
+            verify_machine_root(home, root, skills, catalog)
+            installed.append(root["adapter"])
+            continue
+        for name in skills:
+            if (home / root["root"] / name).exists() or is_link(home / root["root"] / name):
+                raise GateError(f"BLOCKED_COLLISION: {root['root']}/{name} already exists and is not Harness-owned")
+        planned += [*files, state]
+    return {"status": "PLANNED_NOT_INSTALLED" if planned else "ALREADY_INSTALLED", "home": str(home),
+            "roots": roots, "skipped": skipped, "files": planned, "already_installed": installed,
+            "runtime_discovery": "NOT_RUN"}
+
+
+def machine_install(home: Path, catalog: dict, adapters: dict) -> dict:
+    result = machine_plan(home, catalog, adapters)
+    if result["status"] == "ALREADY_INSTALLED":
+        return result
+    home = Path(result["home"])
+    skills, notice = machine_payload(catalog)
+    done = []
+    try:
+        for root in (r for r in result["roots"] if r["mode"] == "copy" and r["adapter"] not in result["already_installed"]):
+            files, state = root_package(root["root"], skills)
+            record = write_package(home, files, state, {
+                "schema_version": 1, "kind": "harness-machine", "adapter": root["adapter"],
+                "ecc_commit": catalog["ecc"]["commit"], "license_notice": notice})
+            done.append((state, record))
+    except Exception:
+        for state, record in reversed(done):  # all roots or none from this call
+            remove_package(home, state, record)
+        raise
+    return {"status": "FILES_INSTALLED_RUNTIME_NOT_VERIFIED", "roots": result["roots"],
+            "skipped": result["skipped"], "runtime_discovery": "NOT_RUN"}
+
+
+def machine_verify(home: Path, catalog: dict, adapters: dict) -> dict:
+    home, roots, skipped = machine_roots(home, adapters)
+    skills, _ = machine_payload(catalog)
+    for root in (r for r in roots if r["mode"] == "copy"):
+        if not (home / root_package(root["root"], skills)[1]).exists():
+            raise GateError(f"NOT_INSTALLED: {root['adapter']} detected but machine-install not applied")
+        verify_machine_root(home, root, skills, catalog)
+    return {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "roots": roots, "skipped": skipped,
+            "runtime_discovery": "NOT_RUN"}
+
+
+def machine_remove(home: Path, catalog: dict, adapters: dict, apply: bool = False) -> dict:
+    home, roots, _ = machine_roots(home, adapters)
+    skills, _ = machine_payload(catalog)
+    owned = []
+    for root in (r for r in roots if r["mode"] == "copy"):
+        state = root_package(root["root"], skills)[1]
+        if (home / state).exists():
+            owned.append((state, verify_machine_root(home, root, skills, catalog)))
+    if not owned:
+        return {"status": "ALREADY_REMOVED"}
+    if not apply:
+        return {"status": "PLANNED_NOT_REMOVED",
+                "files": [item["path"] for _, record in owned for item in record["files"]]}
+    for state, record in owned:
+        remove_package(home, state, record)
+    return {"status": "REMOVED_EXACT_OWNED_FILES"}
+
+
+def match_discovery(listing: dict, names: list[str]) -> dict:
+    entries = [s for block in listing.get("data", []) if isinstance(block, dict)
+               for s in block.get("skills", []) if isinstance(s, dict) and s.get("scope") == "user"]
+    result = {}
+    for name in names:
+        found = [s for s in entries if s.get("name") == name]
+        status = "DISCOVERED" if any(s.get("enabled") for s in found) else ("DISABLED" if found else "MISSING")
+        result[name] = {"status": status, "paths": [s.get("path") for s in found]}
+    return result
+
+
+def codex_skill_listing(timeout_s: float = 30.0) -> dict:
+    """Native metadata only: initialize + skills/list. No thread, turn, model or secret."""
+    exe = shutil.which("codex")
+    if exe is None:
+        raise GateError("BLOCKED_CLIENT_NOT_FOUND: codex CLI not on PATH")
+    keep = {"PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "HOME", "USERPROFILE",
+            "APPDATA", "LOCALAPPDATA", "CODEX_HOME"}
+    env = {k: v for k, v in os.environ.items() if k.upper() in keep}
+    messages: queue.Queue = queue.Queue()
+    # npm's codex shim spawns child processes that may release the cwd a moment late.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as cwd:
+        process = subprocess.Popen([exe, "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.DEVNULL, cwd=cwd, env=env)
+
+        def reader():
+            for raw in process.stdout:
+                try:
+                    messages.put(json.loads(raw))
+                except ValueError:
+                    pass
+            messages.put(None)
+
+        threading.Thread(target=reader, daemon=True).start()
+
+        def call(ident: int, method: str, params: dict) -> dict:
+            process.stdin.write((json.dumps({"id": ident, "method": method, "params": params}) + "\n").encode())
+            process.stdin.flush()
+            for _ in range(4096):
+                try:
+                    message = messages.get(timeout=timeout_s)
+                except queue.Empty:
+                    raise GateError("codex app-server timed out") from None
+                if message is None:
+                    raise GateError("codex app-server exited")
+                if message.get("id") == ident:
+                    if not isinstance(message.get("result"), dict):
+                        raise GateError(f"codex app-server rejected {method}")
+                    return message["result"]
+            raise GateError("codex app-server event limit")
+
+        try:
+            call(1, "initialize", {"clientInfo": {"name": "harnessctl", "version": "1"}})
+            process.stdin.write(b'{"method":"initialized","params":{}}\n')
+            process.stdin.flush()
+            return call(2, "skills/list", {"cwds": [cwd], "forceReload": True})
+        finally:
+            stop_own_process_tree(process)
+
+
+def stop_own_process_tree(process: subprocess.Popen) -> None:
+    """Close stdin so the server exits by itself; otherwise end only the tree we started."""
+    process.stdin.close()
+    try:
+        process.wait(timeout=10)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                       capture_output=True, timeout=15, check=False)
+    else:
+        process.kill()
+    process.wait(timeout=10)
+
+
+def machine_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Machine layer: Harness skills once per computer, per detected tool")
+    parser.add_argument("action", choices=("machine-plan", "machine-install", "machine-verify",
+                                           "machine-remove", "machine-discover"))
+    parser.add_argument("--home", type=Path, help="user home; defaults to the current user's home")
+    parser.add_argument("--apply", action="store_true")
+    args = parser.parse_args(argv)
+    home = args.home if args.home is not None else Path.home()
+    try:
+        catalog = read_manifest(ROOT / "config/approved_skills.json")
+        adapters = read_adapters(ROOT / "config/adapters.json")
+        if args.action == "machine-plan":
+            result = machine_plan(home, catalog, adapters)
+        elif args.action == "machine-install":
+            if not args.apply:
+                raise GateError("machine installation needs --apply; inspect machine-plan first")
+            result = machine_install(home, catalog, adapters)
+        elif args.action == "machine-verify":
+            result = machine_verify(home, catalog, adapters)
+        elif args.action == "machine-remove":
+            result = machine_remove(home, catalog, adapters, apply=args.apply)
+        else:
+            if args.home is not None:
+                raise GateError("discovery uses the real tool configuration; --home is not supported")
+            names = sorted(catalog["ecc"]["skills"])
+            result = {"codex": match_discovery(codex_skill_listing(), names),
+                      "claude": "MANUAL_CHECK_REQUIRED: open a new Claude Code session and list skills",
+                      "model_turns_started": 0}
+        print(json.dumps(result, indent=2))
+        return 0
+    except (GateError, OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
+        reason = str(exc) if isinstance(exc, GateError) else "machine operation blocked; no raw contents emitted"
+        print(json.dumps({"status": "BLOCKED", "reason": reason}), file=sys.stderr)
+        return 2
+
+
 def bootstrap_package(home: Path, client: str) -> tuple[Path, dict[str, bytes], str]:
     if client not in SUPPORTED or ".." in home.parts:
         raise GateError("invalid bootstrap client or home path")
@@ -734,6 +1003,8 @@ def main(argv: list[str] | None = None) -> int:
         return lifecycle_main(argv)
     if argv and argv[0] in ("setup-skill-plan", "setup-skill-install", "setup-skill-verify", "setup-skill-remove"):
         return bootstrap_main(argv)
+    if argv and argv[0].startswith("machine-"):
+        return machine_main(argv)
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
         "Lifecycle: project-attach / project-verify / project-remove. "

@@ -18,7 +18,7 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | `setup-harness` instalada nesta máquina | ✅ em `~/.agents/skills`; o Claude Code a enxerga pela junction `~/.claude/skills → ~/.agents/skills` | descoberta nativa no Codex 0.166 (`DISCOVERED`) | `evidence/HE_OP_02B_ATIVACAO_DESCOBERTA.json` |
 | Ensaio real na plataforma metalúrgica | ✅ patch com QA específico; ❌ suíte global com 2 falhas preexistentes | `BEHAVIOR_OBSERVED` na mesma sessão; turno novo `NOT_RUN` | `evidence/HE_OP_03_PLATAFORMA_METALURGICA.json`; [PR #216](https://github.com/Williamitiro/plataforma-metalurgica/pull/216) |
 | Instalação permanente na plataforma | ❌ não feita | — | o pacote foi removido após o ensaio |
-| Camada 1 (máquina) para Claude Code + Codex | ❌ HE-R1-02 | — | — |
+| Camada 1 (máquina) para Claude Code + Codex: `machine-plan/install/verify/remove/discover` + `config/adapters.json` | ✅ HE-R1-02 (só as 2 skills ECC; a `setup-harness` entra no HE-R1-04) | 13 testes offline; **instalada nesta máquina**; `DISCOVERED` no Codex (`skills/list`, 0 turnos) e no Claude Code (sessão recebeu as skills) | `evidence/HE_R1_02_MACHINE_DISCOVERY.json`; `tests/test_machine_layer.py` |
 | Camada 2 multi-ferramenta | ❌ HE-R1-03 | — | o código atual ainda copia as skills ECC para cada repo |
 | Benchmark A/B (R2) | ❌ `NOT_RUN` | — | `scripts/harness_eval.py` existe, mas com bugs (§3) |
 | JEV via HTTPS (`jev_http.py`) | ✅ código e testes; smoke de 1 chamada observado | relatado pelo operador | `scripts/jev_http.py` |
@@ -32,8 +32,8 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
    se aquele checkout sair desta branch, ela quebra.
 2. **Plataforma: suíte global verde**, em PR próprio na plataforma. Ordem de serviço pronta para colar na thread:
    [historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md](historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md).
-3. **HE-R1-02 → HE-R1-05** (SPEC §10): camada 1 (máquina), camada 2, nova `setup-harness`, instalação na plataforma.
-   Claude Code primeiro, depois Codex. HE-R1-01 concluído.
+3. **HE-R1-03 → HE-R1-05** (SPEC §10): camada 2, nova `setup-harness` (inclui migração do bootstrap antigo),
+   instalação na plataforma. HE-R1-01 e HE-R1-02 concluídos.
 4. **HE-R2-01 → HE-R2-03:** benchmark.
 
 ## 3. Problemas conhecidos (abertos)
@@ -41,7 +41,9 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Problema | Impacto | Corrigido em |
 |---|---|---|
 | `tdd-workflow` manda rodar `node $ECC_ROOT/scripts/setup-package-manager.js` (script não incluído) e as duas skills assumem projeto JavaScript (npm, tsc); os exemplos são em bash | em projeto Python ou sem Node, o agente precisa ignorar esses passos e usar o runner do projeto; rendimento menor | decidir no R2 (medir) se vale uma versão adaptada, como mudança revisada |
-| Descritor da `setup-harness` instalada aponta `ecc_source` para `.poc/ecc-pinned` | só nesta máquina; não mudou de propósito, porque alterar o pacote agora impediria verificar e remover a instalação atual | HE-R1-02 (migração) |
+| Descritor da `setup-harness` instalada aponta `ecc_source` para `.poc/ecc-pinned` | só nesta máquina; não mudou de propósito, porque alterar o pacote agora impediria verificar e remover a instalação atual | HE-R1-04 (migração junto com a reescrita da skill) |
+| Projetos com `project-attach` antigo têm cópia das skills ECC no repositório **e** a cópia da máquina | o Codex lista as duas (escopos `repo` e `user`) | HE-R1-03 (camada 2 sem cópia das skills genéricas) |
+| `~/.agents/skills` nesta máquina é um repositório Git do usuário | as 2 pastas e o recibo aparecem como arquivos não rastreados ali; o Harness não faz commit nem altera esse Git | decisão do usuário (commitar, ignorar ou deixar) |
 | Descritor da `setup-harness` fixa `client: codex`, também lido pelo Claude | o Claude aplicaria o pacote do Codex | HE-R1-04 |
 | `harness_eval.py` começa tokens em `0` (linhas 342–343), o Claude roda com `json` e perde a trajetória, o Codex descarta tokens de cache e de raciocínio | métricas erradas | HE-R2-01 |
 | O braço A do benchmark carregaria as skills globais | resultado falso de "empate" | HE-R2-02 |
@@ -108,6 +110,26 @@ python scripts/harnessctl.py project-remove --repo C:/caminho/projeto --apply
 
 ```bash
 python scripts/harnessctl.py setup-skill-verify --client codex
+```
+
+```bash
+python scripts/harnessctl.py machine-plan
+```
+
+```bash
+python scripts/harnessctl.py machine-install --apply
+```
+
+```bash
+python scripts/harnessctl.py machine-verify
+```
+
+```bash
+python scripts/harnessctl.py machine-discover
+```
+
+```bash
+python scripts/harnessctl.py machine-remove --apply
 ```
 
 JEV (chamada paga, exige autorização): `infisical run --env=dev -- python scripts/jev_http.py --one-call`.

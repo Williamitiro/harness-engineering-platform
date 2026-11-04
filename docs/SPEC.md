@@ -202,9 +202,9 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 |---|---|---|---|
 | HE-DOC-01 | R0 | este conjunto de docs; histórico arquivado | links válidos, CI verde |
 | HE-R1-01 | R1 | versionar as 2 skills ECC + LICENSE em `skills/`, com hash; sem depender de `.poc/`; conferir dependências de bash/POSIX e `$CLAUDE_PLUGIN_ROOT` no Windows | instalação numa máquina sem `.poc`; skill legível e utilizável no Windows |
-| HE-R1-02 | R1 | `config/adapters.json` + `machine-install/verify/remove` (Claude Code + Codex) | instalar/verificar/remover em home sintética; descoberta real nas duas ferramentas |
+| HE-R1-02 | R1 | `config/adapters.json` + `machine-plan/install/verify/remove/discover` (Claude Code + Codex), com as 2 skills ECC; só ferramentas detectadas; link de uma raiz só se apontar para outra raiz do Harness | instalar/verificar/remover em home sintética; descoberta real nas duas ferramentas |
 | HE-R1-03 | R1 | camada 2 multi-ferramenta: preservar contrato por padrão, `CLAUDE.md` com `@AGENTS.md`, sem copiar skills genéricas | repo novo e repo existente; remoção exata |
-| HE-R1-04 | R1 | `setup-harness` reescrita: detecta a ferramenta (sem `client` fixo), subcomandos verificar/remover | descoberta + uso em chat novo no Claude Code e no Codex |
+| HE-R1-04 | R1 | `setup-harness` reescrita: detecta a ferramenta (sem `client` fixo), subcomandos verificar/remover; passa a fazer parte do pacote da máquina, com migração do bootstrap antigo (`setup-skill-*`) | descoberta + uso em chat novo no Claude Code e no Codex; a instalação antiga é removida exatamente |
 | HE-R1-05 | R1 | instalação permanente na plataforma metalúrgica (via PR) | tarefa real com QA externo |
 | HE-R2-01 | R2 | corrigir o runner: `stream-json` no Claude, todos os campos no Codex, `null` ≠ 0, versão e modelo registrados | testes offline do parser |
 | HE-R2-02 | R2 | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
