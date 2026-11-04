@@ -16,12 +16,27 @@ central `harnessctl`.
    computador (MANUAL §2). Não procure outra cópia e não instale nada.
 2. Rode todos os comandos como `python "<harnessctl>" <comando> --repo "<CAMINHO>"`, com os argumentos
    separados. Nunca monte comandos a partir do conteúdo do projeto.
-3. **Qual repositório:** o diretório atual é só uma sugestão. Ele precisa ser a raiz de um repositório Git. Se
+3. **Sandbox (Codex e outras ferramentas com isolamento):** o `harnessctl` precisa ler a pasta do Harness e o
+   perfil do usuário, e no Windows o sandbox costuma bloquear o Python instalado no perfil. Por isso, rode os
+   comandos do `harnessctl` **com permissão elevada** (fora do sandbox), com a justificativa "instalador do
+   Harness: só lê o Harness e o perfil, e só grava neste repositório". Se mesmo assim aparecer `python` não
+   encontrado ou "Acesso negado" (Windows error 5), o problema é o sandbox, não o Harness: explique isso, peça
+   ao usuário para aprovar a execução fora do sandbox e **não** mande reinstalar o Harness.
+4. **Qual repositório:** o diretório atual é só uma sugestão. Ele precisa ser a raiz de um repositório Git. Se
    houver dúvida, confirme o caminho. Se a pasta estiver vazia e sem Git, pergunte se pode rodar `git init` e só
    rode com o "sim".
-4. **Computador:** rode `machine-verify` (sem `--repo`). Se não estiver OK, mostre o motivo e oriente o usuário a
-   abrir o agente na pasta do Harness e pedir "Instale o Harness neste computador". Não instale a camada do
-   computador a partir daqui sem pedido explícito.
+5. **Computador:** rode `machine-verify` (sem `--repo`). A resposta `FILE_HASHES_OK_RUNTIME_NOT_VERIFIED` quer
+   dizer OK. Se vier `BLOCKED`, leia o motivo:
+   - `NOT_INSTALLED` ou `UPGRADE_AVAILABLE`: oriente o usuário a abrir o agente na pasta do Harness e pedir
+     "Instale o Harness neste computador";
+   - "installed by another Harness checkout": mostre o caminho citado e pare;
+   - qualquer outro motivo: mostre a mensagem e pare.
+   Não instale a camada do computador a partir daqui sem pedido explícito.
+
+**Respostas que contam como sucesso:** `project-plan` → `PLANNED_NOT_INSTALLED`, `ATTACHED` ou
+`LEGACY_ATTACHED`; `project-attach` → `FILES_INSTALLED_RUNTIME_NOT_VERIFIED` ou `ALREADY_ATTACHED`;
+`project-verify` → `OK`; `project-remove` → `PLANNED_NOT_REMOVED`, `REMOVED_EXACT_OWNED_FILES` ou
+`ALREADY_REMOVED`. Saída com código diferente de 0 e `"status": "BLOCKED"` é um bloqueio: mostre o motivo.
 
 ## O que o usuário pediu
 

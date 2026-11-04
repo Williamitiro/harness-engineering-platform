@@ -63,6 +63,7 @@ class RepoLayerTests(unittest.TestCase):
     def test_new_repo_attach_creates_rules_only_and_removes_exactly(self):
         result = h.repo_attach(self.repo)
         self.assertEqual(result["status"], "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
+        self.assertEqual(result["created"], ["AGENTS.md", "CLAUDE.md", ".harness/manifest.json"])  # matches the plan
         self.assertEqual((self.repo / "AGENTS.md").read_bytes(), AGENTS_TEMPLATE)
         self.assertEqual((self.repo / "CLAUDE.md").read_bytes(), CLAUDE_TEMPLATE)
         self.assertFalse((self.repo / ".agents").exists())

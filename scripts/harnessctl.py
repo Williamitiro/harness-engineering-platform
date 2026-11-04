@@ -711,7 +711,7 @@ def repo_attach(repo: Path) -> dict:
         "schema_version": 1, "kind": "harness-project", "package": 2,
         "preserved": preserved, "runtime_execution": "NOT_RUN"})
     return {"status": "FILES_INSTALLED_RUNTIME_NOT_VERIFIED", "package": 2, "case": inspection["case"],
-            "created": sorted(files), "preserved": preserved, "note": inspection["note"],
+            "created": [*sorted(files), PROJECT_STATE], "preserved": preserved, "note": inspection["note"],
             "runtime_execution": "NOT_RUN"}
 
 
@@ -900,7 +900,8 @@ def root_package(root: str, files: dict[str, bytes]) -> tuple[dict[str, bytes], 
 
 
 def classify_machine_root(home: Path, root: dict, files: dict[str, bytes], catalog: dict) -> tuple[str, dict]:
-    """CURRENT, or UPGRADE when an older package is intact and only lacks newer files."""
+    """CURRENT, or UPGRADE when an older package is intact: files missing from it, or files
+    whose content changed in this Harness version but are still untouched since install."""
     expected, state = root_package(root["root"], files)
     record = json.loads(owned_bytes(home / state))
     if (not isinstance(record, dict) or record.get("kind") != "harness-machine"
@@ -909,26 +910,28 @@ def classify_machine_root(home: Path, root: dict, files: dict[str, bytes], catal
     entries = record.get("files")
     if not isinstance(entries, list) or not entries:
         raise GateError("invalid machine ownership record")
-    seen = set()
+    seen, outdated = set(), False
     for item in entries:
         rel = item.get("path") if isinstance(item, dict) else None
         if rel not in expected or rel in seen:
             raise GateError("machine ownership record lists an unknown or duplicated path")
         seen.add(rel)
-        if item.get("sha256") != digest(expected[rel]):
+        # Never replace a file the user edited: it must still match what was written.
+        if digest(owned_bytes(home / rel)) != item.get("sha256"):
+            raise GateError(f"managed file missing or modified: {rel}")
+        if item["sha256"] != digest(expected[rel]):
             if rel.endswith("harness-location.json"):
                 try:
                     other = json.loads(owned_bytes(home / rel)).get("harnessctl")
                 except (GateError, ValueError, AttributeError):
                     other = None
-                raise GateError(f"installed by another Harness checkout ({other}); run machine-* from there")
-            raise GateError(f"installed file differs from this Harness version: {rel}")
-        if digest(owned_bytes(home / rel)) != item["sha256"]:
-            raise GateError(f"managed file missing or modified: {rel}")
+                if other != str(ROOT / "scripts/harnessctl.py"):
+                    raise GateError(f"installed by another Harness checkout ({other}); run machine-* from there")
+            outdated = True  # older Harness version, untouched since install
     dirs = record.get("created_dirs")
     if not isinstance(dirs, list) or any(d not in package_dirs([*expected, state]) for d in dirs):
         raise GateError("unsafe directory ownership")
-    return ("CURRENT" if seen == set(expected) else "UPGRADE"), record
+    return ("CURRENT" if seen == set(expected) and not outdated else "UPGRADE"), record
 
 
 def legacy_bootstrap_state(root: str) -> str:

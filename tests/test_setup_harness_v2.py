@@ -34,6 +34,12 @@ class SkillFileTests(unittest.TestCase):
         self.assertNotIn("--source", text)
         self.assertNotIn(b"\r\n", SKILL)
 
+    def test_skill_guides_codex_sandbox_and_lists_ok_statuses(self):
+        text = SKILL.decode("utf-8")
+        self.assertIn("FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", text)  # what machine-verify really returns
+        self.assertIn("permissão elevada", text)                   # Codex sandbox blocks user Python
+        self.assertIn("Acesso negado", text)                        # the real Windows error, with its remedy
+
     def test_skills_folder_has_fixed_bytes_on_every_machine(self):
         out = git("check-attr", "text", "--", "skills/setup-harness/SKILL.md")
         self.assertTrue(out.endswith("text: unset"), out)
@@ -138,6 +144,32 @@ class MachinePackageV2Tests(unittest.TestCase):
         with self.assertRaises(h.GateError):
             h.machine_install(self.home, CATALOG, ADAPTERS)
         self.assertEqual(before, self.snapshot())
+
+    def newer_skill(self):
+        current = h.setup_skill_files()
+        newer = {**current, "setup-harness/SKILL.md": current["setup-harness/SKILL.md"] + b"\nnova linha\n"}
+        return patch.object(h, "setup_skill_files", return_value=newer)
+
+    def test_new_version_of_an_installed_skill_updates_untouched_files(self):
+        h.machine_install(self.home, CATALOG, ADAPTERS)
+        with self.newer_skill():
+            plan = h.machine_plan(self.home, CATALOG, ADAPTERS)
+            self.assertEqual(plan["migrations"], [{"adapter": "codex", "action": "UPGRADE_PACKAGE"}])
+            with self.assertRaises(h.GateError):
+                h.machine_verify(self.home, CATALOG, ADAPTERS)
+            h.machine_install(self.home, CATALOG, ADAPTERS)
+            self.assertTrue((self.root / "setup-harness/SKILL.md").read_bytes().endswith(b"nova linha\n"))
+            self.assertEqual(h.machine_verify(self.home, CATALOG, ADAPTERS)["status"],
+                             "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED")
+
+    def test_new_version_never_overwrites_a_file_the_user_edited(self):
+        h.machine_install(self.home, CATALOG, ADAPTERS)
+        edited = self.root / "setup-harness/SKILL.md"
+        edited.write_bytes(b"minha versao")
+        with self.newer_skill():
+            with self.assertRaises(h.GateError):
+                h.machine_install(self.home, CATALOG, ADAPTERS)
+        self.assertEqual(edited.read_bytes(), b"minha versao")
 
     def test_foreign_setup_harness_folder_blocks(self):
         foreign = self.root / "setup-harness/SKILL.md"
