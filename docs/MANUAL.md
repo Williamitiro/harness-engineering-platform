@@ -7,13 +7,12 @@ Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harne
 >
 > | Passo | Claude Code | Codex |
 > |---|---|---|
-> | 1. Instalar no computador | ✅ funciona; ⏳ a `setup-harness` nova entra quando o código chegar a `C:\dev\harness-engineering` | igual |
-> | 2. Preparar um repositório | ✅ pelos comandos (§3.3); ⏳ `/setup-harness` depois da ativação acima | ✅ pelos comandos (§3.3); ⏳ `$setup-harness` novo depois da ativação |
+> | 1. Instalar no computador | ✅ feito neste computador (03/11) | ✅ feito neste computador (03/11) |
+> | 2. Preparar um repositório | ✅ `/setup-harness` (primeiro teste em chat novo: pendente) ou comandos (§3.3) | ✅ `$setup-harness` (primeiro teste em chat novo: pendente) ou comandos (§3.3) |
 > | 3. Trabalhar | ✅ normal | ✅ normal |
 > | 4. Medir se ajuda (benchmark) | ⏳ ainda não existe | ⏳ ainda não existe |
 >
-> Este manual descreve o fluxo **definitivo**. Os passos marcados 🔧 ficam prontos na próxima etapa de
-> implementação; até lá, não os execute.
+> Este manual descreve o fluxo **definitivo**. O que ainda falta para o Harness V1 é o benchmark (passo 4).
 
 ---
 
@@ -83,7 +82,7 @@ computador está pronta, para o Claude Code e o Codex ao mesmo tempo.
 
 ---
 
-## 3. Preparar um repositório (uma vez por projeto) 🔧
+## 3. Preparar um repositório (uma vez por projeto)
 
 O comando é o mesmo para projeto novo e projeto antigo. A skill descobre sozinha qual é o caso.
 

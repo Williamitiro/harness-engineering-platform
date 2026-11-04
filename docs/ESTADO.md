@@ -14,7 +14,7 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Skills ECC versionadas no repositório (fonte padrão do attach) | ✅ HE-R1-01 | 10 testes offline + attach/remove real via CLI | `vendor/ecc/`; `tests/test_vendored_source.py` |
 | `harnessctl project-doctor/plan/attach/verify/remove`: **pacote 2** (só regras do projeto, sem cópia de skills) | ✅ HE-R1-03, serve Claude Code e Codex | 15 testes offline; ensaio: plan real na plataforma (0 escritas), repo novo e clone da plataforma com remoção exata | `scripts/harnessctl.py`; `tests/test_repo_layer.py`; `evidence/HE_R1_03_REPO_LAYER.json` |
 | Pacote 1 (antigo: skills copiadas no repo, `--preserve-contract`) | ⚠️ legado: ainda verifica e remove; `project-attach` responde `LEGACY_ATTACHED` com instrução de migração | testes offline | `tests/test_project_lifecycle.py` |
-| `setup-harness` nova (sem `client` fixo; plano → "sim" → aplicar → verificar; "verificar" e "remover"), dentro do pacote da máquina, com migração do bootstrap antigo e do pacote da máquina antigo | ✅ HE-R1-04 código; ⏳ **ativação na home real pendente** (ver §2) | 12 testes offline; migração ensaiada com os bytes reais instalados | `skills/setup-harness/`; `tests/test_setup_harness_v2.py`; `evidence/HE_R1_04_SETUP_HARNESS.json` |
+| `setup-harness` nova (sem `client` fixo; plano → "sim" → aplicar → verificar; "verificar" e "remover"), dentro do pacote da máquina, com migração do bootstrap antigo e do pacote da máquina antigo | ✅ HE-R1-04; **ativada nesta máquina em 03/11** a partir de `C:\dev\harness-engineering`; ⏳ teste em chat novo pelo usuário | 12 testes offline; migração real (`UPGRADE_PACKAGE` + `MIGRATE_BOOTSTRAP`); Codex `DISCOVERED` 3/3, 0 turnos | `skills/setup-harness/`; `tests/test_setup_harness_v2.py`; `evidence/HE_R1_04_SETUP_HARNESS.json` |
 | `setup-skill-plan/install/verify/remove` (bootstrap antigo) | ⚠️ obsoleto: ainda verifica e remove as versões antigas aprovadas; `machine-install` migra | testes offline | — |
 | `setup-harness` instalada nesta máquina | ✅ em `~/.agents/skills`; o Claude Code a enxerga pela junction `~/.claude/skills → ~/.agents/skills` | descoberta nativa no Codex 0.166 (`DISCOVERED`) | `evidence/HE_OP_02B_ATIVACAO_DESCOBERTA.json` |
 | Ensaio real na plataforma metalúrgica | ✅ patch com QA específico; ❌ suíte global com 2 falhas preexistentes | `BEHAVIOR_OBSERVED` na mesma sessão; turno novo `NOT_RUN` | `evidence/HE_OP_03_PLATAFORMA_METALURGICA.json`; [PR #216](https://github.com/Williamitiro/plataforma-metalurgica/pull/216) |
@@ -32,10 +32,11 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
    se aquele checkout sair desta branch, ela quebra.
 2. **Plataforma: suíte global verde**, em PR próprio na plataforma. Ordem de serviço pronta para colar na thread:
    [historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md](historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md).
-3. **Ativar a `setup-harness` nova nesta máquina.** Ela precisa ser instalada a partir de
-   `C:\dev\harness-engineering` (o descritor aponta para o `harnessctl` de quem instala), e esse checkout ainda não
-   tem o código novo. Depois do merge dos PRs #4 e #5 (ou com o checkout nessa versão): `machine-install --apply`
-   (migra sozinho) e o teste em chat novo, `/setup-harness` no Claude Code e `$setup-harness` no Codex.
+3. **Teste em chat novo** (gate do R1): `/setup-harness` no Claude Code e `$setup-harness` no Codex, num
+   repositório de teste. A `setup-harness` nova já está ativa; o checkout `C:\dev\harness-engineering` está em
+   *detached* no commit `e42ccfc` do PR #5. Depois do merge, volte esse checkout para o `main`
+   (`git switch main` e `git pull`). Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
+   depois `git switch codex/he-jev-007a` e `setup-skill-install --client codex --apply` (volta ao fluxo antigo).
 4. **HE-R1-05:** instalação permanente na plataforma, via PR. HE-R1-01 a HE-R1-04 concluídos no código.
 4. **HE-R2-01 → HE-R2-03:** benchmark.
 
@@ -44,7 +45,6 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Problema | Impacto | Corrigido em |
 |---|---|---|
 | `tdd-workflow` manda rodar `node $ECC_ROOT/scripts/setup-package-manager.js` (script não incluído) e as duas skills assumem projeto JavaScript (npm, tsc); os exemplos são em bash | em projeto Python ou sem Node, o agente precisa ignorar esses passos e usar o runner do projeto; rendimento menor | decidir no R2 (medir) se vale uma versão adaptada, como mudança revisada |
-| A `setup-harness` **instalada hoje** ainda é a antiga (descritor com `client: codex` e `ecc_source` em `.poc`); o Claude Code lê a versão de Codex | resolvido no código (HE-R1-04): `machine-install` migra | ativação pendente (§2 item 3) |
 | O checkout desta worktree tinha `skills/` com CRLF (autocrlf), o principal com LF | hashes divergentes entre checkouts | `skills/** -text` (HE-R1-04) |
 | Projetos com o pacote 1 têm cópia das skills ECC no repositório **e** a cópia da máquina | o Codex lista as duas (escopos `repo` e `user`) | migrar: `project-remove --apply` e depois `project-attach --apply` (nenhum projeto real está no pacote 1 hoje) |
 | `CLAUDE.md` já existente não é lido, então o Harness não sabe se ele importa o `AGENTS.md` | o plano avisa (`PRESERVE_CHECK_IMPORT`); a linha `@AGENTS.md` precisa ser posta à mão | a `setup-harness` (HE-R1-04) orienta o usuário |

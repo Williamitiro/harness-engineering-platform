@@ -20,7 +20,33 @@
       ".codex"
     ]
   },
-  "real_home_activation": "NOT_RUN: descriptor must point to the canonical checkout C:\\dev\\harness-engineering, which does not have this code yet",
-  "new_session_invocation": "NOT_RUN",
+  "real_home_activation": {
+    "observed_at_utc": "2026-11-04T02:24:28+00:00",
+    "installed_from": "C:\\dev\\harness-engineering (detached at e42ccfc)",
+    "migrations": [
+      "UPGRADE_PACKAGE",
+      "MIGRATE_BOOTSTRAP"
+    ],
+    "verify": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "descriptor": {
+      "schema_version": 2,
+      "harnessctl": "C:\\dev\\harness-engineering\\scripts\\harnessctl.py"
+    },
+    "codex_discovery": {
+      "client_version": "codex-cli 0.166.0",
+      "model_turns_started": 0,
+      "setup-harness": "DISCOVERED",
+      "tdd-workflow": "DISCOVERED",
+      "verification-loop": "DISCOVERED"
+    },
+    "user_skill_repo_untracked_harness_paths": [
+      "setup-harness/",
+      "tdd-workflow/",
+      "verification-loop/",
+      ".harness-machine.json"
+    ],
+    "other_user_changes_touched": 0
+  },
+  "new_session_invocation": "PENDING_USER: /setup-harness in a new Claude Code chat and $setup-harness in a new Codex chat",
   "cost_usd": null
 }
