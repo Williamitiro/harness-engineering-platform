@@ -11,6 +11,7 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Capacidade | Status | Prova (nível) | Onde |
 |---|---|---|---|
 | Docs canônicos (README, MANUAL, SPEC, ESTADO) | ✅ HE-DOC-01 | revisão | este conjunto |
+| Skills ECC versionadas no repositório (fonte padrão do attach) | ✅ HE-R1-01 | 10 testes offline + attach/remove real via CLI | `vendor/ecc/`; `tests/test_vendored_source.py` |
 | `harnessctl project-doctor/plan` (só leitura) | ✅ Codex | testes offline | `scripts/harnessctl.py` |
 | `harnessctl project-attach/verify/remove` + manifesto + `--preserve-contract` | ✅ Codex | testes offline + smoke com ECC real | idem; `tests/test_project_lifecycle.py` |
 | `setup-skill-plan/install/verify/remove` (bootstrap pessoal) | ✅ Codex; Claude só como arquivo (`BLOCKED_CLIENT_R3`) | testes offline | `skills/setup-harness/` |
@@ -31,16 +32,16 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
    se aquele checkout sair desta branch, ela quebra.
 2. **Plataforma: suíte global verde**, em PR próprio na plataforma. Ordem de serviço pronta para colar na thread:
    [historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md](historico/2026-11-03_OS_PLATAFORMA_SUITE_VERDE.md).
-3. **HE-R1-01 → HE-R1-05** (SPEC §10): fonte ECC versionada, camada 1, camada 2, nova `setup-harness`, instalação
-   na plataforma. Claude Code primeiro, depois Codex.
+3. **HE-R1-02 → HE-R1-05** (SPEC §10): camada 1 (máquina), camada 2, nova `setup-harness`, instalação na plataforma.
+   Claude Code primeiro, depois Codex. HE-R1-01 concluído.
 4. **HE-R2-01 → HE-R2-03:** benchmark.
 
 ## 3. Problemas conhecidos (abertos)
 
 | Problema | Impacto | Corrigido em |
 |---|---|---|
-| Fonte ECC só em `.poc/ecc-pinned` (pasta ignorada pelo Git) | não instala em outra máquina | HE-R1-01 |
-| Skills ECC usam bash/POSIX e `$CLAUDE_PLUGIN_ROOT` | podem falhar no Windows | HE-R1-01 |
+| `tdd-workflow` manda rodar `node $ECC_ROOT/scripts/setup-package-manager.js` (script não incluído) e as duas skills assumem projeto JavaScript (npm, tsc); os exemplos são em bash | em projeto Python ou sem Node, o agente precisa ignorar esses passos e usar o runner do projeto; rendimento menor | decidir no R2 (medir) se vale uma versão adaptada, como mudança revisada |
+| Descritor da `setup-harness` instalada aponta `ecc_source` para `.poc/ecc-pinned` | só nesta máquina; não mudou de propósito, porque alterar o pacote agora impediria verificar e remover a instalação atual | HE-R1-02 (migração) |
 | Descritor da `setup-harness` fixa `client: codex`, também lido pelo Claude | o Claude aplicaria o pacote do Codex | HE-R1-04 |
 | `harness_eval.py` começa tokens em `0` (linhas 342–343), o Claude roda com `json` e perde a trajetória, o Codex descarta tokens de cache e de raciocínio | métricas erradas | HE-R2-01 |
 | O braço A do benchmark carregaria as skills globais | resultado falso de "empate" | HE-R2-02 |
@@ -94,7 +95,7 @@ python scripts/harnessctl.py project-plan --repo C:/caminho/projeto --client cod
 ```
 
 ```bash
-python scripts/harnessctl.py project-attach --repo C:/caminho/projeto --client codex --source C:/dev/harness-engineering/.poc/ecc-pinned --preserve-contract --apply
+python scripts/harnessctl.py project-attach --repo C:/caminho/projeto --client codex --preserve-contract --apply
 ```
 
 ```bash

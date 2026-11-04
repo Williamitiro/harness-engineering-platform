@@ -43,7 +43,8 @@ upstreams do dossiê, ou tratar classificação JEV como benchmark de programaç
 
 ```
 FONTE (versionada)          C:\dev\harness-engineering
-  skills/<nome>/SKILL.md      setup-harness, tdd-workflow, verification-loop (ECC pinado, com LICENSE)
+  skills/<nome>/SKILL.md      skills próprias do Harness (setup-harness)
+  vendor/ecc/                 cópia byte a byte do ECC pinado: 2 SKILL.md + LICENSE + SOURCE.json (sem conversão de fim de linha)
   templates/                  AGENTS.md e CLAUDE.md iniciais para repositórios novos
   config/adapters.json        onde cada ferramenta procura skills e regras
   scripts/harnessctl.py       o único instalador

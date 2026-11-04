@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/affaan-m/ECC",
+  "commit": "b38be6a7f6350964d59328b52f0624e1d1d552d1",
+  "version_label": "2.2.3",
+  "license": "MIT",
+  "note": "Byte-identical copy of upstream files at this commit. Do not edit; hashes are pinned in config/approved_skills.json. Updating is a reviewed change."
+}

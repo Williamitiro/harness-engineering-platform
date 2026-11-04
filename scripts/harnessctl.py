@@ -20,6 +20,9 @@ STATE = ".harness-install-record.json"
 ALLOWED = {"tdd-workflow", "verification-loop"}
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT_STATE = ".harness/manifest.json"
+# Byte-identical upstream copy shipped with the Harness (HE-R1-01); default source.
+VENDORED = ROOT / "vendor" / "ecc"
+BUNDLE_FILES = {"LICENSE", "SOURCE.json", *(f"skills/{name}/SKILL.md" for name in ALLOWED)}
 
 
 class GateError(RuntimeError):
@@ -113,9 +116,38 @@ def check_sandbox(target: Path) -> None:
 
 
 def check_source(source: Path, manifest: dict) -> list[dict]:
+    """Accept a pinned ECC Git checkout or exactly this repository's bundled copy."""
     if not source.is_dir():
         raise GateError("ECC source checkout not found")
     assert_no_symlink(source)
+    git_marker = source / ".git"
+    if git_marker.exists() or git_marker.is_symlink():
+        return check_git_source(source, manifest)
+    if source.absolute().resolve() != VENDORED.absolute().resolve():
+        raise GateError("ECC source must be the pinned Git checkout or the bundled vendor/ecc copy")
+    return check_bundled_source(source, manifest)
+
+
+def check_bundled_source(source: Path, manifest: dict) -> list[dict]:
+    present = set()
+    for path in source.rglob("*"):
+        assert_no_symlink(path)
+        if path.is_file():
+            present.add(path.relative_to(source).as_posix())
+        elif not path.is_dir():
+            raise GateError("special file in bundled source refused")
+    if present != BUNDLE_FILES:
+        raise GateError("bundled source file list differs from the approved package")
+    try:
+        record = json.loads((source / "SOURCE.json").read_text(encoding="utf-8"))
+    except ValueError as exc:
+        raise GateError("bundled SOURCE.json is not valid JSON") from exc
+    if str(record.get("commit", "")).lower() != manifest["ecc"]["commit"].lower():
+        raise GateError("bundled source commit differs from the pinned commit")
+    return hashed_skills(source, manifest)
+
+
+def check_git_source(source: Path, manifest: dict) -> list[dict]:
     probe = git_probe(source, "rev-parse", "--verify", "HEAD")
     if probe.returncode != 0 or probe.stdout.strip().lower() != manifest["ecc"]["commit"].lower():
         raise GateError("ECC source HEAD differs from the pinned commit")
@@ -123,6 +155,10 @@ def check_source(source: Path, manifest: dict) -> list[dict]:
     if status_probe.returncode != 0 or status_probe.stdout.strip():
         raise GateError("ECC source worktree has uncommitted modifications or untracked files")
     # Never trust Git HEAD alone: the worktree can contain modified/untracked files.
+    return hashed_skills(source, manifest)
+
+
+def hashed_skills(source: Path, manifest: dict) -> list[dict]:
     result = []
     for name, expected in sorted(manifest["ecc"]["skills"].items()):
         source_file = source / "skills" / name / "SKILL.md"
@@ -541,7 +577,8 @@ def lifecycle_main(argv: list[str]) -> int:
     parser.add_argument("action", choices=("project-attach", "project-verify", "project-remove"))
     parser.add_argument("--repo", required=True, type=Path)
     parser.add_argument("--client", choices=("codex",), default="codex")
-    parser.add_argument("--source", type=Path, help="existing pinned ECC checkout; required on first attach")
+    parser.add_argument("--source", type=Path,
+                        help="pinned ECC Git checkout; default: the bundled vendor/ecc copy")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--preserve-contract", action="store_true", help="attach skills only; never own existing AGENTS.md")
     args = parser.parse_args(argv)
@@ -552,9 +589,8 @@ def lifecycle_main(argv: list[str]) -> int:
         if args.action == "project-attach":
             if not args.apply:
                 raise GateError("attach needs --apply; inspect project-plan first")
-            if args.source is None:
-                raise GateError("attach needs --source pointing to the pinned ECC checkout")
-            result = attach_project(args.repo, args.source, manifest, preserve_contract=args.preserve_contract)
+            source = VENDORED if args.source is None else args.source
+            result = attach_project(args.repo, source, manifest, preserve_contract=args.preserve_contract)
         elif args.action == "project-verify":
             verify_project(args.repo, manifest)
             result = {"status": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED", "runtime_execution": "NOT_RUN"}

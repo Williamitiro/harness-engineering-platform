@@ -21,7 +21,8 @@ arquivo.
 
 ```
 docs/            MANUAL, SPEC, ESTADO (+ evidence/ com dados brutos, historico/ arquivado)
-skills/          skills distribuídas pelo Harness (setup-harness; ECC em HE-R1-01)
+skills/          skills próprias do Harness (setup-harness)
+vendor/ecc/      skills ECC (tdd-workflow, verification-loop), cópia pinada por hash, licença MIT
 templates/       AGENTS.md / CLAUDE.md iniciais para repositórios novos
 config/          catálogo de skills aprovadas (hashes), políticas
 scripts/         harnessctl.py (instalador), harness_eval.py (benchmark), jev_http.py (JEV)

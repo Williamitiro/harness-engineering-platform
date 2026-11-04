@@ -1,0 +1,2 @@
+# Bundled upstream files are hash-pinned: Git must never convert their bytes.
+vendor/** -text
