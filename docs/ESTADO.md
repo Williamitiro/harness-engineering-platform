@@ -21,6 +21,7 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Instalação permanente na plataforma | ✅ HE-R1-05 em PR, **sem merge**: `CLAUDE.md` + manifesto, `AGENTS.md` da plataforma preservado | `project-verify` OK; chat novo: Claude Code e Codex citam a regra de branch da plataforma e veem as 2 skills (`DISCOVERED`); suíte da plataforma 2040 passed, 16 falhas de caminho longo que passam com `--basetemp` curto; tarefa real com as skills `NOT_RUN` | `evidence/HE_R1_05_PLATAFORMA.json`; [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229) |
 | Camada 1 (máquina) para Claude Code + Codex: `machine-plan/install/verify/remove/discover` + `config/adapters.json` | ✅ HE-R1-02 (só as 2 skills ECC; a `setup-harness` entra no HE-R1-04) | 13 testes offline; **instalada nesta máquina**; `DISCOVERED` no Codex (`skills/list`, 0 turnos) e no Claude Code (sessão recebeu as skills) | `evidence/HE_R1_02_MACHINE_DISCOVERY.json`; `tests/test_machine_layer.py` |
 | Benchmark A/B (R2) | ❌ `NOT_RUN` | — | `scripts/harness_eval.py` existe, mas com bugs (§3) |
+| Linha de base de qualidade no uso real (HE-R2) | ✅ medida no histórico da plataforma, sem chamada de modelo: 238 PRs; 24 com revisão independente contada; **20 defeitos confirmados**, 1,05 por PR revisado com código; tokens do Claude em 171 de 231 PRs (mediana 36 mil de saída); Codex 0 (só revisa, na `main`). Lote isolado de 21 execuções: 8 rodadas, **inválidas** (D51 da plataforma e Python bloqueado no sandbox do Codex) | 9 testes offline; contagem conferida contra as tabelas dos PRs #244, #245, #247; revisões sem tabela (#163, #166, #167, #82) ficam `null` | `scripts/quality_baseline.py`; `evidence/HE_R2_BASELINE_QUALIDADE.json`; `benchmarks/r2/` |
 | JEV via HTTPS (`jev_http.py`) | ✅ código e testes; smoke de 1 chamada observado | relatado pelo operador | `scripts/jev_http.py` |
 | Piloto JEV A×J (3 classificações) | ⚠️ "COMPLETED, 3/3 nas duas condições" relatado pelo operador; o recibo no repo é da tentativa anterior, `ABORTED` | sem recibo do sucesso | `evidence/HE_JEV_007B_PILOT.json` |
 | Isolamento G1 | ⚠️ MXC nativo do Codex: canários negados (observado); host Windows: reprovado | sem atestação externa | `evidence/HE_JEV_007A_*.json` |
@@ -37,7 +38,10 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
    a camada do computador foi instalada). Depois do merge, `git switch main` e `git pull` nessa pasta. Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
    depois `git switch codex/he-jev-007a` e `setup-skill-install --client codex --apply` (volta ao fluxo antigo).
 4. **Primeira tarefa real na plataforma com as skills**, com revisão externa (critério de aceite do HE-R1-05).
-5. **HE-R2-01 → HE-R2-03:** benchmark.
+5. **HE-R2: medir no uso real.** Instalar o kit na plataforma (PR, com autorização), trabalhar normalmente e rodar
+   `scripts/quality_baseline.py` a cada lote de PRs, comparando com a linha de base. Defeito só conta se a revisão
+   independente o publicar em tabela citando o PR de origem. Antes: decidir a regra D51 (o Codex recusa tarefa nova) e
+   o Python no sandbox do Codex. O lote isolado (`scripts/r2_bench.py`) fica só para dúvidas pontuais.
 
 ## 3. Problemas conhecidos (abertos)
 

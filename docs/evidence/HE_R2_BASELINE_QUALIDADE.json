@@ -1,0 +1,5619 @@
+{
+ "records": [
+  {
+   "pr": 1,
+   "merged_at": "2026-10-17T19:44:47Z",
+   "branch": "claude/metalurgia-decisions-benchmark-191cd3",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2820,
+    "tests": 70,
+    "docs": 6677
+   },
+   "claude": {
+    "input": 306,
+    "cache_write": 468884,
+    "cache_read": 50471587,
+    "output": 251332,
+    "models": {
+     "claude-opus-5-5": 153
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 2,
+   "merged_at": "2026-10-17T20:23:59Z",
+   "branch": "docs-exportprofile",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 411
+   },
+   "claude": {
+    "input": 106,
+    "cache_write": 69121,
+    "cache_read": 29107741,
+    "output": 44680,
+    "models": {
+     "claude-opus-5-5": 53
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 3,
+   "merged_at": "2026-10-17T20:22:57Z",
+   "branch": "b00-corpus",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 89,
+    "tests": 253,
+    "docs": 295
+   },
+   "claude": {
+    "input": 104,
+    "cache_write": 113227,
+    "cache_read": 7750496,
+    "output": 53358,
+    "models": {
+     "claude-opus-5-5": 52
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 4,
+   "merged_at": "2026-10-17T20:25:54Z",
+   "branch": "docs-siglas-d12",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 1660
+   },
+   "claude": {
+    "input": 22,
+    "cache_write": 17048,
+    "cache_read": 3337781,
+    "output": 10371,
+    "models": {
+     "claude-opus-5-5": 11
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 5,
+   "merged_at": "2026-10-17T20:39:05Z",
+   "branch": "docs-modelo-esforco",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 79
+   },
+   "claude": {
+    "input": 44,
+    "cache_write": 34379,
+    "cache_read": 13199945,
+    "output": 22315,
+    "models": {
+     "claude-opus-5-5": 22
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 6,
+   "merged_at": "2026-10-17T20:56:09Z",
+   "branch": "b01-schemas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1517,
+    "tests": 225,
+    "docs": 6
+   },
+   "claude": {
+    "input": 26,
+    "cache_write": 49361,
+    "cache_read": 1359553,
+    "output": 32653,
+    "models": {
+     "claude-sonnet-5-5": 13
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 7,
+   "merged_at": "2026-10-17T21:02:33Z",
+   "branch": "b18-contratos-minimos",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1001,
+    "tests": 278,
+    "docs": 0
+   },
+   "claude": {
+    "input": 28,
+    "cache_write": 45756,
+    "cache_read": 1539615,
+    "output": 27732,
+    "models": {
+     "claude-sonnet-5-5": 14
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 8,
+   "merged_at": "2026-10-17T21:08:16Z",
+   "branch": "b02-registro-idempotente",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 742,
+    "tests": 400,
+    "docs": 0
+   },
+   "claude": {
+    "input": 64,
+    "cache_write": 81008,
+    "cache_read": 4176696,
+    "output": 51680,
+    "models": {
+     "claude-opus-5-5": 32
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 9,
+   "merged_at": "2026-10-17T21:07:03Z",
+   "branch": "docs-dependencias-b04-b13",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 103
+   },
+   "claude": {
+    "input": 126,
+    "cache_write": 173305,
+    "cache_read": 42336063,
+    "output": 53172,
+    "models": {
+     "claude-opus-5-5": 63
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 10,
+   "merged_at": "2026-10-17T21:20:34Z",
+   "branch": "b03-aprendizado",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio, e foi suficiente",
+   "lines": {
+    "code": 627,
+    "tests": 367,
+    "docs": 0
+   },
+   "claude": {
+    "input": 60,
+    "cache_write": 107731,
+    "cache_read": 4370680,
+    "output": 53839,
+    "models": {
+     "claude-opus-5-5": 30
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 11,
+   "merged_at": "2026-10-17T22:02:51Z",
+   "branch": "b04-dxf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 44760,
+    "tests": 685,
+    "docs": 157
+   },
+   "claude": {
+    "input": 168,
+    "cache_write": 186606,
+    "cache_read": 20322715,
+    "output": 138273,
+    "models": {
+     "claude-opus-5-5": 84
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 12,
+   "merged_at": "2026-10-17T22:38:35Z",
+   "branch": "d19-engenharia-calculo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 1079
+   },
+   "claude": {
+    "input": 46,
+    "cache_write": 49719,
+    "cache_read": 3961360,
+    "output": 26986,
+    "models": {
+     "claude-opus-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 13,
+   "merged_at": "2026-10-17T22:38:51Z",
+   "branch": "b18-material",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 474,
+    "tests": 154,
+    "docs": 81
+   },
+   "claude": {
+    "input": 46,
+    "cache_write": 39009,
+    "cache_read": 4948314,
+    "output": 20317,
+    "models": {
+     "claude-opus-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 14,
+   "merged_at": "2026-10-17T22:41:36Z",
+   "branch": "cli-dxf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 166,
+    "tests": 93,
+    "docs": 33
+   },
+   "claude": {
+    "input": 48,
+    "cache_write": 56881,
+    "cache_read": 2664453,
+    "output": 21114,
+    "models": {
+     "claude-sonnet-5-5": 24
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 15,
+   "merged_at": "2026-10-17T23:23:50Z",
+   "branch": "cli-respostas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 421,
+    "tests": 335,
+    "docs": 112
+   },
+   "claude": {
+    "input": 102,
+    "cache_write": 80239,
+    "cache_read": 8918768,
+    "output": 55509,
+    "models": {
+     "claude-opus-5-5": 50
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 16,
+   "merged_at": "2026-10-18T00:05:43Z",
+   "branch": "b16-bom",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 275,
+    "tests": 175,
+    "docs": 0
+   },
+   "claude": {
+    "input": 46,
+    "cache_write": 73445,
+    "cache_read": 2852357,
+    "output": 28318,
+    "models": {
+     "claude-sonnet-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 17,
+   "merged_at": "2026-10-18T00:11:53Z",
+   "branch": "b31-tela-local",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 782,
+    "tests": 256,
+    "docs": 113
+   },
+   "claude": {
+    "input": 94,
+    "cache_write": 76115,
+    "cache_read": 7993091,
+    "output": 52762,
+    "models": {
+     "claude-opus-5-5": 47
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 18,
+   "merged_at": "2026-10-18T00:39:27Z",
+   "branch": "docs-re-icutdev",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 132
+   },
+   "claude": {
+    "input": 602,
+    "cache_write": 1120229,
+    "cache_read": 116308115,
+    "output": 159575,
+    "models": {
+     "claude-opus-5-5": 243,
+     "claude-sonnet-5-5": 46
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 19,
+   "merged_at": "2026-10-18T01:07:08Z",
+   "branch": "tela-visual-molde",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio, como no brief, e foi suficiente. Não fiz merge",
+   "lines": {
+    "code": 989,
+    "tests": 87,
+    "docs": 180
+   },
+   "claude": {
+    "input": 286,
+    "cache_write": 172824,
+    "cache_read": 32134930,
+    "output": 99810,
+    "models": {
+     "claude-opus-5-5": 142
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 20,
+   "merged_at": "2026-10-18T01:23:27Z",
+   "branch": "b20-custo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 777,
+    "tests": 296,
+    "docs": 104
+   },
+   "claude": {
+    "input": 72,
+    "cache_write": 109733,
+    "cache_read": 5902315,
+    "output": 60977,
+    "models": {
+     "claude-sonnet-5-5": 36
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 21,
+   "merged_at": "2026-10-18T02:35:33Z",
+   "branch": "tela-ux-v2",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/alto (redesenho de experiência + regra de domínio nova, D17). Nível foi suf",
+   "lines": {
+    "code": 6083,
+    "tests": 292,
+    "docs": 219
+   },
+   "claude": {
+    "input": 384,
+    "cache_write": 409566,
+    "cache_read": 68733735,
+    "output": 220717,
+    "models": {
+     "claude-opus-5-5": 191
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 22,
+   "merged_at": "2026-10-18T02:51:03Z",
+   "branch": "b04-gravacao-aninhada",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio, suficiente",
+   "lines": {
+    "code": 3004,
+    "tests": 31,
+    "docs": 20
+   },
+   "claude": {
+    "input": 120,
+    "cache_write": 116497,
+    "cache_read": 8600548,
+    "output": 47334,
+    "models": {
+     "claude-opus-5-5": 59
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 23,
+   "merged_at": "2026-10-18T03:18:56Z",
+   "branch": "tela-ajustes-face",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Sonnet/médio — suficiente",
+   "lines": {
+    "code": 786,
+    "tests": 232,
+    "docs": 167
+   },
+   "claude": {
+    "input": 184,
+    "cache_write": 210058,
+    "cache_read": 19932135,
+    "output": 85399,
+    "models": {
+     "claude-sonnet-5-5": 92
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 24,
+   "merged_at": "2026-10-18T03:37:27Z",
+   "branch": "pergunta-dobrada",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 198,
+    "tests": 123,
+    "docs": 8
+   },
+   "claude": {
+    "input": 116,
+    "cache_write": 113517,
+    "cache_read": 8789477,
+    "output": 40391,
+    "models": {
+     "claude-sonnet-5-5": 58
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 25,
+   "merged_at": "2026-10-18T04:16:02Z",
+   "branch": "estudo-extracao-pdf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 253
+   },
+   "claude": {
+    "input": 108,
+    "cache_write": 108512,
+    "cache_read": 7600269,
+    "output": 56493,
+    "models": {
+     "claude-sonnet-5-5": 54
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 26,
+   "merged_at": "2026-10-18T04:40:41Z",
+   "branch": "previa-corte-3d",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 83728,
+    "tests": 317,
+    "docs": 320
+   },
+   "claude": {
+    "input": 338,
+    "cache_write": 448124,
+    "cache_read": 61394818,
+    "output": 202456,
+    "models": {
+     "claude-opus-5-5": 169
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 27,
+   "merged_at": "2026-10-18T04:49:59Z",
+   "branch": "estudo-sparrow-jagua",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 162
+   },
+   "claude": {
+    "input": 28,
+    "cache_write": 28269,
+    "cache_read": 1929008,
+    "output": 16765,
+    "models": {
+     "claude-sonnet-5-5": 13
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 28,
+   "merged_at": "2026-10-18T12:38:57Z",
+   "branch": "estudo-freecad-sheetmetal",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 171
+   },
+   "claude": {
+    "input": 54,
+    "cache_write": 155137,
+    "cache_read": 4103233,
+    "output": 18963,
+    "models": {
+     "claude-sonnet-5-5": 25
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 29,
+   "merged_at": "2026-10-18T12:43:24Z",
+   "branch": "b24-orcamento",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 873,
+    "tests": 492,
+    "docs": 145
+   },
+   "claude": {
+    "input": 142,
+    "cache_write": 166517,
+    "cache_read": 13291856,
+    "output": 83961,
+    "models": {
+     "claude-sonnet-5-5": 71
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 30,
+   "merged_at": "2026-10-18T12:41:09Z",
+   "branch": "b19-nesting",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 761,
+    "tests": 283,
+    "docs": 14
+   },
+   "claude": {
+    "input": 88,
+    "cache_write": 90100,
+    "cache_read": 5769390,
+    "output": 52199,
+    "models": {
+     "claude-sonnet-5-5": 43
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 31,
+   "merged_at": "2026-10-18T12:47:50Z",
+   "branch": "b13-pdf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio, como no brief; foi suficiente. Nada foi delegado a subagente",
+   "lines": {
+    "code": 2510,
+    "tests": 620,
+    "docs": 347
+   },
+   "claude": {
+    "input": 278,
+    "cache_write": 337106,
+    "cache_read": 39544146,
+    "output": 157780,
+    "models": {
+     "claude-opus-5-5": 138
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 32,
+   "merged_at": "2026-10-18T12:51:51Z",
+   "branch": "ficha-peca-conjunto",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Sonnet/médio — suficiente",
+   "lines": {
+    "code": 1359,
+    "tests": 206,
+    "docs": 81
+   },
+   "claude": {
+    "input": 234,
+    "cache_write": 293700,
+    "cache_read": 30343537,
+    "output": 136269,
+    "models": {
+     "claude-sonnet-5-5": 116
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 33,
+   "merged_at": "2026-10-18T14:35:47Z",
+   "branch": "b24-tela-orcamento",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 74,
+    "tests": 24,
+    "docs": 99
+   },
+   "claude": {
+    "input": 42,
+    "cache_write": 40175,
+    "cache_read": 2132311,
+    "output": 10553,
+    "models": {
+     "claude-sonnet-5-5": 21
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 34,
+   "merged_at": "2026-10-18T13:27:21Z",
+   "branch": "docs-estado-projeto",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 561
+   },
+   "claude": {
+    "input": 44,
+    "cache_write": 32926,
+    "cache_read": 8013252,
+    "output": 18850,
+    "models": {
+     "claude-opus-5-5": 22
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 35,
+   "merged_at": "2026-10-18T14:37:07Z",
+   "branch": "b03-demo-ciclo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 151,
+    "docs": 67
+   },
+   "claude": {
+    "input": 8,
+    "cache_write": 3566,
+    "cache_read": 544527,
+    "output": 2566,
+    "models": {
+     "claude-sonnet-5-5": 4
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 36,
+   "merged_at": "2026-10-18T15:14:09Z",
+   "branch": "ra1-subconjunto-emissao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 571,
+    "tests": 290,
+    "docs": 3171
+   },
+   "claude": {
+    "input": 126,
+    "cache_write": 96470,
+    "cache_read": 14085261,
+    "output": 55716,
+    "models": {
+     "claude-opus-5-5": 60
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 37,
+   "merged_at": "2026-10-18T14:46:31Z",
+   "branch": "b17-pacote-2d",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 871,
+    "tests": 398,
+    "docs": 178
+   },
+   "claude": {
+    "input": 198,
+    "cache_write": 250682,
+    "cache_read": 21737896,
+    "output": 97917,
+    "models": {
+     "claude-opus-5-5": 88,
+     "claude-sonnet-5-5": 7
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 38,
+   "merged_at": "2026-10-18T15:44:56Z",
+   "branch": "ra1-subconjunto-aprovado",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2,
+    "tests": 6,
+    "docs": 106
+   },
+   "claude": {
+    "input": 44,
+    "cache_write": 88948,
+    "cache_read": 4951514,
+    "output": 16066,
+    "models": {
+     "claude-opus-5-5": 20,
+     "claude-sonnet-5-5": 2
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 39,
+   "merged_at": "2026-10-18T17:19:26Z",
+   "branch": "ra1-pacote-andre",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 190
+   },
+   "claude": {
+    "input": 26,
+    "cache_write": 10098,
+    "cache_read": 1663688,
+    "output": 6723,
+    "models": {
+     "claude-sonnet-5-5": 13
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 40,
+   "merged_at": "2026-10-18T16:31:37Z",
+   "branch": "decisoes-18-10",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 54
+   },
+   "claude": {
+    "input": 84,
+    "cache_write": 320511,
+    "cache_read": 7172031,
+    "output": 27551,
+    "models": {
+     "claude-opus-5-5": 20,
+     "claude-sonnet-5-5": 22
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 41,
+   "merged_at": "2026-10-18T17:07:42Z",
+   "branch": "b13-folha-divergente",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 247,
+    "tests": 188,
+    "docs": 24
+   },
+   "claude": {
+    "input": 56,
+    "cache_write": 36244,
+    "cache_read": 6152027,
+    "output": 22822,
+    "models": {
+     "claude-sonnet-5-5": 27
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 42,
+   "merged_at": "2026-10-18T17:54:14Z",
+   "branch": "b18-perfis-cam",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 909,
+    "tests": 126,
+    "docs": 294
+   },
+   "claude": {
+    "input": 94,
+    "cache_write": 42554,
+    "cache_read": 10985726,
+    "output": 24721,
+    "models": {
+     "claude-opus-5-5": 44
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 43,
+   "merged_at": "2026-10-18T19:33:03Z",
+   "branch": "b06-worker-freecad",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 7913,
+    "tests": 614,
+    "docs": 499
+   },
+   "claude": {
+    "input": 208,
+    "cache_write": 258734,
+    "cache_read": 31709031,
+    "output": 70245,
+    "models": {
+     "claude-opus-5-5": 99
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 44,
+   "merged_at": "2026-10-18T18:32:54Z",
+   "branch": "b13-folha-confirma-amarrada",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 54,
+    "tests": 74,
+    "docs": 10
+   },
+   "claude": {
+    "input": 78,
+    "cache_write": 40955,
+    "cache_read": 9666924,
+    "output": 21941,
+    "models": {
+     "claude-sonnet-5-5": 36
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 45,
+   "merged_at": "2026-10-18T20:57:20Z",
+   "branch": "b24-custo-real-minimo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 395,
+    "tests": 169,
+    "docs": 206
+   },
+   "claude": {
+    "input": 286,
+    "cache_write": 238350,
+    "cache_read": 31821977,
+    "output": 97665,
+    "models": {
+     "claude-opus-5-5": 140
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 46,
+   "merged_at": "2026-10-18T19:02:40Z",
+   "branch": "b00-ignorar-pycache",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 32,
+    "docs": 23
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 47,
+   "merged_at": "2026-10-18T19:03:13Z",
+   "branch": "b04-insert-camada-oculta",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 12,
+    "tests": 26,
+    "docs": 23
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 48,
+   "merged_at": "2026-10-18T19:05:02Z",
+   "branch": "b08-respostas-revisao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 21,
+    "tests": 18,
+    "docs": 23
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 49,
+   "merged_at": "2026-10-18T19:03:48Z",
+   "branch": "b17-definicao-por-revisao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 22,
+    "tests": 48,
+    "docs": 23
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 50,
+   "merged_at": "2026-10-18T19:04:22Z",
+   "branch": "b02-recuperar-job",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 3,
+    "tests": 35,
+    "docs": 23
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 51,
+   "merged_at": "2026-10-18T20:41:26Z",
+   "branch": "b07-verificador-posicao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 87,
+    "tests": 92,
+    "docs": 105
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 52,
+   "merged_at": "2026-10-18T21:43:03Z",
+   "branch": "estudo-sparrow-medicao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 387
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 53,
+   "merged_at": "2026-10-18T20:58:07Z",
+   "branch": "b20-correcoes-preco",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 75,
+    "tests": 135,
+    "docs": 55
+   },
+   "claude": {
+    "input": 110,
+    "cache_write": 47470,
+    "cache_read": 16952984,
+    "output": 29279,
+    "models": {
+     "claude-opus-5-5": 52
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 54,
+   "merged_at": "2026-10-18T21:43:58Z",
+   "branch": "estudo-uniao-cad",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 330,
+    "tests": 144,
+    "docs": 605
+   },
+   "claude": {
+    "input": 166,
+    "cache_write": 263495,
+    "cache_read": 14858828,
+    "output": 87815,
+    "models": {
+     "claude-opus-5-5": 65,
+     "claude-sonnet-5-5": 18
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 55,
+   "merged_at": "2026-10-18T21:44:28Z",
+   "branch": "plano-tela-config-online",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 905
+   },
+   "claude": {
+    "input": 62,
+    "cache_write": 56358,
+    "cache_read": 5798271,
+    "output": 38427,
+    "models": {
+     "claude-opus-5-5": 31
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 56,
+   "merged_at": "2026-10-18T21:43:30Z",
+   "branch": "estudo-nesting-criterios",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 496
+   },
+   "claude": {
+    "input": 152,
+    "cache_write": 98214,
+    "cache_read": 16739997,
+    "output": 50504,
+    "models": {
+     "claude-opus-5-5": 76
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 57,
+   "merged_at": "2026-10-18T21:34:48Z",
+   "branch": "b19-maxrects",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 203,
+    "tests": 190,
+    "docs": 67
+   },
+   "claude": {
+    "input": 4,
+    "cache_write": 1514,
+    "cache_read": 339843,
+    "output": 1007,
+    "models": {
+     "claude-sonnet-5-5": 2
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 58,
+   "merged_at": "2026-10-18T22:05:09Z",
+   "branch": "docs-conserta-decisoes",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 203
+   },
+   "claude": {
+    "input": 12,
+    "cache_write": 46927,
+    "cache_read": 3610249,
+    "output": 8535,
+    "models": {
+     "claude-opus-5-5": 6
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 59,
+   "merged_at": "2026-10-18T22:21:55Z",
+   "branch": "docs-nesting-alternativas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 43
+   },
+   "claude": {
+    "input": 14,
+    "cache_write": 8979,
+    "cache_read": 4417442,
+    "output": 3229,
+    "models": {
+     "claude-opus-5-5": 7
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 60,
+   "merged_at": "2026-10-18T22:22:20Z",
+   "branch": "claude/evidencia-palanque-r06-ea59a5",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 768,
+    "tests": 0,
+    "docs": 423
+   },
+   "claude": {
+    "input": 86,
+    "cache_write": 105207,
+    "cache_read": 5108703,
+    "output": 41914,
+    "models": {
+     "claude-sonnet-5-5": 43
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 61,
+   "merged_at": "2026-10-19T02:14:22Z",
+   "branch": "teste-nesting-comparativo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 643047,
+    "tests": 53,
+    "docs": 514
+   },
+   "claude": {
+    "input": 38,
+    "cache_write": 16126,
+    "cache_read": 3524415,
+    "output": 9680,
+    "models": {
+     "claude-sonnet-5-5": 19
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 62,
+   "merged_at": "2026-10-19T00:36:46Z",
+   "branch": "claude/tela-plano-orcamento-b110f0",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1388,
+    "tests": 343,
+    "docs": 208
+   },
+   "claude": {
+    "input": 382,
+    "cache_write": 917229,
+    "cache_read": 57052799,
+    "output": 163186,
+    "models": {
+     "claude-opus-5-5": 178,
+     "claude-sonnet-5-5": 7
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 63,
+   "merged_at": "2026-10-19T00:37:01Z",
+   "branch": "claude/tela-configuracoes-b25748",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1709,
+    "tests": 343,
+    "docs": 526
+   },
+   "claude": {
+    "input": 324,
+    "cache_write": 439180,
+    "cache_read": 40185706,
+    "output": 149776,
+    "models": {
+     "claude-opus-5-5": 147,
+     "claude-sonnet-5-5": 12
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 64,
+   "merged_at": "2026-10-19T02:16:55Z",
+   "branch": "claude/evidencia-molde-c05-7e621a",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2113,
+    "tests": 0,
+    "docs": 323
+   },
+   "claude": {
+    "input": 230,
+    "cache_write": 556741,
+    "cache_read": 25448960,
+    "output": 106031,
+    "models": {
+     "claude-opus-5-5": 115
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 65,
+   "merged_at": "2026-10-19T02:17:39Z",
+   "branch": "docs-dividas-tecnicas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 35
+   },
+   "claude": {
+    "input": 52,
+    "cache_write": 182104,
+    "cache_read": 9093150,
+    "output": 7288,
+    "models": {
+     "claude-opus-5-5": 11,
+     "claude-sonnet-5-5": 14
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 66,
+   "merged_at": "2026-10-19T02:41:36Z",
+   "branch": "b19-par-invertido",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 362,
+    "tests": 112,
+    "docs": 94
+   },
+   "claude": {
+    "input": 12,
+    "cache_write": 4312,
+    "cache_read": 1141238,
+    "output": 6029,
+    "models": {
+     "claude-sonnet-5-5": 6
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 67,
+   "merged_at": "2026-10-19T02:43:19Z",
+   "branch": "tela-observacao-peca",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 368,
+    "tests": 187,
+    "docs": 168
+   },
+   "claude": {
+    "input": 146,
+    "cache_write": 105803,
+    "cache_read": 36008054,
+    "output": 58088,
+    "models": {
+     "claude-opus-5-5": 70
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 68,
+   "merged_at": "2026-10-19T02:42:35Z",
+   "branch": "b19-retalho-continuo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 622,
+    "tests": 106,
+    "docs": 94
+   },
+   "claude": {
+    "input": 120,
+    "cache_write": 71573,
+    "cache_read": 13473253,
+    "output": 45452,
+    "models": {
+     "claude-sonnet-5-5": 58
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 69,
+   "merged_at": "2026-10-19T03:34:25Z",
+   "branch": "claude/plano-unificacao-2733ab",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 1097
+   },
+   "claude": {
+    "input": 264,
+    "cache_write": 399086,
+    "cache_read": 23680383,
+    "output": 97670,
+    "models": {
+     "claude-opus-5-5": 116,
+     "claude-haiku-5-5": 11
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 70,
+   "merged_at": "2026-10-19T03:59:56Z",
+   "branch": "claude/pacote-andre-c05-plataforma",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1410,
+    "tests": 202,
+    "docs": 141
+   },
+   "claude": {
+    "input": 278,
+    "cache_write": 307274,
+    "cache_read": 67384464,
+    "output": 146946,
+    "models": {
+     "claude-opus-5-5": 136
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 71,
+   "merged_at": "2026-10-19T10:38:43Z",
+   "branch": "d37-retalho-hibrido",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 420,
+    "tests": 188,
+    "docs": 189
+   },
+   "claude": {
+    "input": 68,
+    "cache_write": 423290,
+    "cache_read": 11958686,
+    "output": 13987,
+    "models": {
+     "claude-opus-5-5": 32
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 72,
+   "merged_at": "2026-10-19T10:38:51Z",
+   "branch": "d37-estoque-retalhos",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 599,
+    "tests": 233,
+    "docs": 191
+   },
+   "claude": {
+    "input": 106,
+    "cache_write": 62576,
+    "cache_read": 20317964,
+    "output": 32200,
+    "models": {
+     "claude-opus-5-5": 51
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 73,
+   "merged_at": "2026-10-19T10:41:30Z",
+   "branch": "claude/pacote-canonico-c05",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1060,
+    "tests": 0,
+    "docs": 136
+   },
+   "claude": {
+    "input": 78,
+    "cache_write": 67746,
+    "cache_read": 26117717,
+    "output": 43564,
+    "models": {
+     "claude-opus-5-5": 38
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 74,
+   "merged_at": "2026-10-19T12:41:46Z",
+   "branch": "d37-reserva-retalho",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 169,
+    "tests": 159,
+    "docs": 185
+   },
+   "claude": {
+    "input": 78,
+    "cache_write": 55909,
+    "cache_read": 17647086,
+    "output": 37551,
+    "models": {
+     "claude-opus-5-5": 37
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 75,
+   "merged_at": "2026-10-19T11:42:12Z",
+   "branch": "fix-estado-conflito",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 22,
+    "docs": 42
+   },
+   "claude": {
+    "input": 66,
+    "cache_write": 116359,
+    "cache_read": 4465206,
+    "output": 9773,
+    "models": {
+     "claude-opus-5-5": 25,
+     "claude-sonnet-5-5": 6
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 77,
+   "merged_at": "2026-10-19T16:53:04Z",
+   "branch": "claude/pacote-canonico-r08",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 4590,
+    "tests": 0,
+    "docs": 353
+   },
+   "claude": {
+    "input": 440,
+    "cache_write": 1919515,
+    "cache_read": 49409220,
+    "output": 47426,
+    "models": {
+     "claude-opus-5-5": 168,
+     "claude-sonnet-5-5": 46
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 78,
+   "merged_at": "2026-10-21T16:11:27Z",
+   "branch": "claude/plano-canonico-cad-fabricacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 563
+   },
+   "claude": {
+    "input": 40,
+    "cache_write": 68843,
+    "cache_read": 15003956,
+    "output": 24713,
+    "models": {
+     "claude-opus-5-5": 20
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 79,
+   "merged_at": "2026-10-21T17:01:21Z",
+   "branch": "claude/conferidor-pacote-oficina",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 254,
+    "tests": 0,
+    "docs": 57
+   },
+   "claude": {
+    "input": 22,
+    "cache_write": 19924,
+    "cache_read": 8845774,
+    "output": 14513,
+    "models": {
+     "claude-opus-5-5": 11
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 80,
+   "merged_at": "2026-10-21T17:02:13Z",
+   "branch": "claude/regra-testar-antes-de-entregar",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 93
+   },
+   "claude": {
+    "input": 78,
+    "cache_write": 92151,
+    "cache_read": 33525062,
+    "output": 24972,
+    "models": {
+     "claude-opus-5-5": 39
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 81,
+   "merged_at": "2026-10-22T15:51:41Z",
+   "branch": "e3-pacote-oficina",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2133,
+    "tests": 449,
+    "docs": 407
+   },
+   "claude": {
+    "input": 640,
+    "cache_write": 1045871,
+    "cache_read": 149339675,
+    "output": 284841,
+    "models": {
+     "claude-opus-5-5": 262,
+     "claude-sonnet-5-5": 56
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 82,
+   "merged_at": "2026-10-21T18:44:23Z",
+   "branch": "claude/conferencia-regras-r18",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 30,
+    "tests": 0,
+    "docs": 42
+   },
+   "claude": {
+    "input": 16,
+    "cache_write": 15127,
+    "cache_read": 7293653,
+    "output": 9725,
+    "models": {
+     "claude-opus-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 83,
+   "merged_at": "2026-10-21T18:44:53Z",
+   "branch": "claude/decisao-un-unificacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 46
+   },
+   "claude": {
+    "input": 142,
+    "cache_write": 2031580,
+    "cache_read": 38492320,
+    "output": 21344,
+    "models": {
+     "claude-opus-5-5": 41,
+     "claude-sonnet-5-5": 25
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 84,
+   "merged_at": "2026-10-21T21:41:45Z",
+   "branch": "e2-1-importacao-cad",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/alto, suficiente",
+   "lines": {
+    "code": 4695,
+    "tests": 181,
+    "docs": 16720
+   },
+   "claude": {
+    "input": 224,
+    "cache_write": 473399,
+    "cache_read": 31317843,
+    "output": 86177,
+    "models": {
+     "claude-opus-5-5": 111
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 85,
+   "merged_at": "2026-10-21T22:31:14Z",
+   "branch": "e2-4-gerador-conferencia",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/alto, suficiente",
+   "lines": {
+    "code": 160,
+    "tests": 59,
+    "docs": 203
+   },
+   "claude": {
+    "input": 180,
+    "cache_write": 559466,
+    "cache_read": 39831254,
+    "output": 85883,
+    "models": {
+     "claude-opus-5-5": 90
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 86,
+   "merged_at": "2026-10-21T23:04:22Z",
+   "branch": "e2-2-agents-unico",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/alto, suficiente",
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 173
+   },
+   "claude": {
+    "input": 108,
+    "cache_write": 194229,
+    "cache_read": 22172432,
+    "output": 36751,
+    "models": {
+     "claude-opus-5-5": 53
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 87,
+   "merged_at": "2026-10-21T23:05:48Z",
+   "branch": "e2-5-actions-proposta",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/alto na execução, suficiente",
+   "lines": {
+    "code": 37,
+    "tests": 5,
+    "docs": 144
+   },
+   "claude": {
+    "input": 46,
+    "cache_write": 96526,
+    "cache_read": 10490240,
+    "output": 18791,
+    "models": {
+     "claude-opus-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 88,
+   "merged_at": "2026-10-21T23:22:11Z",
+   "branch": "fix-marcas-estado",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 7,
+    "tests": 11,
+    "docs": 75
+   },
+   "claude": {
+    "input": 64,
+    "cache_write": 41824,
+    "cache_read": 3439206,
+    "output": 18730,
+    "models": {
+     "claude-opus-5-5": 31
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 89,
+   "merged_at": "2026-10-21T23:53:00Z",
+   "branch": "e2-doc-unificacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 382
+   },
+   "claude": {
+    "input": 28,
+    "cache_write": 18217,
+    "cache_read": 1927230,
+    "output": 8777,
+    "models": {
+     "claude-opus-5-5": 13
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 90,
+   "merged_at": "2026-10-22T00:35:38Z",
+   "branch": "e2-congelar-cad",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 270
+   },
+   "claude": {
+    "input": 38,
+    "cache_write": 143302,
+    "cache_read": 2840650,
+    "output": 12232,
+    "models": {
+     "claude-opus-5-5": 18
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 91,
+   "merged_at": "2026-10-22T14:01:12Z",
+   "branch": "e2-divisao-codex-claude",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 268
+   },
+   "claude": {
+    "input": 48,
+    "cache_write": 25271,
+    "cache_read": 4336643,
+    "output": 17871,
+    "models": {
+     "claude-opus-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 92,
+   "merged_at": "2026-10-22T14:22:38Z",
+   "branch": "e2-protocolo-codex-claude",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 220
+   },
+   "claude": {
+    "input": 150,
+    "cache_write": 354816,
+    "cache_read": 17012103,
+    "output": 44067,
+    "models": {
+     "claude-opus-5-5": 69
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 93,
+   "merged_at": "2026-10-22T15:51:39Z",
+   "branch": "e3-oficina-legivel",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2156,
+    "tests": 495,
+    "docs": 414
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 94,
+   "merged_at": "2026-10-22T17:42:56Z",
+   "branch": "e3-spec-pacote-legivel",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 624
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 95,
+   "merged_at": "2026-10-22T20:04:52Z",
+   "branch": "e3-d44-registro",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 115
+   },
+   "claude": {
+    "input": 94,
+    "cache_write": 373173,
+    "cache_read": 14490765,
+    "output": 26534,
+    "models": {
+     "claude-opus-5-5": 42
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 96,
+   "merged_at": "2026-10-22T23:05:23Z",
+   "branch": "e3a-pacote-legivel",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 959,
+    "tests": 370,
+    "docs": 224
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 97,
+   "merged_at": "2026-10-22T21:33:32Z",
+   "branch": "e3-protocolo-parte-certa",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 50
+   },
+   "claude": {
+    "input": 22,
+    "cache_write": 17461,
+    "cache_read": 3865366,
+    "output": 6532,
+    "models": {
+     "claude-opus-5-5": 10
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 98,
+   "merged_at": "2026-10-22T21:58:27Z",
+   "branch": "e3-d45-leitura",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 10
+   },
+   "claude": {
+    "input": 64,
+    "cache_write": 58395,
+    "cache_read": 12198120,
+    "output": 11807,
+    "models": {
+     "claude-opus-5-5": 29,
+     "<synthetic>": 1
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 99,
+   "merged_at": "2026-10-23T01:19:05Z",
+   "branch": "e3b-documentos-legiveis",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 73,
+    "tests": 0,
+    "docs": 122
+   },
+   "claude": {
+    "input": 112,
+    "cache_write": 82830,
+    "cache_read": 24996658,
+    "output": 39641,
+    "models": {
+     "claude-opus-5-5": 50
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 100,
+   "merged_at": "2026-10-23T16:07:32Z",
+   "branch": "e3a-plano-acabamento",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 790,
+    "tests": 384,
+    "docs": 930
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 101,
+   "merged_at": "2026-10-23T10:06:34Z",
+   "branch": "e3b-gerador-chama-oficina",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 311,
+    "tests": 11,
+    "docs": 81
+   },
+   "claude": {
+    "input": 136,
+    "cache_write": 1204361,
+    "cache_read": 34630418,
+    "output": 46690,
+    "models": {
+     "claude-opus-5-5": 61,
+     "<synthetic>": 1
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 102,
+   "merged_at": "2026-10-23T12:01:46Z",
+   "branch": "e3-d46-letra-codigo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 28
+   },
+   "claude": {
+    "input": 66,
+    "cache_write": 1256843,
+    "cache_read": 17016286,
+    "output": 17455,
+    "models": {
+     "claude-opus-5-5": 28
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 103,
+   "merged_at": "2026-10-23T18:19:44Z",
+   "branch": "e3-funcao-molde",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 6,
+    "tests": 0,
+    "docs": 53
+   },
+   "claude": {
+    "input": 30,
+    "cache_write": 18126,
+    "cache_read": 9554602,
+    "output": 10026,
+    "models": {
+     "claude-opus-5-5": 14
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 104,
+   "merged_at": "2026-10-23T19:59:27Z",
+   "branch": "e3b-vista-explodida",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 195,
+    "tests": 0,
+    "docs": 55
+   },
+   "claude": {
+    "input": 230,
+    "cache_write": 946961,
+    "cache_read": 82572546,
+    "output": 81270,
+    "models": {
+     "claude-opus-5-5": 107
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 105,
+   "merged_at": "2026-10-23T18:12:00Z",
+   "branch": "e3-p12-escala",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 23,
+    "tests": 42,
+    "docs": 150
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 106,
+   "merged_at": "2026-10-23T20:20:21Z",
+   "branch": "e3-p14-p17",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 386,
+    "tests": 269,
+    "docs": 178
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 107,
+   "merged_at": "2026-10-24T05:00:04Z",
+   "branch": "e3b-portal-importado",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 5668,
+    "tests": 77,
+    "docs": 328
+   },
+   "claude": {
+    "input": 122,
+    "cache_write": 1868514,
+    "cache_read": 50867516,
+    "output": 34121,
+    "models": {
+     "claude-opus-5-5": 57
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 108,
+   "merged_at": "2026-10-24T01:51:57Z",
+   "branch": "e3-ui-fabricar",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 5518,
+    "tests": 135,
+    "docs": 551
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 109,
+   "merged_at": "2026-10-24T05:00:31Z",
+   "branch": "e3-telas-juntas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 184,
+    "tests": 138,
+    "docs": 67
+   },
+   "claude": {
+    "input": 300,
+    "cache_write": 213499,
+    "cache_read": 29938552,
+    "output": 72896,
+    "models": {
+     "claude-opus-5-5": 143
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 110,
+   "merged_at": "2026-10-24T05:07:28Z",
+   "branch": "e3-ui-link-projetar",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 15,
+    "tests": 81,
+    "docs": 244
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 111,
+   "merged_at": "2026-10-24T12:46:51Z",
+   "branch": "e3-plano-unico",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 175,
+    "tests": 86,
+    "docs": 113
+   },
+   "claude": {
+    "input": 292,
+    "cache_write": 505859,
+    "cache_read": 47757172,
+    "output": 85999,
+    "models": {
+     "claude-opus-5-5": 139
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 112,
+   "merged_at": "2026-10-24T12:54:13Z",
+   "branch": "e3-plano-fabricar-r18",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 34,
+    "tests": 84,
+    "docs": 246
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 113,
+   "merged_at": "2026-10-24T15:44:08Z",
+   "branch": "e3-portal-larguras",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 26,
+    "tests": 11,
+    "docs": 352
+   },
+   "claude": {
+    "input": 68,
+    "cache_write": 43829,
+    "cache_read": 14405425,
+    "output": 27904,
+    "models": {
+     "claude-opus-5-5": 32
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 114,
+   "merged_at": "2026-10-24T19:39:51Z",
+   "branch": "e4-deploy",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1077,
+    "tests": 431,
+    "docs": 781
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 115,
+   "merged_at": "2026-10-24T15:55:13Z",
+   "branch": "d47-vps-leitura",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 36
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 117,
+   "merged_at": "2026-10-24T18:01:12Z",
+   "branch": "e3-r18b-documental",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 460,
+    "tests": 130,
+    "docs": 218
+   },
+   "claude": {
+    "input": 646,
+    "cache_write": 725002,
+    "cache_read": 164381487,
+    "output": 205065,
+    "models": {
+     "claude-opus-5-5": 297
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 118,
+   "merged_at": "2026-10-24T18:11:22Z",
+   "branch": "e3-r18b-fabricar",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 356,
+    "tests": 114,
+    "docs": 240
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 119,
+   "merged_at": "2026-10-24T17:50:48Z",
+   "branch": "d48-servidor-atual",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 28
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 120,
+   "merged_at": "2026-10-24T19:29:40Z",
+   "branch": "e4-porta",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 306,
+    "tests": 155,
+    "docs": 66
+   },
+   "claude": {
+    "input": 212,
+    "cache_write": 117099,
+    "cache_read": 81182215,
+    "output": 67328,
+    "models": {
+     "claude-opus-5-5": 97
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 121,
+   "merged_at": "2026-10-24T19:19:42Z",
+   "branch": "e4-fabricar-prefixo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 80,
+    "tests": 103,
+    "docs": 300
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 122,
+   "merged_at": "2026-10-24T20:46:12Z",
+   "branch": "e4-acesso-aberto",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 61,
+    "tests": 54,
+    "docs": 93
+   },
+   "claude": {
+    "input": 170,
+    "cache_write": 232628,
+    "cache_read": 55590208,
+    "output": 58093,
+    "models": {
+     "claude-opus-5-5": 81
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 123,
+   "merged_at": "2026-10-25T19:39:13Z",
+   "branch": "b13-analise-modelagem-ia",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 119
+   },
+   "claude": {
+    "input": 162,
+    "cache_write": 419107,
+    "cache_read": 20032188,
+    "output": 69865,
+    "models": {
+     "claude-opus-5-5": 77
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 124,
+   "merged_at": "2026-10-24T21:44:21Z",
+   "branch": "e4-publicacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 192,
+    "tests": 17,
+    "docs": 121
+   },
+   "claude": {
+    "input": 38,
+    "cache_write": 20783,
+    "cache_read": 3730616,
+    "output": 12059,
+    "models": {
+     "claude-opus-5-5": 18
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 125,
+   "merged_at": "2026-10-24T22:03:38Z",
+   "branch": "e4-head",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 33,
+    "tests": 87,
+    "docs": 24
+   },
+   "claude": {
+    "input": 62,
+    "cache_write": 33220,
+    "cache_read": 7003646,
+    "output": 17250,
+    "models": {
+     "claude-opus-5-5": 30
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 126,
+   "merged_at": "2026-10-24T22:33:21Z",
+   "branch": "e4-espera-saude",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 33,
+    "tests": 33,
+    "docs": 54
+   },
+   "claude": {
+    "input": 36,
+    "cache_write": 15987,
+    "cache_read": 4097120,
+    "output": 10079,
+    "models": {
+     "claude-opus-5-5": 16
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 127,
+   "merged_at": "2026-10-24T22:52:05Z",
+   "branch": "e4-recibo-atualizacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 22
+   },
+   "claude": {
+    "input": 32,
+    "cache_write": 28378,
+    "cache_read": 4408879,
+    "output": 12795,
+    "models": {
+     "claude-opus-5-5": 16
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 128,
+   "merged_at": "2026-10-25T00:22:06Z",
+   "branch": "e4-forja",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 809,
+    "tests": 235,
+    "docs": 243
+   },
+   "claude": {
+    "input": 228,
+    "cache_write": 266810,
+    "cache_read": 38410678,
+    "output": 105413,
+    "models": {
+     "claude-opus-5-5": 93,
+     "claude-sonnet-5-5": 19
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 129,
+   "merged_at": "2026-10-25T00:43:12Z",
+   "branch": "e4-forja-inicio",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 84,
+    "tests": 7,
+    "docs": 31
+   },
+   "claude": {
+    "input": 92,
+    "cache_write": 103091,
+    "cache_read": 23530878,
+    "output": 49066,
+    "models": {
+     "claude-opus-5-5": 46
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 130,
+   "merged_at": "2026-10-25T02:06:42Z",
+   "branch": "e4-documentos-medir",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 651,
+    "tests": 125,
+    "docs": 99
+   },
+   "claude": {
+    "input": 44,
+    "cache_write": 36411,
+    "cache_read": 12901706,
+    "output": 23312,
+    "models": {
+     "claude-opus-5-5": 22
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 131,
+   "merged_at": "2026-10-25T02:13:19Z",
+   "branch": "e4-recibo-fase2",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 12,
+    "tests": 0,
+    "docs": 15
+   },
+   "claude": {
+    "input": 12,
+    "cache_write": 11158,
+    "cache_read": 3636338,
+    "output": 3952,
+    "models": {
+     "claude-opus-5-5": 6
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 132,
+   "merged_at": "2026-10-25T02:46:05Z",
+   "branch": "e3-precos-reais",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 5,
+    "tests": 47,
+    "docs": 147
+   },
+   "claude": {
+    "input": 88,
+    "cache_write": 73672,
+    "cache_read": 28873626,
+    "output": 40520,
+    "models": {
+     "claude-opus-5-5": 44
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 133,
+   "merged_at": "2026-10-25T02:48:24Z",
+   "branch": "e3-recibo-precos",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 9
+   },
+   "claude": {
+    "input": 36,
+    "cache_write": 53840,
+    "cache_read": 12842412,
+    "output": 19816,
+    "models": {
+     "claude-opus-5-5": 18
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 134,
+   "merged_at": "2026-10-25T04:58:53Z",
+   "branch": "e4-medir3d-furo-aresta",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 506,
+    "tests": 101,
+    "docs": 129
+   },
+   "claude": {
+    "input": 374,
+    "cache_write": 271726,
+    "cache_read": 55118914,
+    "output": 150554,
+    "models": {
+     "claude-opus-5-5": 187
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 135,
+   "merged_at": "2026-10-25T05:01:42Z",
+   "branch": "e4-pacote-oficina",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 445,
+    "tests": 116,
+    "docs": 148
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 136,
+   "merged_at": "2026-10-25T04:55:42Z",
+   "branch": "coord-2026-10-25",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 45,
+    "docs": 295
+   },
+   "claude": {
+    "input": 468,
+    "cache_write": 1496930,
+    "cache_read": 35635974,
+    "output": 116704,
+    "models": {
+     "claude-opus-5-5": 181,
+     "claude-sonnet-5-5": 41
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 137,
+   "merged_at": "2026-10-25T12:59:32Z",
+   "branch": "e4-forja-fabricar",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 85,
+    "tests": 38,
+    "docs": 161
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 138,
+   "merged_at": "2026-10-25T05:03:34Z",
+   "branch": "b-codigo-uma-letra",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2,
+    "tests": 5,
+    "docs": 24
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 139,
+   "merged_at": "2026-10-25T13:01:29Z",
+   "branch": "b-reconfigurar-numero",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 14,
+    "tests": 21,
+    "docs": 23
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 140,
+   "merged_at": "2026-10-25T15:27:56Z",
+   "branch": "f2-organizacoes",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 82,
+    "tests": 132,
+    "docs": 59
+   },
+   "claude": {
+    "input": 834,
+    "cache_write": 597217,
+    "cache_read": 179803786,
+    "output": 340772,
+    "models": {
+     "claude-opus-5-5": 407
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 141,
+   "merged_at": "2026-10-25T14:42:47Z",
+   "branch": "claude/fase3-visual-comum-a763a4",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 206,
+    "tests": 27,
+    "docs": 119
+   },
+   "claude": {
+    "input": 128,
+    "cache_write": 151927,
+    "cache_read": 9449405,
+    "output": 36342,
+    "models": {
+     "claude-sonnet-5-5": 60
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 142,
+   "merged_at": "2026-10-25T15:56:13Z",
+   "branch": "claude/e3-orcamento-itens-f62d7a",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Sonnet/médio",
+   "lines": {
+    "code": 5,
+    "tests": 3,
+    "docs": 37
+   },
+   "claude": {
+    "input": 160,
+    "cache_write": 154327,
+    "cache_read": 13339012,
+    "output": 45574,
+    "models": {
+     "claude-sonnet-5-5": 76
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 144,
+   "merged_at": "2026-10-25T15:27:55Z",
+   "branch": "f2-permissao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 693,
+    "tests": 618,
+    "docs": 128
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 145,
+   "merged_at": "2026-10-25T14:36:53Z",
+   "branch": "coord-d52",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 277
+   },
+   "claude": {
+    "input": 704,
+    "cache_write": 2115361,
+    "cache_read": 89477218,
+    "output": 176310,
+    "models": {
+     "claude-opus-5-5": 249,
+     "claude-sonnet-5-5": 76
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 146,
+   "merged_at": "2026-10-25T15:56:11Z",
+   "branch": "claude/e3-orcamento-pdf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Sonnet/médio",
+   "lines": {
+    "code": 734,
+    "tests": 199,
+    "docs": 68
+   },
+   "claude": {
+    "input": 60,
+    "cache_write": 23932,
+    "cache_read": 6614030,
+    "output": 14096,
+    "models": {
+     "claude-sonnet-5-5": 26
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 148,
+   "merged_at": "2026-10-25T16:42:31Z",
+   "branch": "f2-registro",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 321,
+    "tests": 164,
+    "docs": 348
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 150,
+   "merged_at": "2026-10-25T16:42:30Z",
+   "branch": "f2-tela-pessoas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 848,
+    "tests": 469,
+    "docs": 63
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 151,
+   "merged_at": "2026-10-25T17:45:39Z",
+   "branch": "claude/e3-empresa-clientes",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Sonnet/médio",
+   "lines": {
+    "code": 1100,
+    "tests": 499,
+    "docs": 223
+   },
+   "claude": {
+    "input": 60,
+    "cache_write": 39811,
+    "cache_read": 9124617,
+    "output": 25706,
+    "models": {
+     "claude-sonnet-5-5": 27
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 152,
+   "merged_at": "2026-10-25T18:06:51Z",
+   "branch": "f7-contrato-regras",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 14,
+    "docs": 447
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 153,
+   "merged_at": "2026-10-25T18:06:49Z",
+   "branch": "f7-ida-e-volta",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 416,
+    "tests": 374,
+    "docs": 317
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 154,
+   "merged_at": "2026-10-25T17:45:41Z",
+   "branch": "claude/e3-organizacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Sonnet/médio",
+   "lines": {
+    "code": 64,
+    "tests": 141,
+    "docs": 71
+   },
+   "claude": {
+    "input": 148,
+    "cache_write": 74492,
+    "cache_read": 26076431,
+    "output": 46858,
+    "models": {
+     "claude-sonnet-5-5": 66
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 155,
+   "merged_at": "2026-10-25T17:45:41Z",
+   "branch": "ra1-fechamento-pares",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 254,
+    "tests": 104,
+    "docs": 57
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 156,
+   "merged_at": "2026-10-25T18:06:51Z",
+   "branch": "porta-organizacao-valida",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 15,
+    "tests": 35,
+    "docs": 8
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 157,
+   "merged_at": "2026-10-25T18:06:51Z",
+   "branch": "coord-d53-tokens",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 241
+   },
+   "claude": {
+    "input": 68,
+    "cache_write": 107519,
+    "cache_read": 3062906,
+    "output": 12434,
+    "models": {
+     "claude-opus-5-5": 22,
+     "claude-haiku-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 158,
+   "merged_at": "2026-10-25T18:25:20Z",
+   "branch": "ra1-dobra-chamada-linha",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 187,
+    "tests": 85,
+    "docs": 83
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 159,
+   "merged_at": "2026-10-25T18:25:20Z",
+   "branch": "ra1-json-invalido",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 3,
+    "tests": 24,
+    "docs": 0
+   },
+   "claude": {
+    "input": 50,
+    "cache_write": 54084,
+    "cache_read": 2292406,
+    "output": 10303,
+    "models": {
+     "claude-opus-5-5": 3,
+     "claude-haiku-5-5": 6,
+     "claude-sonnet-5-5": 14
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 160,
+   "merged_at": "2026-10-25T18:25:18Z",
+   "branch": "e3-fabricar-ajustes",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 208,
+    "tests": 155,
+    "docs": 257
+   },
+   "claude": {
+    "input": 180,
+    "cache_write": 189550,
+    "cache_read": 8938587,
+    "output": 46298,
+    "models": {
+     "claude-opus-5-5": 37,
+     "claude-sonnet-5-5": 43,
+     "claude-haiku-5-5": 4
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 161,
+   "merged_at": "2026-10-25T19:39:13Z",
+   "branch": "coord-fechamento-25",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 119
+   },
+   "claude": {
+    "input": 268,
+    "cache_write": 567392,
+    "cache_read": 34538482,
+    "output": 74379,
+    "models": {
+     "claude-opus-5-5": 85,
+     "claude-sonnet-5-5": 41
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 162,
+   "merged_at": "2026-10-25T19:39:11Z",
+   "branch": "e4-publicacao-25",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 22,
+    "tests": 0,
+    "docs": 1896
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 163,
+   "merged_at": "2026-10-25T20:49:04Z",
+   "branch": "fabricar-achados-160",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 111,
+    "docs": 8
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 164,
+   "merged_at": "2026-10-25T21:19:30Z",
+   "branch": "fabricar-org-conhecida",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 51,
+    "tests": 83,
+    "docs": 8
+   },
+   "claude": {
+    "input": 160,
+    "cache_write": 713763,
+    "cache_read": 6633748,
+    "output": 29155,
+    "models": {
+     "claude-sonnet-5-5": 56,
+     "claude-opus-5-5": 21
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 165,
+   "merged_at": "2026-10-25T21:19:37Z",
+   "branch": "docs-pendencias-lf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2,
+    "tests": 2,
+    "docs": 418
+   },
+   "claude": {
+    "input": 94,
+    "cache_write": 75135,
+    "cache_read": 3781346,
+    "output": 27821,
+    "models": {
+     "claude-sonnet-5-5": 29,
+     "claude-opus-5-5": 18
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 166,
+   "merged_at": "2026-10-25T21:46:59Z",
+   "branch": "ra1-dobra-achados",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 73,
+    "tests": 59,
+    "docs": 8
+   },
+   "claude": {
+    "input": 12,
+    "cache_write": 15690,
+    "cache_read": 386280,
+    "output": 1301,
+    "models": {
+     "claude-sonnet-5-5": 4,
+     "claude-opus-5-5": 2
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 167,
+   "merged_at": "2026-10-25T21:47:06Z",
+   "branch": "coord-licoes-25b",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 45
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 168,
+   "merged_at": "2026-10-25T22:02:05Z",
+   "branch": "fabricar-area-desligada",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 42,
+    "tests": 49,
+    "docs": 15
+   },
+   "claude": {
+    "input": 30,
+    "cache_write": 55501,
+    "cache_read": 1726164,
+    "output": 8404,
+    "models": {
+     "claude-opus-5-5": 6,
+     "claude-sonnet-5-5": 7
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 169,
+   "merged_at": "2026-10-25T22:38:48Z",
+   "branch": "e4-publicacao-25b",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 74,
+    "tests": 0,
+    "docs": 80
+   },
+   "claude": {
+    "input": 32,
+    "cache_write": 126124,
+    "cache_read": 3065251,
+    "output": 14069,
+    "models": {
+     "claude-opus-5-5": 10,
+     "claude-sonnet-5-5": 6
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 170,
+   "merged_at": "2026-10-25T23:01:29Z",
+   "branch": "projetar-icone-paginas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 14,
+    "tests": 13,
+    "docs": 15
+   },
+   "claude": {
+    "input": 152,
+    "cache_write": 225321,
+    "cache_read": 9223756,
+    "output": 21086,
+    "models": {
+     "claude-opus-5-5": 19,
+     "claude-haiku-5-5": 7,
+     "claude-sonnet-5-5": 37
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 171,
+   "merged_at": "2026-10-25T23:39:37Z",
+   "branch": "f7-contrato-v1",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 32,
+    "tests": 40,
+    "docs": 111
+   },
+   "claude": {
+    "input": 52,
+    "cache_write": 49622,
+    "cache_read": 2865805,
+    "output": 19837,
+    "models": {
+     "claude-opus-5-5": 2,
+     "claude-sonnet-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 172,
+   "merged_at": "2026-10-26T00:56:07Z",
+   "branch": "f7-ida-e-volta-produto",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 572,
+    "tests": 409,
+    "docs": 188
+   },
+   "claude": {
+    "input": 140,
+    "cache_write": 273340,
+    "cache_read": 8762301,
+    "output": 43804,
+    "models": {
+     "claude-opus-5-5": 38,
+     "claude-sonnet-5-5": 29
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 173,
+   "merged_at": "2026-10-26T01:25:10Z",
+   "branch": "f7-ajustes-lote-d",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 8,
+    "tests": 12,
+    "docs": 22
+   },
+   "claude": {
+    "input": 42,
+    "cache_write": 60284,
+    "cache_read": 2850735,
+    "output": 10187,
+    "models": {
+     "claude-opus-5-5": 4,
+     "claude-sonnet-5-5": 15
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 174,
+   "merged_at": "2026-10-26T01:54:57Z",
+   "branch": "e4-publicacao-26",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 85,
+    "tests": 0,
+    "docs": 90
+   },
+   "claude": {
+    "input": 54,
+    "cache_write": 108848,
+    "cache_read": 7144719,
+    "output": 16808,
+    "models": {
+     "claude-opus-5-5": 15,
+     "claude-sonnet-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 175,
+   "merged_at": "2026-10-26T02:20:14Z",
+   "branch": "f7-texto-401",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 5,
+    "tests": 6,
+    "docs": 8
+   },
+   "claude": {
+    "input": 60,
+    "cache_write": 267889,
+    "cache_read": 4150243,
+    "output": 15215,
+    "models": {
+     "claude-opus-5-5": 6,
+     "claude-sonnet-5-5": 17,
+     "claude-haiku-5-5": 5
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 176,
+   "merged_at": "2026-10-26T11:24:45Z",
+   "branch": "f7-d57-projeto-antigo",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 43,
+    "tests": 113,
+    "docs": 51
+   },
+   "claude": {
+    "input": 84,
+    "cache_write": 387303,
+    "cache_read": 5304901,
+    "output": 25975,
+    "models": {
+     "claude-opus-5-5": 32,
+     "claude-sonnet-5-5": 6
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 177,
+   "merged_at": "2026-10-26T13:44:02Z",
+   "branch": "e4-publicacao-27",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 68,
+    "tests": 0,
+    "docs": 66
+   },
+   "claude": {
+    "input": 36,
+    "cache_write": 110962,
+    "cache_read": 4167242,
+    "output": 15678,
+    "models": {
+     "claude-opus-5-5": 7,
+     "claude-haiku-5-5": 9
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 178,
+   "merged_at": "2026-10-26T16:49:37Z",
+   "branch": "docs-d58-das279",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 30
+   },
+   "claude": {
+    "input": 268,
+    "cache_write": 581461,
+    "cache_read": 27073756,
+    "output": 132022,
+    "models": {
+     "claude-opus-5-5": 122,
+     "claude-haiku-5-5": 3,
+     "<synthetic>": 1,
+     "claude-sonnet-5-5": 4
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 179,
+   "merged_at": "2026-10-26T17:47:38Z",
+   "branch": "e3-orcamento-batistaco",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 20,
+    "docs": 211
+   },
+   "claude": {
+    "input": 78,
+    "cache_write": 138495,
+    "cache_read": 8311883,
+    "output": 37071,
+    "models": {
+     "claude-opus-5-5": 26,
+     "claude-haiku-5-5": 7,
+     "claude-sonnet-5-5": 3
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 180,
+   "merged_at": "2026-10-26T17:31:33Z",
+   "branch": "e3-caderno-legivel",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 226,
+    "tests": 43,
+    "docs": 125
+   },
+   "claude": {
+    "input": 130,
+    "cache_write": 279026,
+    "cache_read": 11347935,
+    "output": 33593,
+    "models": {
+     "claude-opus-5-5": 40,
+     "claude-sonnet-5-5": 22
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 181,
+   "merged_at": "2026-10-26T18:15:06Z",
+   "branch": "e3-precos-servidor",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 59
+   },
+   "claude": {
+    "input": 52,
+    "cache_write": 98223,
+    "cache_read": 9016274,
+    "output": 15571,
+    "models": {
+     "claude-opus-5-5": 14,
+     "claude-haiku-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 182,
+   "merged_at": "2026-10-27T00:29:03Z",
+   "branch": "b-ajustar-arcos",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 18,
+    "tests": 26,
+    "docs": 38
+   },
+   "claude": {
+    "input": 58,
+    "cache_write": 102849,
+    "cache_read": 2407405,
+    "output": 12275,
+    "models": {
+     "claude-sonnet-5-5": 27
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 183,
+   "merged_at": "2026-10-27T01:06:43Z",
+   "branch": "e3-revisao-r18c",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 18,
+    "tests": 0,
+    "docs": 41
+   },
+   "claude": {
+    "input": 68,
+    "cache_write": 262808,
+    "cache_read": 4478609,
+    "output": 14413,
+    "models": {
+     "claude-opus-5-5": 3,
+     "claude-sonnet-5-5": 29
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 184,
+   "merged_at": "2026-10-27T01:31:48Z",
+   "branch": "e3-teste-r17-real",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 12,
+    "tests": 0,
+    "docs": 17
+   },
+   "claude": {
+    "input": 12,
+    "cache_write": 9865,
+    "cache_read": 1073841,
+    "output": 4470,
+    "models": {
+     "claude-opus-5-5": 1,
+     "claude-sonnet-5-5": 5
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 185,
+   "merged_at": "2026-10-27T01:31:55Z",
+   "branch": "e4-publicacao-r18c",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 38,
+    "tests": 0,
+    "docs": 65
+   },
+   "claude": {
+    "input": 18,
+    "cache_write": 8082,
+    "cache_read": 2265132,
+    "output": 5183,
+    "models": {
+     "claude-opus-5-5": 3,
+     "claude-sonnet-5-5": 3
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 186,
+   "merged_at": "2026-10-27T11:19:44Z",
+   "branch": "projetar-revisao-vigente",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 182,
+    "tests": 188,
+    "docs": 32
+   },
+   "claude": {
+    "input": 144,
+    "cache_write": 633266,
+    "cache_read": 14855103,
+    "output": 56204,
+    "models": {
+     "claude-opus-5-5": 12,
+     "claude-sonnet-5-5": 57
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 187,
+   "merged_at": "2026-10-27T12:24:51Z",
+   "branch": "projetar-revisao-links",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 15,
+    "tests": 40,
+    "docs": 32
+   },
+   "claude": {
+    "input": 22,
+    "cache_write": 45544,
+    "cache_read": 2089822,
+    "output": 6911,
+    "models": {
+     "claude-opus-5-5": 2,
+     "claude-sonnet-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 188,
+   "merged_at": "2026-10-27T12:41:39Z",
+   "branch": "e4-publicacao-27-10",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 104,
+    "tests": 0,
+    "docs": 153
+   },
+   "claude": {
+    "input": 68,
+    "cache_write": 205912,
+    "cache_read": 12726646,
+    "output": 25819,
+    "models": {
+     "claude-opus-5-5": 17,
+     "claude-haiku-5-5": 12
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 189,
+   "merged_at": "2026-10-27T15:04:40Z",
+   "branch": "e3-caderno-ilustrado",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 685,
+    "tests": 89,
+    "docs": 226
+   },
+   "claude": {
+    "input": 344,
+    "cache_write": 1899086,
+    "cache_read": 30836037,
+    "output": 149990,
+    "models": {
+     "claude-opus-5-5": 135,
+     "claude-sonnet-5-5": 33
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 190,
+   "merged_at": "2026-10-29T14:09:45Z",
+   "branch": "e4-publicacao-r18d",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 351,
+    "tests": 0,
+    "docs": 122
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 191,
+   "merged_at": "2026-10-28T13:43:59Z",
+   "branch": "e3-referencias-retirada",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 185,
+    "tests": 105,
+    "docs": 400
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 192,
+   "merged_at": "2026-10-28T17:39:32Z",
+   "branch": "e4-estufa-online",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 59,
+    "tests": 44,
+    "docs": 141
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 193,
+   "merged_at": "2026-10-28T18:16:08Z",
+   "branch": "e4-estufa-precos-referencia",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 383,
+    "tests": 159,
+    "docs": 132
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 194,
+   "merged_at": "2026-10-28T18:23:47Z",
+   "branch": "e4-estufa-recibo-f02",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 45
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 195,
+   "merged_at": "2026-10-29T11:30:46Z",
+   "branch": "e4-fluxo-orcamento-projeto",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2652,
+    "tests": 1509,
+    "docs": 203
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 196,
+   "merged_at": "2026-10-29T11:51:38Z",
+   "branch": "e4-custo-conferencia-publicacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 16,
+    "tests": 29,
+    "docs": 59
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 197,
+   "merged_at": "2026-10-29T11:57:52Z",
+   "branch": "e4-custo-recibo-final",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 22
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 198,
+   "merged_at": "2026-10-29T14:23:45Z",
+   "branch": "docs-sincronizar-pendencias",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 51
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 199,
+   "merged_at": "2026-10-29T15:09:39Z",
+   "branch": "d66-listas-dobra-acesso",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 270,
+    "tests": 59,
+    "docs": 76
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 200,
+   "merged_at": "2026-10-29T17:10:00Z",
+   "branch": "d66-clareza-listas-cotacao",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 402,
+    "tests": 13,
+    "docs": 15
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 201,
+   "merged_at": "2026-10-29T17:39:53Z",
+   "branch": "d66-refino-visual-listas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 70,
+    "tests": 0,
+    "docs": 0
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 202,
+   "merged_at": "2026-10-29T17:58:22Z",
+   "branch": "fix-test-um-lugar-so",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 2,
+    "docs": 0
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 203,
+   "merged_at": "2026-10-29T22:42:23Z",
+   "branch": "d66-correcao-revisao-ia",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 136,
+    "tests": 178,
+    "docs": 18
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 204,
+   "merged_at": "2026-10-29T23:35:25Z",
+   "branch": "b20-integridade-listas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 128,
+    "tests": 144,
+    "docs": 49
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 205,
+   "merged_at": "2026-10-29T23:39:47Z",
+   "branch": "e4-recibo-listas",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 23,
+    "tests": 0,
+    "docs": 45
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 206,
+   "merged_at": "2026-10-30T01:22:55Z",
+   "branch": "b31-conferencia-tecnica",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 482,
+    "tests": 194,
+    "docs": 393
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 207,
+   "merged_at": "2026-10-30T11:51:12Z",
+   "branch": "e4-vista-completa",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 303,
+    "tests": 394,
+    "docs": 72
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 208,
+   "merged_at": "2026-10-30T22:27:52Z",
+   "branch": "e4-corrigir-ficha-visor",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "gpt-6-luna/baixo, suficiente para conferir o diff e os cenários definidos; model",
+   "lines": {
+    "code": 62,
+    "tests": 80,
+    "docs": 57
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 209,
+   "merged_at": "2026-11-02T20:43:18Z",
+   "branch": "docs-reuse-first",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 846
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 210,
+   "merged_at": "2026-11-02T20:45:19Z",
+   "branch": "b-auditoria-motores-cad",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 154707,
+    "tests": 0,
+    "docs": 2173
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 211,
+   "merged_at": "2026-11-02T18:31:25Z",
+   "branch": "feature/forja-solidcraft-integration",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 5985,
+    "tests": 773,
+    "docs": 1747
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 212,
+   "merged_at": "2026-11-02T18:31:49Z",
+   "branch": "feature/forja-solidcraft-fase2",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 2149,
+    "tests": 144,
+    "docs": 259
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 213,
+   "merged_at": "2026-11-02T20:48:30Z",
+   "branch": "b-forja-cad-integrado",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 1248,
+    "tests": 169,
+    "docs": 572
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 214,
+   "merged_at": "2026-11-02T22:15:17Z",
+   "branch": "b-fa001-ingestao-pdf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 15,
+    "tests": 0,
+    "docs": 376
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 216,
+   "merged_at": "2026-11-05T01:04:35Z",
+   "branch": "b19-he-op-03-cli-finitos",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 293,
+    "tests": 22,
+    "docs": 104
+   },
+   "claude": null,
+   "codex": null
+  },
+  {
+   "pr": 219,
+   "merged_at": "2026-11-04T03:18:29Z",
+   "branch": "e3-anti-empeno-r02-alivio-dobra",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 100
+   },
+   "claude": {
+    "input": 174,
+    "cache_write": 478079,
+    "cache_read": 19887024,
+    "output": 67750,
+    "models": {
+     "claude-opus-5-5": 38,
+     "claude-sonnet-5-5": 43
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 220,
+   "merged_at": "2026-11-04T03:18:48Z",
+   "branch": "b41-verificador-alivio-dobra",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 2,
+   "declared_model": "Sonnet/médio — suficiente",
+   "lines": {
+    "code": 502,
+    "tests": 124,
+    "docs": 122
+   },
+   "claude": {
+    "input": 130,
+    "cache_write": 390802,
+    "cache_read": 8560013,
+    "output": 38852,
+    "models": {
+     "claude-sonnet-5-5": 61
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 221,
+   "merged_at": "2026-11-04T03:19:27Z",
+   "branch": "pesquisa-solidcraft-motor-principal",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 228
+   },
+   "claude": {
+    "input": 882,
+    "cache_write": 948363,
+    "cache_read": 103880952,
+    "output": 200772,
+    "models": {
+     "claude-opus-5-5": 322,
+     "<synthetic>": 2,
+     "claude-sonnet-5-5": 1
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 222,
+   "merged_at": "2026-11-04T03:19:27Z",
+   "branch": "fase-a-solidcraft-piloto",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 228
+   },
+   "claude": {
+    "input": 52,
+    "cache_write": 25232,
+    "cache_read": 4918133,
+    "output": 14664,
+    "models": {
+     "claude-opus-5-5": 22
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 223,
+   "merged_at": "2026-11-04T03:19:25Z",
+   "branch": "fa-recorte-plano",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 477,
+    "tests": 194,
+    "docs": 737
+   },
+   "claude": {
+    "input": 186,
+    "cache_write": 267834,
+    "cache_read": 14273014,
+    "output": 94583,
+    "models": {
+     "claude-opus-5-5": 85
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 224,
+   "merged_at": "2026-11-04T03:18:09Z",
+   "branch": "fix-crlf-main",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 94,
+    "docs": 381
+   },
+   "claude": {
+    "input": 1770,
+    "cache_write": 3826587,
+    "cache_read": 105955081,
+    "output": 383775,
+    "models": {
+     "claude-opus-5-5": 631,
+     "claude-sonnet-5-5": 151
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 225,
+   "merged_at": "2026-11-04T03:54:17Z",
+   "branch": "e-oficina-dobra-no-preco",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 204,
+    "tests": 147,
+    "docs": 378
+   },
+   "claude": {
+    "input": 202,
+    "cache_write": 193988,
+    "cache_read": 19338074,
+    "output": 60255,
+    "models": {
+     "claude-opus-5-5": 86,
+     "claude-sonnet-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 226,
+   "merged_at": "2026-11-04T03:54:45Z",
+   "branch": "fb-contrato-modelo",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": "Opus/médio — arquitetura de contrato e adaptador; foi suficiente",
+   "lines": {
+    "code": 430,
+    "tests": 178,
+    "docs": 73
+   },
+   "claude": {
+    "input": 74,
+    "cache_write": 104279,
+    "cache_read": 6330326,
+    "output": 37414,
+    "models": {
+     "claude-opus-5-5": 37
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 227,
+   "merged_at": "2026-11-04T03:54:44Z",
+   "branch": "fb-lista-fechada",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 149,
+    "tests": 144,
+    "docs": 69
+   },
+   "claude": {
+    "input": 24,
+    "cache_write": 29728,
+    "cache_read": 2793674,
+    "output": 24499,
+    "models": {
+     "claude-opus-5-5": 12
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 228,
+   "merged_at": "2026-11-04T03:54:43Z",
+   "branch": "fb-adaptador-solidcraft",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 2,
+   "declared_model": null,
+   "lines": {
+    "code": 1123,
+    "tests": 532,
+    "docs": 85
+   },
+   "claude": {
+    "input": 86,
+    "cache_write": 74726,
+    "cache_read": 11429038,
+    "output": 51472,
+    "models": {
+     "claude-opus-5-5": 39
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 230,
+   "merged_at": "2026-11-04T12:31:43Z",
+   "branch": "fc-receita-forja",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 2,
+   "declared_model": "Opus/médio — arquitetura da cadeia. Foi suficiente",
+   "lines": {
+    "code": 861,
+    "tests": 154,
+    "docs": 204
+   },
+   "claude": {
+    "input": 94,
+    "cache_write": 39849,
+    "cache_read": 12477329,
+    "output": 23365,
+    "models": {
+     "claude-opus-5-5": 41
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 231,
+   "merged_at": "2026-11-04T12:51:33Z",
+   "branch": "fa-alivio-dobra",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": "Opus/médio, suficiente",
+   "lines": {
+    "code": 77,
+    "tests": 93,
+    "docs": 188
+   },
+   "claude": {
+    "input": 166,
+    "cache_write": 167891,
+    "cache_read": 13031648,
+    "output": 67888,
+    "models": {
+     "claude-opus-5-5": 78
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 232,
+   "merged_at": "2026-11-04T13:31:39Z",
+   "branch": "docs-licoes-2026-11-04",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 0,
+    "tests": 0,
+    "docs": 208
+   },
+   "claude": {
+    "input": 56,
+    "cache_write": 194207,
+    "cache_read": 3217206,
+    "output": 12310,
+    "models": {
+     "claude-opus-5-5": 11,
+     "claude-sonnet-5-5": 11
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 233,
+   "merged_at": "2026-11-04T14:19:19Z",
+   "branch": "e3-cota-dobra-borda",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": "Sonnet/médio, porque é implementação com contrato claro e teste definido",
+   "lines": {
+    "code": 137,
+    "tests": 155,
+    "docs": 83
+   },
+   "claude": {
+    "input": 252,
+    "cache_write": 347357,
+    "cache_read": 15892711,
+    "output": 72724,
+    "models": {
+     "claude-opus-5-5": 41,
+     "claude-sonnet-5-5": 67
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 234,
+   "merged_at": "2026-11-04T20:16:58Z",
+   "branch": "e3-caderno-dobras",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 2,
+   "declared_model": "Opus/médio — suficiente; a parte que pedia mais (layout e regra D1) coube",
+   "lines": {
+    "code": 957,
+    "tests": 246,
+    "docs": 237
+   },
+   "claude": {
+    "input": 378,
+    "cache_write": 274503,
+    "cache_read": 62806264,
+    "output": 166199,
+    "models": {
+     "claude-opus-5-5": 178
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 235,
+   "merged_at": "2026-11-04T16:46:35Z",
+   "branch": "e3-identidade-anel-circulo",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 5,
+    "tests": 20,
+    "docs": 105
+   },
+   "claude": {
+    "input": 50,
+    "cache_write": 95472,
+    "cache_read": 3326506,
+    "output": 13993,
+    "models": {
+     "claude-opus-5-5": 19,
+     "claude-sonnet-5-5": 5
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 236,
+   "merged_at": "2026-11-04T15:59:36Z",
+   "branch": "e3-desenvolvimento-de-planificados",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 7,
+    "tests": 24,
+    "docs": 247
+   },
+   "claude": {
+    "input": 40,
+    "cache_write": 140505,
+    "cache_read": 2191327,
+    "output": 5301,
+    "models": {
+     "claude-opus-5-5": 7,
+     "claude-sonnet-5-5": 8
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 237,
+   "merged_at": "2026-11-04T16:23:58Z",
+   "branch": "e3-tubo-na-compra",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 2,
+   "declared_model": null,
+   "lines": {
+    "code": 20,
+    "tests": 43,
+    "docs": 103
+   },
+   "claude": {
+    "input": 32,
+    "cache_write": 12364,
+    "cache_read": 2026225,
+    "output": 3061,
+    "models": {
+     "claude-opus-5-5": 5,
+     "claude-sonnet-5-5": 7
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 238,
+   "merged_at": "2026-11-04T16:23:55Z",
+   "branch": "e3-p11-pecas-pequenas",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 0,
+   "declared_model": null,
+   "lines": {
+    "code": 111,
+    "tests": 83,
+    "docs": 375
+   },
+   "claude": {
+    "input": 318,
+    "cache_write": 248554,
+    "cache_read": 18245011,
+    "output": 55418,
+    "models": {
+     "claude-opus-5-5": 29,
+     "claude-sonnet-5-5": 113
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 239,
+   "merged_at": "2026-11-04T20:39:54Z",
+   "branch": "e3-cadeia-pluvial",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 195,
+    "tests": 226,
+    "docs": 190
+   },
+   "claude": {
+    "input": 166,
+    "cache_write": 292299,
+    "cache_read": 16699759,
+    "output": 47559,
+    "models": {
+     "claude-opus-5-5": 78,
+     "<synthetic>": 1
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 240,
+   "merged_at": "2026-11-04T20:57:50Z",
+   "branch": "e3-solidcraft-solidos",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 117,
+    "tests": 237,
+    "docs": 73
+   },
+   "claude": {
+    "input": 94,
+    "cache_write": 215213,
+    "cache_read": 8648288,
+    "output": 27737,
+    "models": {
+     "claude-opus-5-5": 43
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 241,
+   "merged_at": "2026-11-04T20:58:59Z",
+   "branch": "e3-materiais-selecao-compra",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 75,
+    "tests": 137,
+    "docs": 356
+   },
+   "claude": {
+    "input": 56,
+    "cache_write": 25986,
+    "cache_read": 4617637,
+    "output": 14967,
+    "models": {
+     "claude-opus-5-5": 25
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 242,
+   "merged_at": "2026-11-04T22:13:25Z",
+   "branch": "e3-pluvial-r05-modelo",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 164,
+    "tests": 126,
+    "docs": 75
+   },
+   "claude": {
+    "input": 218,
+    "cache_write": 174928,
+    "cache_read": 23070356,
+    "output": 85467,
+    "models": {
+     "claude-opus-5-5": 107
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 243,
+   "merged_at": "2026-11-04T23:03:25Z",
+   "branch": "e3-oficina-notas-zip",
+   "is_findings_fix": false,
+   "reviewed": true,
+   "findings": 1,
+   "declared_model": null,
+   "lines": {
+    "code": 114,
+    "tests": 53,
+    "docs": 181
+   },
+   "claude": {
+    "input": 230,
+    "cache_write": 245677,
+    "cache_read": 19008713,
+    "output": 66966,
+    "models": {
+     "claude-opus-5-5": 106,
+     "claude-sonnet-5-5": 4
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 244,
+   "merged_at": "2026-11-05T01:04:55Z",
+   "branch": "e3-geometria-revisao-codex",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio — geometria com regra de fabricação; foi suficiente",
+   "lines": {
+    "code": 193,
+    "tests": 300,
+    "docs": 79
+   },
+   "claude": {
+    "input": 62,
+    "cache_write": 30449,
+    "cache_read": 7165671,
+    "output": 18456,
+    "models": {
+     "claude-opus-5-5": 27
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 245,
+   "merged_at": "2026-11-05T01:23:33Z",
+   "branch": "claude/fix-codex-oficina-caderno-b7caba",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio (regra da conferência fixa e custo). O nível bastou",
+   "lines": {
+    "code": 377,
+    "tests": 240,
+    "docs": 123
+   },
+   "claude": {
+    "input": 198,
+    "cache_write": 224498,
+    "cache_read": 18795494,
+    "output": 78512,
+    "models": {
+     "claude-opus-5-5": 97
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 246,
+   "merged_at": "2026-11-05T01:43:39Z",
+   "branch": "e3-gancho-crlf",
+   "is_findings_fix": false,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": null,
+   "lines": {
+    "code": 31,
+    "tests": 0,
+    "docs": 69
+   },
+   "claude": {
+    "input": 54,
+    "cache_write": 21011,
+    "cache_read": 6629227,
+    "output": 12489,
+    "models": {
+     "claude-opus-5-5": 23
+    },
+    "sessions": 1
+   },
+   "codex": null
+  },
+  {
+   "pr": 247,
+   "merged_at": "2026-11-05T01:56:53Z",
+   "branch": "e3-fix-codex-cadeia-verificador",
+   "is_findings_fix": true,
+   "reviewed": false,
+   "findings": null,
+   "declared_model": "Opus/médio, porque são regras de segurança da cadeia e do verificador. O nível f",
+   "lines": {
+    "code": 102,
+    "tests": 174,
+    "docs": 100
+   },
+   "claude": null,
+   "codex": null
+  }
+ ],
+ "findings_prs": [
+  {
+   "pr": 247,
+   "per_origin": {
+    "230": 2,
+    "220": 2,
+    "239": 1,
+    "226": 1
+   },
+   "unattributed_rows": 0,
+   "reviewed": [
+    220,
+    226,
+    230,
+    239
+   ]
+  },
+  {
+   "pr": 245,
+   "per_origin": {
+    "234": 2,
+    "225": 1,
+    "233": 1,
+    "237": 2,
+    "241": 1,
+    "243": 1
+   },
+   "unattributed_rows": 1,
+   "reviewed": [
+    219,
+    220,
+    221,
+    222,
+    223,
+    224,
+    225,
+    226,
+    227,
+    228,
+    229,
+    230,
+    231,
+    232,
+    233,
+    234,
+    235,
+    236,
+    237,
+    238,
+    239,
+    240,
+    241,
+    242,
+    243
+   ]
+  },
+  {
+   "pr": 244,
+   "per_origin": {
+    "223": 1,
+    "228": 2,
+    "231": 1,
+    "240": 1,
+    "242": 1
+   },
+   "unattributed_rows": 0,
+   "reviewed": [
+    219,
+    220,
+    221,
+    222,
+    223,
+    224,
+    225,
+    226,
+    227,
+    228,
+    229,
+    230,
+    231,
+    232,
+    233,
+    234,
+    235,
+    236,
+    237,
+    238,
+    239,
+    240,
+    241,
+    242,
+    243
+   ]
+  },
+  {
+   "pr": 167,
+   "per_origin": {},
+   "unattributed_rows": 0,
+   "reviewed": [
+    164
+   ]
+  },
+  {
+   "pr": 166,
+   "per_origin": {},
+   "unattributed_rows": 0,
+   "reviewed": [
+    158
+   ]
+  },
+  {
+   "pr": 163,
+   "per_origin": {},
+   "unattributed_rows": 0,
+   "reviewed": [
+    160
+   ]
+  },
+  {
+   "pr": 82,
+   "per_origin": {},
+   "unattributed_rows": 0,
+   "reviewed": []
+  }
+ ],
+ "summary": {
+  "prs_total": 238,
+  "prs_work": 231,
+  "prs_findings_fix": 7,
+  "reviewed": 24,
+  "reviewed_with_findings": 15,
+  "findings_total": 20,
+  "findings_per_reviewed_pr": 0.83,
+  "reviewed_with_code": 19,
+  "findings_per_reviewed_code_pr": 1.05,
+  "token_coverage": {
+   "claude": 171,
+   "codex": 0,
+   "of": 231
+  },
+  "median_claude_output_per_pr": 36342,
+  "median_claude_input_uncached_per_pr": 110998,
+  "median_code_lines_per_pr": 84,
+  "reviewed_by_main_claude_model": {
+   "claude-opus-5-5": {
+    "prs": 18,
+    "findings": 15
+   },
+   "claude-sonnet-5-5": {
+    "prs": 6,
+    "findings": 5
+   }
+  },
+  "findings_prs_without_table": [
+   82,
+   163,
+   166,
+   167
+  ]
+ },
+ "inputs": {
+  "repo": "C:\\dev\\plataforma-metalurgica",
+  "prs": 238,
+  "claude_logs": 273,
+  "codex_logs": 33
+ }
+}
