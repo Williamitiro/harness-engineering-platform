@@ -34,8 +34,8 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 2. **Plataforma: revisar e fazer o merge do [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229)**
    (HE-R1-05). A correção de CRLF já entrou na `main` da plataforma (#224). Achado: com pasta temporária de caminho
    longo, 16 testes da plataforma falham no Windows; com `--basetemp` curto, passam.
-3. **Checkout canônico em *detached*:** `C:\dev\harness-engineering` está no commit `09b128a` do PR #5 (é de onde
-   a camada do computador foi instalada). Depois do merge, `git switch main` e `git pull` nessa pasta. Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
+3. **Checkout canônico em *detached*:** `C:\dev\harness-engineering` fica na ponta do PR #5, em *detached* (é de
+   onde a camada do computador foi instalada; `machine-verify` OK em 05/11). Depois do merge, `git switch main` e `git pull` nessa pasta. Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
    depois `git switch codex/he-jev-007a` e `setup-skill-install --client codex --apply` (volta ao fluxo antigo).
 4. **Primeira tarefa real na plataforma com as skills**, com revisão externa (critério de aceite do HE-R1-05).
 5. **HE-R2: medir no uso real.** Kit na plataforma em [PR #252](https://github.com/Williamitiro/plataforma-metalurgica/pull/252) (3 skills: `karpathy-guidelines`, `search-first`, `systematic-debugging`; 2 regras de escopo; suíte 2222 passed). Revisão independente APROVADO COM RESSALVAS; os 8 achados foram corrigidos em 15141eb, e o merge entrou em 05/11/2026 (`be0a3b4`). A partir daí, trabalhar normalmente e rodar
