@@ -1,6 +1,6 @@
 # Estado do Harness Engineering
 
-**Atualizado em 04/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
+**Atualizado em 05/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
 Branch de trabalho: `codex/he-jev-007a` ([PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4),
@@ -42,6 +42,16 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
    `scripts/quality_baseline.py` a cada lote de PRs, comparando com a linha de base. Defeito só conta se a revisão
    independente o publicar em tabela citando o PR de origem. Antes: decidir a regra D51 (o Codex recusa tarefa nova) e
    o Python no sandbox do Codex. O lote isolado (`scripts/r2_bench.py`) fica só para dúvidas pontuais.
+6. **Alinhar SPEC e ESTADO sobre o R2.** A SPEC §6 define o R2 como A/B isolado (≥2 tarefas, k=3); o item 5 mede no
+   uso real, antes × depois, sem grupo de controle. Decidir qual vale para "V1 pronto" e corrigir o outro documento.
+7. **Antes do primeiro lote do R2:** (a) aumentar a cobertura de revisão independente (hoje 24 de 238 PRs); (b) fixar
+   no `quality_baseline.py`, antes de olhar os dados, a métrica, a janela e o limite que contam como ganho.
+8. **Depois do R2: ciclo de melhoria contínua** (observar → hipótese com evidência → teste candidata × atual →
+   aprovação humana → nova linha de base). O agente analista só propõe; não altera gabarito, testes nem regras de
+   segurança. Começar só com ~100 PRs revisados na linha de base. Sem nova plataforma: `quality_baseline.py` já cobre
+   ETL e correlação; DuckDB só se a análise descer a eventos por chamada de ferramenta. LangSmith e Phoenix ficam como
+   referência (Phoenix: Elastic License 2.0, exige servidor). Leitura: Self-Harness
+   ([arXiv 2606.09498](https://arxiv.org/abs/2606.09498)) e Meta-Harness ([arXiv 2603.28052](https://arxiv.org/abs/2603.28052)).
 
 ## 3. Problemas conhecidos (abertos)
 
@@ -59,6 +69,8 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | O braço A do benchmark carregaria as skills globais | resultado falso de "empate" | HE-R2-02 |
 | Gabarito JEV no mesmo repositório, 30 casos visíveis, sem anotador independente | não serve para benchmark real | R4 |
 | Sem corte financeiro independente (limites são lógicos) | risco de gasto | antes de qualquer lote pago |
+| Linha de base com 24 PRs revisados (1,05 defeito por PR) | queda de 30% nos defeitos só aparece com ~140 PRs revisados por período (estimativa Poisson, 80% de poder, α=5%; mais se os dados variarem muito); antes × depois sem controle mistura efeito da skill com troca de modelo, tipo de tarefa e revisor | §2 itens 6 e 7 |
+| Fontes divergem se o `usage` do `turn.completed` no Codex é por turno ou acumulado na sessão | somar turnos pode contar tokens em dobro | conferir no HE-R2-01 |
 
 ## 4. Lições que viraram regra
 
