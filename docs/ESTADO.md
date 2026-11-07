@@ -1,6 +1,6 @@
 # Estado do Harness Engineering
 
-**Atualizado em 05/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
+**Atualizado em 07/11/2026** (§7: modelo operacional). Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
 Branch de trabalho: `codex/he-jev-007a` ([PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4),
@@ -90,6 +90,9 @@ Cada linha é um erro que aconteceu e a regra que ele gerou (detalhes em `histor
 | Testes verdes no local, CI vermelho | o estado oficial é o CI do HEAD; testes não dependem de binários locais |
 | Skill presente nunca invocada (Antigravity) | provar cada nível: presente → descoberta → invocada → comportamento → resultado |
 | 40+ documentos com status contraditórios | um ESTADO, uma SPEC, um MANUAL; relatórios novos são proibidos |
+| Duas tarefas agendadas pararam em 3–4 s, no meio do trabalho, e o app marcou "succeeded" | rotina termina com uma linha verificável; status do app não é resultado (SPEC §10.5) |
+| Uma arquitetura tratou o Hermes como secretário pessoal; no Core, o canal é empresarial (`WORK`) | antes de propor arquitetura, ler escopo, identidade e permissão no estado do próprio sistema |
+| Modelo do OpenAI Dots citado a partir de fonte secundária | fato de produto vem da documentação oficial; se não houver, marcar como não confirmado |
 
 ## 5. Linha do tempo (resumo)
 
@@ -103,6 +106,7 @@ Cada linha é um erro que aconteceu e a regra que ele gerou (detalhes em `histor
 | 02/11 | SPEC V1 + dossiê de 12 repositórios | normativa até 03/11 (agora em `historico/`) |
 | 02/11–03/11 | HE-OP-01/02/02B/03: lifecycle de projeto, bootstrap, `--preserve-contract`, ensaio na plataforma | ver §1 |
 | 03/11 | HE-DOC-01: docs consolidados em 4; SPEC V2 (2 camadas, Claude Code no R1, correções do benchmark) | este conjunto |
+| 05–07/11 | Modelo operacional: pesquisa de agentes pessoais, revisão cruzada Claude × Codex | SPEC §10; §7 abaixo |
 
 ## 6. Comandos que funcionam hoje
 
@@ -149,3 +153,42 @@ python scripts/harnessctl.py machine-remove --apply
 JEV (chamada paga, exige autorização): `infisical run --env=dev -- python scripts/jev_http.py --one-call`.
 Legados que **não** devem ser usados: `jev_live_smoke.py`, `run_jev_live_smoke.ps1`, `jev_startup_triage.py`,
 `apply_direct_jev.py`, `jev_collector.py --mode live` e `prepare_blind_sandbox.py --clean`.
+
+## 7. Modelo operacional (SPEC §10)
+
+Conferido em 07/11/2026, somente leitura, nesta máquina e nos repositórios citados.
+
+| Item | Status | Prova (nível) | Onde |
+|---|---|---|---|
+| Central `C:\dev\central-inteligencia` | `NOT_RUN`: a pasta não existe | — | HE-OM-01 |
+| Thread coordenadora | `NOT_RUN` | — | HE-OM-03 |
+| Escopo da máquina: skills | 7 skills em `~/.agents/skills` (Git próprio), lidas pelo Claude Code via `~/.claude/skills`: `coordenacao-claude-codex`, `git-lane-checkpoint`, `resiplac-vault-capture-global`, `reverse-engineer-anything`, `setup-harness`, `tdd-workflow`, `verification-loop` | listagem da pasta; uma sessão aberta no harness-engineering recebeu a skill da Vault (`DISCOVERED`) | `~/.agents/skills/README.md` |
+| Escopo da máquina: MCPs de usuário | `gemini-notebook`, `rea`, `fish-audio` | `~/.claude.json`; carregados nesta sessão | — |
+| Conectores Gmail/Agenda no Claude Code | `NOT_RUN`: não conferido em `/mcp` | — | HE-OM-02 |
+| `~/.claude/CLAUDE.md` | 1 regra (skills estacionadas em `~/.claude/skills-off`) | leitura | — |
+| Tarefas agendadas do desktop | 13 definições, 21 execuções, todas "succeeded"; 2 pararam em 3–4 s, no meio da tarefa (13/10, abertura e linha F1 do Nexus) | `list_task_runs` + transcrição das duas | HE-OM-04 |
+| Hermes: agenda pelo WhatsApp (Entrega F do Core) | `INCONCLUSIVE`: duas negativas após confirmação em 02/11; jornada pendente | estado do Core | `resiplac-core/docs/CURRENT_STATE.yaml` (fonte da verdade) |
+
+**Achados no Core (função real `resolveHermesWhatsappSourcePolicy`, executada localmente com `tsx` sobre o checkout
+`ba7c090`, sem rede e sem produção):**
+
+| Mensagem de teste | Rota | Leitura |
+|---|---|---|
+| "Agendar Alinhamento Operacional amanhã às 10h no Google Calendar" | `erp_operational` | "Operacional" no título manda para o ERP, mesmo citando o Google (`ERP_CALENDAR_PATTERN`) |
+| "Agende no meu Google Calendar: Alinhamento Técnico amanhã às 10h" | `clarify` | a regra reconhece "agenda", mas não "agende" nem "Google Calendar" |
+| "Crie na minha agenda pessoal: Alinhamento Técnico amanhã às 10h" | `personal_calendar` | sugere ao modelo só `personal.agenda.list`; `create`, `update` e `cancel` existem no serviço, mas não aparecem como candidatas (sugestão consultiva, `advisory_only`) |
+
+O caminho de escrita está correto: reserva da operação, busca no Google pela chave de idempotência antes de inserir,
+recibo e auditoria (`personal-agenda-service.ts`). Cada mensagem grava `CAPABILITY_ROUTER_SHADOW_DECISION` com a rota
+e as candidatas, o que permite diagnosticar as tentativas de 02/11 com consulta só de leitura. A causa da segunda
+negativa continua `INCONCLUSIVE`; nova homologação ao vivo: `NOT_RUN`.
+
+**Pendências do modelo operacional, em ordem:**
+
+1. HE-OM-03: abrir a thread coordenadora; primeiro entregável = diagnóstico "onde estamos" + fila de lanes.
+2. HE-OM-01 e HE-OM-02: criar a Central e registrar o inventário do escopo da máquina.
+3. Core, Entrega F (lane no `resiplac-core`, com revisão do Codex): diagnóstico só de leitura das tentativas de 02/11
+   → conjunto fixo de frases de agenda como teste offline da rota → corrigir a causa comprovada → roteiro ao vivo do
+   runbook (seção 7) → só então comparar modelos.
+4. HE-OM-04: aplicar a regra de linha final verificável nas próximas rotinas agendadas.
+5. Definir o destino de conhecimento **pessoal**, separado da Resiplac-Vault, antes de qualquer captura pessoal.

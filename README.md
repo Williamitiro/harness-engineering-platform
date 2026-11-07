@@ -13,6 +13,7 @@ Não é um agente novo: o Claude Code e o Codex continuam fazendo o trabalho. O 
 | **usar** (instalar no computador, preparar um repositório, trabalhar) | [docs/MANUAL.md](docs/MANUAL.md) |
 | saber **o que funciona hoje** e o que falta | [docs/ESTADO.md](docs/ESTADO.md) |
 | entender **as regras e o desenho** (para agentes e devs) | [docs/SPEC.md](docs/SPEC.md) |
+| saber **onde abrir cada conversa** e como os trabalhos são coordenados | [docs/SPEC.md §10](docs/SPEC.md#10-modelo-operacional-onde-trabalhar-o-que-é-global-e-como-coordenar) |
 
 O histórico (relatórios, auditorias, experimentos antigos) está em [docs/historico/](docs/historico/) apenas como
 arquivo.
