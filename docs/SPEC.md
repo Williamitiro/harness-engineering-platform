@@ -53,7 +53,7 @@ FONTE (versionada)          C:\dev\harness-engineering
 CAMADA 1 — MÁQUINA           uma vez por computador; vale para todos os repositórios
   ~/.agents/skills/<nome>/            pasta canônica (padrão Agent Skills): setup-harness, tdd-workflow, verification-loop
   ~/.agents/skills/.harness-machine.json   versão, hashes e origem
-  setup-harness/harness-location.json      só o caminho do harnessctl de quem instalou (instalar a partir do checkout canônico)
+  setup-harness/harness-location.json      só o caminho do harnessctl de quem instalou: ~/.harness-engineering/<tag> (harness_release.py)
   apontadores, conforme adapters.json:
     Claude Code → ~/.claude/skills/<nome>   (link por skill; cópia se o link não for detectado)
     Antigravity → ~/.gemini/config/skills/<nome>   (R3+)
