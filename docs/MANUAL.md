@@ -93,15 +93,29 @@ resposta deve citar `tdd-workflow` e `verification-loop`. A `setup-harness` só 
 
 ### 2.5. Antes de formatar o computador
 
-**Ainda não há restauração completa homologada.** A instalação acima recupera o pacote do Harness; suas outras
-skills, configurações e MCPs precisam da entrega de recuperação (SPEC §11, HE-REC-02).
+**Já existe backup privado e restaurador de arquivos; a recuperação completa da máquina ainda não está homologada.**
+O [agent-environment](https://github.com/Williamitiro/agent-environment/tree/codex/initial-recovery) guarda 20 skills,
+quatro configurações sanitizadas e o histórico Git da pasta pessoal original. A entrega está no PR #1 Draft.
 
-O procedimento a entregar é: instalar os aplicativos → clonar o repositório privado de ambiente pessoal → rodar
-`restore.ps1` → entrar novamente nas contas → conferir skills e MCPs. O script ainda não está entregue.
+Depois de instalar Git e Python 3.12 ou superior e autenticar o GitHub:
 
-Antes de formatar, é preciso conferir a cópia no GitHub privado, provar a restauração em um perfil limpo e preservar
-trabalhos locais sem cópia externa. Senhas e tokens ficam em armazenamento seguro separado. O inventário inicial
-em `docs/evidence/HE_REC_01_WORKSTATION_INVENTORY.json` registra caminhos e nomes; ele não salva os conteúdos.
+```powershell
+git clone --branch codex/initial-recovery https://github.com/Williamitiro/agent-environment.git C:\dev\agent-environment
+cd C:\dev\agent-environment
+python recovery.py backup-verify
+python recovery.py plan
+python recovery.py apply
+python recovery.py verify
+```
+
+O restaurador recusa sobrescrever arquivos e links existentes. O README do backup explica como ensaiar em pasta
+vazia e conferir colisões. Reinstale o Harness pelo §2 deste manual e consulte as pendências no README do backup.
+As cópias de skills já instaladas pelo Harness ficam apenas como referência, para preservar o instalador por versão.
+
+Ainda faltam reinstalação e conectividade dos programas locais de MCP, plugins, logins, descoberta das skills nos
+aplicativos, tarefas Windows e trabalhos locais sem cópia externa. Senhas e tokens ficam em armazenamento seguro
+separado. O ensaio executado provou restauração offline de arquivos, sem reinstalar o Windows. Evidência:
+`docs/evidence/HE_REC_02_PRIVATE_BACKUP.json`. Novas alterações nas ferramentas exigem nova captura e publicação.
 
 ---
 

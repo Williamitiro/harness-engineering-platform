@@ -231,7 +231,8 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 ## 11. Recuperação após formatação
 
 **Objetivo:** reinstalar os aplicativos, clonar um único repositório privado de ambiente pessoal e executar
-`restore.ps1` para recuperar as ferramentas e configurações pessoais. Nome proposto: `Williamitiro/agent-environment`.
+`restore.ps1` (ou `python recovery.py`) para recuperar as ferramentas e configurações pessoais. Repositório privado:
+`Williamitiro/agent-environment`; estado da entrega e gates pendentes no ESTADO.
 O Harness continua como produto versionado e é reinstalado por tag (MANUAL §2). O repositório pessoal registra essa
 versão e o procedimento; não usa o checkout de desenvolvimento como instalação.
 
