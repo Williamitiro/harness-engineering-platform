@@ -3,10 +3,17 @@
 Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harness funciona por dentro; isso está na
 [SPEC](SPEC.md). Se um passo falhar, veja [Problemas comuns](#7-problemas-comuns).
 
-> **O que já funciona hoje (03/11/2026)**
+> **Situação em 07/11/2026**
 >
 > | Passo | Claude Code | Codex |
 > |---|---|---|
+> | 1. Instalar no computador | ✅ feito neste computador, versão `v1.0.0` | ✅ idem |
+> | 2. Preparar um repositório | ✅ feito em 7 repositórios (no `main` deles); nos outros, `/setup-harness` | ✅ idem, com `$setup-harness` |
+> | 3. Trabalhar | ✅ normal | ✅ normal |
+> | 4. Ver se está funcionando (relatório do dia) | ✅ §4.1 | ✅ §4.1 |
+> | 5. Medir se ajuda (benchmark) | ⏳ ainda não existe | ⏳ ainda não existe |
+
+---|---|---|
 > | 1. Instalar no computador | ✅ feito neste computador (03/11) | ✅ feito neste computador (03/11) |
 > | 2. Preparar um repositório | ✅ `/setup-harness` (primeiro teste em chat novo: pendente) ou comandos (§3.3) | ✅ `$setup-harness` (primeiro teste em chat novo: pendente) ou comandos (§3.3) |
 > | 3. Trabalhar | ✅ normal | ✅ normal |
@@ -38,10 +45,15 @@ faz essa entrega é a skill **`setup-harness`**, e você só precisa chamá-la.
 
 ## 2. Instalar no computador (uma vez só)
 
-Faça isto uma vez em cada computador que você usa. O mesmo comando instala as três skills (`setup-harness`,
-`tdd-workflow`, `verification-loop`) e, se encontrar uma instalação antiga do Harness, atualiza sozinho, sem tocar em
-skills suas. **Rode sempre a partir de `C:\dev\harness-engineering`**: a `setup-harness` guarda o endereço de quem a
-instalou.
+O Harness é instalado a partir de uma **versão fixa** (ex.: `v1.0.0`), numa pasta só dele:
+
+| Pasta | Para quê |
+|---|---|
+| `C:\dev\harness-engineering` | onde o Harness é **desenvolvido**. Trocar de branch aqui **não afeta** o que está instalado |
+| `C:\Users\itiro\.harness-engineering\v1.0.0` | a versão **instalada**: cópia exata da versão marcada, sem Git, que ninguém edita |
+| `C:\Users\itiro\.harness-engineering\current` | atalho para a versão em uso; é o caminho dos comandos deste manual |
+
+É o mesmo padrão de `pipx`, `uv tool` e Homebrew: o que está instalado não muda até você instalar outra versão.
 
 **2.1. Ter a pasta do Harness.** Neste computador ela já existe em `C:\dev\harness-engineering`. Num computador
 novo, abra o PowerShell e rode:
@@ -50,35 +62,34 @@ novo, abra o PowerShell e rode:
 git clone https://github.com/Williamitiro/harness-engineering-platform.git C:\dev\harness-engineering
 ```
 
-**2.2. Instalar.** Abra o **Claude Code** (ou o Codex) **dentro da pasta `C:\dev\harness-engineering`** e escreva:
-
-> Instale o Harness neste computador.
-
-O agente mostra o que vai copiar e para onde, pede o seu "sim", instala e confere. Ele só instala nas ferramentas
-que encontrar no computador (Claude Code, Codex), e nunca sobrescreve uma skill sua com o mesmo nome. Se preferir
-fazer sem o agente, os comandos são estes, um de cada vez:
+**2.2. Ver o plano** (não grava nada):
 
 ```bash
-python C:\dev\harness-engineering\scripts\harnessctl.py machine-plan
+python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.0.0
 ```
+
+**2.3. Instalar:**
 
 ```bash
-python C:\dev\harness-engineering\scripts\harnessctl.py machine-install --apply
+python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.0.0 --apply
 ```
+
+Ele extrai a versão, instala as três skills (`setup-harness`, `tdd-workflow`, `verification-loop`) para o Claude Code
+e o Codex, confere os arquivos e aponta o atalho `current`. Se já havia uma instalação, ele a remove antes e, se a
+nova falhar, volta à anterior. Nunca sobrescreve uma skill sua com o mesmo nome.
+
+**2.4. Conferir:**
 
 ```bash
-python C:\dev\harness-engineering\scripts\harnessctl.py machine-discover
+python C:\dev\harness-engineering\scripts\harness_release.py status
 ```
 
-O primeiro mostra o plano sem gravar nada, o segundo instala e o terceiro confirma que o Codex enxerga as skills,
-sem gastar nenhuma resposta do modelo.
+Deve mostrar a versão (`release.tag`) e `machine_verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED` (arquivos íntegros).
+Depois, abra o Claude Code ou o Codex em qualquer pasta e pergunte *"Quais skills você tem disponíveis?"*. A
+resposta deve citar `tdd-workflow` e `verification-loop`. A `setup-harness` só aparece quando você a chama.
 
-**2.3. Conferir.** Feche e abra de novo o Claude Code (ou o Codex), em qualquer pasta, e escreva:
-
-> Quais skills você tem disponíveis?
-
-A resposta deve citar **`setup-harness`**, **`tdd-workflow`** e **`verification-loop`**. Se citar, a parte do
-computador está pronta, para o Claude Code e o Codex ao mesmo tempo.
+**Atualizar para uma versão nova** (ex.: `v1.1.0`): `git -C C:\dev\harness-engineering fetch --tags` e repita
+2.2 e 2.3 com a tag nova. A versão anterior continua na pasta dela, para voltar se precisar.
 
 ---
 
@@ -126,11 +137,11 @@ vontade (por exemplo, a seção "Comandos do projeto"). Se um dia você remover 
 Abra o PowerShell e rode, trocando o caminho pelo do seu projeto, um comando de cada vez:
 
 ```bash
-python C:\dev\harness-engineering\scripts\harnessctl.py project-plan --repo C:\dev\meu-projeto
+python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py project-plan --repo C:\dev\meu-projeto
 ```
 
 ```bash
-python C:\dev\harness-engineering\scripts\harnessctl.py project-attach --repo C:\dev\meu-projeto --apply
+python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py project-attach --repo C:\dev\meu-projeto --apply
 ```
 
 O primeiro só mostra o que faria (`PRESERVE` = mantém o seu arquivo; `WOULD_CREATE` = cria). O segundo aplica. Num
@@ -150,11 +161,11 @@ Para forçar o uso de uma skill, cite o nome dela: *"use o tdd-workflow para cor
 
 ### 4.1. Relatório do dia
 
-No fim do dia, na pasta do Harness:
+No fim do dia, em qualquer pasta:
 
 ```powershell
-python C:\dev\harness-engineering\scripts\harnessctl.py machine-verify
-python C:\dev\harness-engineering\scripts\daily_report.py
+python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine-verify
+python C:\Users\itiro\.harness-engineering\current\scripts\daily_report.py
 ```
 
 O primeiro confere se as skills do computador continuam intactas. O segundo lê as sessões do dia do Claude Code e
@@ -172,9 +183,9 @@ achar problemas de funcionamento, como uma skill que nunca é usada ou uma sess�
 | Quero… | O que digito no repositório | O que acontece |
 |---|---|---|
 | **Conferir** se está tudo certo | `/setup-harness verificar` | compara os arquivos com o recibo e diz OK ou o que mudou |
-| **Atualizar** depois de uma versão nova do Harness | primeiro, na pasta do Harness: `git pull` e o passo 2.2 de novo; depois, em cada repositório: `/setup-harness verificar` | o computador recebe as skills novas; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
+| **Atualizar** depois de uma versão nova do Harness | §2, "Atualizar para uma versão nova"; depois, em cada repositório: `/setup-harness verificar` | o computador recebe as skills novas; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
 | **Remover** do projeto | `/setup-harness remover` | mostra o que vai apagar (só o que ele criou) e pede confirmação |
-| **Remover do computador** | `python C:\dev\harness-engineering\scripts\harnessctl.py machine-remove` (prévia) e depois o mesmo comando com `--apply` | apaga só as skills que o Harness instalou; se você editou alguma, ele para e não apaga nada |
+| **Remover do computador** | `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine-remove` (prévia) e depois o mesmo comando com `--apply` | apaga só as skills que o Harness instalou; se você editou alguma, ele para e não apaga nada |
 
 ---
 

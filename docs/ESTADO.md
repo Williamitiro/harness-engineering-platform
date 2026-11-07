@@ -5,9 +5,10 @@ pendências §2. Não crie relatórios novos.
 
 **Tudo está no `main`** desde 07/11/2026: o merge do [PR #5](https://github.com/Williamitiro/harness-engineering-platform/pull/5)
 (`baf91cd`) levou junto o [PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4), e depois entrou o
-[PR #6](https://github.com/Williamitiro/harness-engineering-platform/pull/6) (`7098393`, HE-R2-01 e CI). O checkout
-canônico `C:\dev\harness-engineering` está no `main` (antes ficava em *detached*); `machine-verify` OK e
-`machine-discover` com as 3 skills `DISCOVERED` no Codex em 07/11.
+[PR #6](https://github.com/Williamitiro/harness-engineering-platform/pull/6) (`7098393`, HE-R2-01 e CI). **Este
+computador roda a versão `v1.0.0`**, instalada em `C:\Users\itiro\.harness-engineering\v1.0.0` por
+`scripts/harness_release.py` (atalho `current`); a pasta `C:\dev\harness-engineering` é só de desenvolvimento e
+trocar de branch nela não afeta o instalado.
 
 ## 1. O que existe e com que prova
 
@@ -32,6 +33,7 @@ canônico `C:\dev\harness-engineering` está no `main` (antes ficava em *detache
 | Isolamento G1 | ⚠️ MXC nativo do Codex: canários negados (observado); host Windows: reprovado | sem atestação externa | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — | — |
 | Repositórios ligados ao Harness (pacote 2) | ✅ **7 com o Harness no `main` desde 07/11/2026**: plataforma-metalurgica ([#229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229)), [engenharia-reversa#2](https://github.com/Williamitiro/engenharia-reversa/pull/2), [negocios-com-evidencia#2](https://github.com/Williamitiro/negocios-com-evidencia/pull/2) (`AGENTS.md` criado do modelo), [nexus-engineering-control#73](https://github.com/Williamitiro/nexus-engineering-control/pull/73), [nexus-quant#509](https://github.com/Williamitiro/nexus-quant/pull/509), [resiplac-core#81](https://github.com/Williamitiro/resiplac-core/pull/81) e [video-motion#5](https://github.com/Williamitiro/video-motion/pull/5) (nesses dois, o `CLAUDE.md` existente ganhou só a linha `@AGENTS.md`) no `main`; [itiro-negocios-ideias#2](https://github.com/Williamitiro/itiro-negocios-ideias/pull/2) na branch do PR #1 (onde está o `AGENTS.md`), chega ao `main` com o #1. ⚠️ [cad#1](https://github.com/Williamitiro/cad/pull/1): no PR único do cad (Draft), **sem merge** (decisão do proprietário). Fora: `frontend-resiplac`, `modelo-de-negocio-resiplac` (alterações não commitadas) e `resiplac-institucional` (remoto fora do GitHub) | `project-verify` OK em cada cópia antes do PR; depois do merge, `.harness/manifest.json` e `@AGENTS.md` conferidos na branch de destino no remoto | `harnessctl project-attach` |
+| Instalação por versão marcada (`harness_release.py install --tag … --apply` / `status`): extrai a tag sem `.git` em `~/.harness-engineering/<tag>`, troca a instalação (remove com o instalador antigo, instala e confere com o novo), aponta `current`; se a nova falhar, reinstala a anterior; sem `--apply` não grava nada | ✅ código; usada neste computador (`v1.0.0`) | 7 testes offline em home e repositório Git sintéticos: instalação nova, troca de versão com a antiga intacta, idempotência, prévia sem escrita, recusa de branch e de tag inexistente, recusa de pasta adulterada, volta automática à versão anterior | `scripts/harness_release.py`; `tests/test_harness_release.py`; MANUAL §2 |
 | Relatório diário de funcionamento | ✅ código | 9 testes offline; rodado nas sessões reais de 07/11 (9 sessões). Só contagens e nomes, nenhum texto de conversa. **Não é benchmark** | `scripts/daily_report.py`; `tests/test_daily_report.py`; MANUAL §4 |
 
 ## 2. Pendências, em ordem
@@ -39,10 +41,9 @@ canônico `C:\dev\harness-engineering` está no `main` (antes ficava em *detache
 1. **Pendentes da ligação:** o PR #1 do cad (frente única, com outros trabalhos) e o PR #1 do itiro-negocios-ideias
    são decisão do proprietário. `frontend-resiplac` e `modelo-de-negocio-resiplac`: ligar depois de resolver as
    alterações locais (`/setup-harness` no repositório). Checkouts principais que não estão no `main` só passam a ter
-   o Harness quando a branch deles incorporar o `main`. A `setup-harness` usa o `harnessctl` de
-   `C:\dev\harness-engineering`: esse checkout deve ficar no `main`.
-2. **Plataforma:** o [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229) entrou; falta o
-   checkout principal `C:\dev\plataforma-metalurgica` (do proprietário) fazer `git pull` na `main`.
+   o Harness quando a branch deles incorporar o `main` (os que estavam limpos no `main` foram atualizados em 07/11).
+2. **Atualizar o Harness:** nova tag + `harness_release.py install --tag <nova> --apply` (MANUAL §2). Nunca instalar
+   de uma pasta de desenvolvimento.
 3. **Rodar `scripts/daily_report.py` no fim de cada dia de trabalho** (MANUAL §4) e anotar aqui o que falhar
    (skill nunca usada, sessão terminando com teste falhando, erros de ferramenta recorrentes).
 4. **Primeira tarefa real na plataforma com as skills**, com revisão externa (critério de aceite do HE-R1-05).

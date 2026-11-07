@@ -25,8 +25,9 @@ afirmações superadas.
    pagas, instalar dependências ou alterar configuração global.
 
 ## Pedidos comuns do usuário
-- **"Instale o Harness neste computador"** → MANUAL §2: rode `harnessctl.py machine-plan`, mostre o plano, aplique
-  `machine-install --apply` após o "sim" e confira com `machine-verify` e `machine-discover`. Instale sempre a partir
-  do checkout canônico `C:\dev\harness-engineering` (nunca de uma worktree temporária): a `setup-harness` guarda o
-  caminho de quem instalou. `setup-skill-*` é obsoleto.
+- **"Instale (ou atualize) o Harness neste computador"** → MANUAL §2: `scripts/harness_release.py install --tag
+  <versão>` (plano), mostre o plano, aplique com `--apply` após o "sim" e confira com `harness_release.py status` e
+  `harnessctl.py machine-discover`. Instale **só versões marcadas (tags)**, nunca de uma pasta de desenvolvimento ou
+  worktree: a `setup-harness` guarda o caminho de quem instalou, e a versão fica em `~/.harness-engineering/<tag>`.
+  `machine-install` direto e `setup-skill-*` não são o caminho normal.
 - **"Configure o Harness no repositório X"** → use a skill `setup-harness` e a sequência canônica da SPEC §4.
