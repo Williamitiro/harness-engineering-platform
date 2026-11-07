@@ -3,11 +3,11 @@
 **Atualizado em 07/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
-Branch de trabalho: `claude/harness-engineer-analysis-e80c76` ([PR #5](https://github.com/Williamitiro/harness-engineering-platform/pull/5),
-Draft, **sem revisão e sem merge**). O PR #5 contém o [PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4)
-(`codex/he-jev-007a`) inteiro (conferido em 07/11 com `git merge-base --is-ancestor`). O `main` ainda não contém
-nada abaixo de HE-OP. HE-R2-01 e a revisão do CI (07/11) estão em `claude/infrastructure-review-20c8fa`, feita a partir
-da ponta do PR #5 (`2d786a2`).
+**Tudo está no `main`** desde 07/11/2026: o merge do [PR #5](https://github.com/Williamitiro/harness-engineering-platform/pull/5)
+(`baf91cd`) levou junto o [PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4), e depois entrou o
+[PR #6](https://github.com/Williamitiro/harness-engineering-platform/pull/6) (`7098393`, HE-R2-01 e CI). O checkout
+canônico `C:\dev\harness-engineering` está no `main` (antes ficava em *detached*); `machine-verify` OK e
+`machine-discover` com as 3 skills `DISCOVERED` no Codex em 07/11.
 
 ## 1. O que existe e com que prova
 
@@ -25,24 +25,23 @@ da ponta do PR #5 (`2d786a2`).
 | Camada 1 (máquina) para Claude Code + Codex: `machine-plan/install/verify/remove/discover` + `config/adapters.json` | ✅ HE-R1-02 (só as 2 skills ECC; a `setup-harness` entra no HE-R1-04) | 13 testes offline; **instalada nesta máquina**; `DISCOVERED` no Codex (`skills/list`, 0 turnos) e no Claude Code (sessão recebeu as skills) | `evidence/HE_R1_02_MACHINE_DISCOVERY.json`; `tests/test_machine_layer.py` |
 | Benchmark A/B (R2) | ❌ `NOT_RUN`; falta o braço A isolado (HE-R2-02) | — | `scripts/harness_eval.py` |
 | Telemetria do runner (HE-R2-01): Claude em `stream-json --verbose` (trajetória, modelo, versão, skills, tokens com cache, custo estimado); Codex com os 5 campos de `usage`, último total (não a soma); `null` ≠ 0; `--model`/`--effort` fixados e registrados; versão do CLI no lugar do caminho do binário | ✅ código | 21 testes offline novos (parser + runner com subprocess simulado); semântica do `usage` do Codex lida no fonte `rust-v0.166.0` (`event_processor_with_jsonl_output.rs`). Execução real `NOT_RUN` | `scripts/native_telemetry.py`; `scripts/harness_eval.py`; `tests/test_native_telemetry.py`; `tests/test_harness_eval.py` |
-| CI | ✅ 07/11: actions fixadas por SHA (checkout v7.0.1, setup-python v7.1.0), Python 3.12 fixado, suíte offline também em **Windows**, `compileall` de tudo, Dependabot mensal só para actions; integração npm do `jev-code` (legado) só sob demanda | YAML validado localmente; **primeira execução no GitHub, sobretudo a do Windows, ainda não observada** | `.github/workflows/quality.yml`; `.github/dependabot.yml` |
+| CI | ✅ 07/11: actions fixadas por SHA (checkout v7.0.1, setup-python v7.1.0), Python 3.12 fixado, suíte offline também em **Windows**, `compileall` de tudo, Dependabot mensal só para actions; integração npm do `jev-code` (legado) só sob demanda | verde no GitHub no PR #6, inclusive `unit (windows-latest)` (runs 42388089286 e 42388117073) | `.github/workflows/quality.yml`; `.github/dependabot.yml` |
 | Linha de base de qualidade no uso real (HE-R2) | ✅ medida no histórico da plataforma, sem chamada de modelo: 238 PRs; 24 com revisão independente contada; **20 defeitos confirmados**, 1,05 por PR revisado com código; tokens do Claude em 171 de 231 PRs (mediana 36 mil de saída); Codex 0 (só revisa, na `main`). Lote isolado de 21 execuções: 8 rodadas, **inválidas** (D51 da plataforma e Python bloqueado no sandbox do Codex) | 9 testes offline; contagem conferida contra as tabelas dos PRs #244, #245, #247; revisões sem tabela (#163, #166, #167, #82) ficam `null` | `scripts/quality_baseline.py`; `evidence/HE_R2_BASELINE_QUALIDADE.json`; `benchmarks/r2/` |
 | JEV via HTTPS (`jev_http.py`) | ✅ código e testes; smoke de 1 chamada observado | relatado pelo operador | `scripts/jev_http.py` |
 | Piloto JEV A×J (3 classificações) | ⚠️ "COMPLETED, 3/3 nas duas condições" relatado pelo operador; o recibo no repo é da tentativa anterior, `ABORTED` | sem recibo do sucesso | `evidence/HE_JEV_007B_PILOT.json` |
 | Isolamento G1 | ⚠️ MXC nativo do Codex: canários negados (observado); host Windows: reprovado | sem atestação externa | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — | — |
+| Repositórios ligados ao Harness (pacote 2) em 07/11 | ⚠️ 8 PRs abertos, **sem merge**: [cad#1](https://github.com/Williamitiro/cad/pull/1) (frente única do cad, Draft), [engenharia-reversa#2](https://github.com/Williamitiro/engenharia-reversa/pull/2), [itiro-negocios-ideias#2](https://github.com/Williamitiro/itiro-negocios-ideias/pull/2) (sobre a branch do PR #1, que tem o `AGENTS.md`), [negocios-com-evidencia#2](https://github.com/Williamitiro/negocios-com-evidencia/pull/2) (`AGENTS.md` criado do modelo), [nexus-engineering-control#73](https://github.com/Williamitiro/nexus-engineering-control/pull/73), [nexus-quant#509](https://github.com/Williamitiro/nexus-quant/pull/509), [resiplac-core#81](https://github.com/Williamitiro/resiplac-core/pull/81) e [video-motion#5](https://github.com/Williamitiro/video-motion/pull/5) (nesses dois, o `CLAUDE.md` existente ganhou só a linha `@AGENTS.md`). Fora: `frontend-resiplac`, `modelo-de-negocio-resiplac` (alterações não commitadas) e `resiplac-institucional` (remoto fora do GitHub) | `project-verify` OK em cada cópia; HEAD local = branch remota = PR conferidos | cópias em `%TEMP%\hxs\<repo>`, branch `chore/harness-setup` |
+| Relatório diário de funcionamento | ✅ código | 9 testes offline; rodado nas sessões reais de 07/11 (9 sessões). Só contagens e nomes, nenhum texto de conversa. **Não é benchmark** | `scripts/daily_report.py`; `tests/test_daily_report.py`; MANUAL §4 |
 
 ## 2. Pendências, em ordem
 
-1. **Revisar e fazer o merge do PR #5** (contém o PR #4; revisar o #5 cobre os dois, e o #4 pode ser fechado depois).
-   A `setup-harness` instalada aponta para `C:\dev\harness-engineering\scripts\harnessctl.py`; se aquele checkout sair
-   desta branch, ela quebra.
-2. **Plataforma: revisar e fazer o merge do [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229)**
-   (HE-R1-05). A correção de CRLF já entrou na `main` da plataforma (#224). Achado: com pasta temporária de caminho
-   longo, 16 testes da plataforma falham no Windows; com `--basetemp` curto, passam.
-3. **Checkout canônico em *detached*:** `C:\dev\harness-engineering` fica na ponta do PR #5, em *detached* (é de
-   onde a camada do computador foi instalada; `machine-verify` OK em 05/11). Depois do merge, `git switch main` e `git pull` nessa pasta. Para desfazer agora, em `C:\dev\harness-engineering`: `machine-remove --apply`,
-   depois `git switch codex/he-jev-007a` e `setup-skill-install --client codex --apply` (volta ao fluxo antigo).
+1. **Aceitar os 8 PRs de ligação dos repositórios** (tabela §1). Depois do merge de cada um, apagar a cópia
+   `%TEMP%\hxs\<repo>` com `git worktree remove`. A `setup-harness` instalada aponta para
+   `C:\dev\harness-engineering\scripts\harnessctl.py`: esse checkout deve ficar no `main`.
+2. **Plataforma: [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229)** (HE-R1-05) — ver §1.
+3. **Rodar `scripts/daily_report.py` no fim de cada dia de trabalho** (MANUAL §4) e anotar aqui o que falhar
+   (skill nunca usada, sessão terminando com teste falhando, erros de ferramenta recorrentes).
 4. **Primeira tarefa real na plataforma com as skills**, com revisão externa (critério de aceite do HE-R1-05).
 5. **HE-R2: medir no uso real.** Kit na plataforma em [PR #252](https://github.com/Williamitiro/plataforma-metalurgica/pull/252) (3 skills: `karpathy-guidelines`, `search-first`, `systematic-debugging`; 2 regras de escopo; suíte 2222 passed). Revisão independente APROVADO COM RESSALVAS; os 8 achados foram corrigidos em 15141eb, e o merge entrou em 05/11/2026 (`be0a3b4`). A partir daí, trabalhar normalmente e rodar
    `scripts/quality_baseline.py` a cada lote de PRs, comparando com a linha de base. Defeito só conta se a revisão

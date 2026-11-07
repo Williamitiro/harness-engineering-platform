@@ -148,6 +148,23 @@ sozinho:
 
 Para forçar o uso de uma skill, cite o nome dela: *"use o tdd-workflow para corrigir este bug"*.
 
+### 4.1. Relatório do dia
+
+No fim do dia, na pasta do Harness:
+
+```powershell
+python C:\dev\harness-engineering\scripts\harnessctl.py machine-verify
+python C:\dev\harness-engineering\scripts\daily_report.py
+```
+
+O primeiro confere se as skills do computador continuam intactas. O segundo lê as sessões do dia do Claude Code e
+do Codex no seu computador e mostra, por sessão: o repositório, se ele tem o Harness, quais skills o agente usou, se
+rodou testes (se algum falhou e depois passou, e se o último passou) e os tokens. Para outro dia, use
+`--date 2026-11-07`; para JSON, use `--json`. Nada sai do computador, e nenhum texto das conversas entra no relatório.
+
+**O que ele não diz:** se o trabalho ficou melhor. Isso só o benchmark responde (seção 6). Use o relatório para
+achar problemas de funcionamento, como uma skill que nunca é usada ou uma sessão que termina com teste falhando.
+
 ---
 
 ## 5. Conferir, atualizar e remover
