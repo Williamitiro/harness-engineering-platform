@@ -1,0 +1,126 @@
+{
+  "delivery": "HE-REC-02",
+  "scope": "Initial private backup and offline file restoration; full workstation recovery remains NOT_RUN",
+  "publication": {
+    "status": "PASS",
+    "repository": "https://github.com/Williamitiro/agent-environment",
+    "private": true,
+    "worktree": "C:/dev/agent-environment",
+    "branch": "codex/initial-recovery",
+    "local_head": "3a055e1ac8195e4c6ef4b7236eaa8b2fc8f263bb",
+    "remote_head": "3a055e1ac8195e4c6ef4b7236eaa8b2fc8f263bb",
+    "pr": "https://github.com/Williamitiro/agent-environment/pull/1",
+    "pr_head": "3a055e1ac8195e4c6ef4b7236eaa8b2fc8f263bb",
+    "pr_state": "OPEN",
+    "draft": true
+  },
+  "fresh_remote_clone": {
+    "status": "PASS",
+    "head": "3a055e1ac8195e4c6ef4b7236eaa8b2fc8f263bb",
+    "hashes_verified": 486,
+    "security_audit": "PASS",
+    "scanned_files_and_history_entries": 617,
+    "actionable_secret_findings": 0,
+    "reviewed_public_identifiers": 1
+  },
+  "validation": {
+    "status": "PASS",
+    "build": "PASS: compileall for owned Python code",
+    "types": "NOT_RUN: pyright not installed",
+    "lint": "NOT_RUN: ruff not installed",
+    "tests": {
+      "status": "PASS",
+      "count": 17,
+      "skipped": 0,
+      "coverage": {
+        "recovery.py": {
+          "covered_lines": 170,
+          "executable_lines": 182,
+          "percent": 93.4,
+          "method": "Python stdlib trace, line coverage"
+        },
+        "capture.py": {
+          "covered_lines": 112,
+          "executable_lines": 136,
+          "percent": 82.4,
+          "method": "Python stdlib trace, line coverage"
+        },
+        "audit.py": {
+          "covered_lines": 42,
+          "executable_lines": 46,
+          "percent": 91.3,
+          "method": "Python stdlib trace, line coverage"
+        }
+      }
+    },
+    "security": {
+      "status": "PASS",
+      "integrity": {
+        "status": "PASS",
+        "action": "backup-verify",
+        "checked": 486
+      },
+      "scanned_files_and_history_entries": 617,
+      "findings": [],
+      "reviewed_public_identifiers": [
+        {
+          "file": "payload/.gemini/skills/media-use/scripts/lib/telemetry.mjs",
+          "kind": "credential_assignment",
+          "line": 12
+        }
+      ],
+      "limitation": "Pattern scan with reviewed exceptions; not proof of absence of every possible secret."
+    },
+    "tdd": {
+      "red_commit": "4f281d9",
+      "red_result": "FAIL: implementation absent",
+      "green_commit": "bad29c2",
+      "green_result": "PASS: 11 safety tests; later tests extend credential and archive checks"
+    },
+    "restore_trial": {
+      "status": "PASS",
+      "environment": "Windows; empty directory under ignored .poc, not an active application profile",
+      "entrypoint": "powershell -NoProfile -ExecutionPolicy Bypass -File restore.ps1 (process only; no policy persisted)",
+      "plan": {
+        "status": "PASS",
+        "files": 482,
+        "create": 482
+      },
+      "apply": {
+        "status": "PASS",
+        "files": 482
+      },
+      "verify": {
+        "status": "PASS",
+        "files": 482,
+        "create": 0,
+        "links": 1
+      },
+      "restored_skills": 20,
+      "configs_parse": "PASS",
+      "claude_skills_link": "PASS",
+      "codex_desktop_generated_runtime_omitted": true
+    },
+    "original_skills_git_unchanged": {
+      "head": "5dea8ed6db73b0ac8676c3b9ee9cba76718d6ef4",
+      "pending_changes": 82
+    },
+    "harness_remote_tag": {
+      "tag": "v1.0.0",
+      "remote_sha": "9aafe731fbb2e7a681c18fd50576049acc609cbc",
+      "status": "PASS: ls-remote"
+    },
+    "native_skill_discovery": "NOT_RUN",
+    "mcp_connectivity": "NOT_RUN",
+    "windows_reinstall_trial": "NOT_RUN",
+    "remaining": "External MCP programs, plugins, credentials, scheduled tasks and local-only project work require separate verification."
+  },
+  "authorization": "User: Sim, eu autorizo fazer o repositório privado. Pode fazer",
+  "full_machine_recovery": "NOT_RUN",
+  "harness_offline_suite": {
+    "status": "PASS",
+    "tests": 270,
+    "skipped": 2,
+    "command": "JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests"
+  }
+}

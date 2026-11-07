@@ -86,6 +86,13 @@ padrão.
 Adicionar uma ferramenta = **uma entrada na tabela + teste de descoberta**, sem código novo por ferramenta. Plugins e
 hooks de cada ferramenta não são portáveis e não fazem parte do núcleo.
 
+**Escopo do pacote global:** `tdd-workflow` e `verification-loop` são as duas skills de programação selecionadas
+do ECC; `setup-harness` instala e mantém o kit. As três não representam todo o catálogo pesquisado nem uma seleção
+com superioridade comprovada. A decisão da V1 é começar com um kit pequeno (§1), medir (§6) e acrescentar módulos
+conforme lacunas e ganhos (§8). O ESTADO registra separadamente as três skills adicionais aplicadas na plataforma
+metalúrgica; elas não são distribuídas pelo instalador global. Enquanto o R2 estiver `NOT_RUN` ou inconclusivo,
+o ganho de qualidade deste pacote continua sem comprovação.
+
 ## 4. Sequência canônica (igual para toda ferramenta e todo repositório)
 
 Toda operação do `harnessctl` e da skill `setup-harness` segue estes passos e só avança se o anterior passou:
@@ -218,3 +225,27 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-R2-02 | R2 | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
 | HE-R2-H | R2 | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |
 | HE-R2-03 | R2 | lote 8–12 tarefas | veredito auditável → **V1 pronto** |
+| HE-REC-01 | Recuperação | contrato de recuperação após formatação e inventário inicial sem conteúdo de configurações | inventário JSON; distinção explícita entre inventário, backup publicado e restauração comprovada |
+| HE-REC-02 | Recuperação | preparar e publicar ambiente pessoal privado e restaurador; respeitar autorizações de escrita externa e push | perfil limpo: plano → aplicar → verificar; conteúdo remoto conferido; descoberta das skills e registros MCP; autenticações pendentes identificadas |
+
+## 11. Recuperação após formatação
+
+**Objetivo:** reinstalar os aplicativos, clonar um único repositório privado de ambiente pessoal e executar
+`restore.ps1` (ou `python recovery.py`) para recuperar as ferramentas e configurações pessoais. Repositório privado:
+`Williamitiro/agent-environment`; estado da entrega e gates pendentes no ESTADO.
+O Harness continua como produto versionado e é reinstalado por tag (MANUAL §2). O repositório pessoal registra essa
+versão e o procedimento; não usa o checkout de desenvolvimento como instalação.
+
+O ambiente pessoal deve preservar skills próprias, origens e versões das ferramentas externas, regras pessoais,
+configurações sem segredos dos clientes e registros de MCP, apontadores entre pastas e tarefas agendadas pertinentes.
+Cada item deve declarar fonte, destino, dependências, forma de restauração e verificação. Conteúdos em plugins,
+configurações de projeto e trabalhos locais sem remoto precisam ser inventariados antes de afirmar cobertura completa.
+Credenciais ficam em armazenamento seguro separado; os passos para autenticar novamente precisam estar no procedimento.
+
+**Aceite:** cópia fora do computador conferida no remoto privado; nenhum segredo publicado; restaurador com prévia,
+aplicação explícita, verificação e recusa de colisões; ensaio em perfil limpo mostrando as skills descobertas e os
+registros MCP restaurados. A autenticação e a conectividade de cada serviço têm evidência própria. Um JSON com nomes
+e caminhos é inventário, não backup. Arquivos locais ou commits sem push não asseguram recuperação após perda do disco.
+
+O HE-REC-01 prepara o contrato e o inventário. O HE-REC-02 entrega o backup e a restauração; não declarar a máquina
+pronta para formatar enquanto essa entrega e a conferência dos trabalhos locais estiverem pendentes.

@@ -1,0 +1,228 @@
+{
+  "delivery": "HE-REC-01",
+  "observed_at_utc": "2026-11-07T22:20:03.673259+00:00",
+  "status": "PASS",
+  "evidence_level": "READ_ONLY_INVENTORY",
+  "restore_status": "NOT_RUN",
+  "backup_status": "NOT_RUN",
+  "proposed_private_repository": "Williamitiro/agent-environment",
+  "skills_git": {
+    "branch": [
+      "main"
+    ],
+    "head": [
+      "5dea8ed6db73b0ac8676c3b9ee9cba76718d6ef4"
+    ],
+    "remote_names": [],
+    "pending_changes": [
+      "M README.md",
+      " D build-awwwards-quality-sites/LICENSE",
+      " D build-awwwards-quality-sites/SKILL.md",
+      " D build-awwwards-quality-sites/agents/openai.yaml",
+      " D frontend-design/LICENSE.txt",
+      " D frontend-design/SKILL.md",
+      " D impeccable/LICENSE",
+      " D impeccable/NOTICE.md",
+      " D impeccable/SKILL.md",
+      " D impeccable/agents/impeccable_asset_producer.toml",
+      " D impeccable/agents/impeccable_documenter.toml",
+      " D impeccable/agents/impeccable_finish_reviewer.toml",
+      " D impeccable/agents/impeccable_manual_edit_applier.toml",
+      " D impeccable/agents/openai.yaml",
+      " D impeccable/reference/adapt.md",
+      " D impeccable/reference/adapt.native.md",
+      " D impeccable/reference/android.md",
+      " D impeccable/reference/animate.md",
+      " D impeccable/reference/audit.md",
+      " D impeccable/reference/audit.native.md",
+      " D impeccable/reference/bolder.md",
+      " D impeccable/reference/clarify.md",
+      " D impeccable/reference/colorize.md",
+      " D impeccable/reference/component-review.md",
+      " D impeccable/reference/craft-floor.md",
+      " D impeccable/reference/craft.md",
+      " D impeccable/reference/critique.md",
+      " D impeccable/reference/degraded/asset-producer.md",
+      " D impeccable/reference/degraded/documenter.md",
+      " D impeccable/reference/degraded/finish-reviewer.md",
+      " D impeccable/reference/degraded/manual-edit-applier.md",
+      " D impeccable/reference/delight.md",
+      " D impeccable/reference/distill.md",
+      " D impeccable/reference/doctor.md",
+      " D impeccable/reference/document.md",
+      " D impeccable/reference/extract.md",
+      " D impeccable/reference/generate.md",
+      " D impeccable/reference/harden.md",
+      " D impeccable/reference/hooks.md",
+      " D impeccable/reference/init.md",
+      " D impeccable/reference/ios.md",
+      " D impeccable/reference/layout.md",
+      " D impeccable/reference/live-setup.md",
+      " D impeccable/reference/live.md",
+      " D impeccable/reference/new-work.md",
+      " D impeccable/reference/onboard.md",
+      " D impeccable/reference/operate.md",
+      " D impeccable/reference/optimize.md",
+      " D impeccable/reference/overdrive.md",
+      " D impeccable/reference/polish.md",
+      " D impeccable/reference/quieter.md",
+      " D impeccable/reference/region-map.md",
+      " D impeccable/reference/routing.md",
+      " D impeccable/reference/shape.md",
+      " D impeccable/reference/typeset.md",
+      " D impeccable/reference/visualize.md",
+      " D impeccable/scripts/VERSION",
+      " D impeccable/scripts/command-metadata.json",
+      " D impeccable/scripts/data/font-index-failures.json",
+      " D impeccable/scripts/data/font-index.json",
+      " D impeccable/scripts/impeccable",
+      " D impeccable/scripts/impeccable.cmd",
+      " D impeccable/scripts/live-browser-dom.js",
+      " D impeccable/scripts/live-browser-ignores.js",
+      " D impeccable/scripts/live-browser-session.js",
+      " D impeccable/scripts/live-browser.js",
+      " D impeccable/scripts/modern-screenshot.umd.js",
+      " D playwright/LICENSE.txt",
+      " D playwright/NOTICE.txt",
+      " D playwright/SKILL.md",
+      " D playwright/agents/openai.yaml",
+      " D playwright/assets/playwright-small.svg",
+      " D playwright/assets/playwright.png",
+      " D playwright/references/cli.md",
+      " D playwright/references/workflows.md",
+      " D playwright/scripts/playwright_cli.sh",
+      "?? .harness-machine.json",
+      "?? coordenacao-claude-codex/",
+      "?? reverse-engineer-anything/",
+      "?? setup-harness/",
+      "?? tdd-workflow/",
+      "?? verification-loop/"
+    ]
+  },
+  "personal_skills_present": [
+    "coordenacao-claude-codex",
+    "git-lane-checkpoint",
+    "resiplac-vault-capture-global",
+    "reverse-engineer-anything",
+    "setup-harness",
+    "tdd-workflow",
+    "verification-loop"
+  ],
+  "candidate_locations": [
+    {
+      "path": "~/.codex/config.toml",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.codex/AGENTS.md",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.claude/settings.json",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.claude.json",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.claude/CLAUDE.md",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.gemini/settings.json",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.gemini/GEMINI.md",
+      "present": false,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.cursor/mcp.json",
+      "present": false,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.agents/skills",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.claude/skills",
+      "present": true,
+      "is_link": true,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.codex/skills",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.cursor/skills",
+      "present": false,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    },
+    {
+      "path": "~/.gemini/skills",
+      "present": true,
+      "is_link": false,
+      "inspection": "PRESENCE_ONLY",
+      "contents_captured": false
+    }
+  ],
+  "limitations": [
+    "File presence only; configuration contents and credentials were not read.",
+    "Inventory is not a backup and does not establish complete machine coverage.",
+    "Pending deletions are recorded, not approved or reversed.",
+    "Project-local MCP configuration, plugins, scheduled tasks and local-only work still require inventory."
+  ],
+  "acceptance": [
+    "All desired personal skills and safe configuration have an off-machine copy.",
+    "Private remote commit and expected files are verified.",
+    "restore.ps1 supports plan, apply and verify without overwriting existing files.",
+    "Clean profile restore proves skills discovery and MCP registrations; logins listed separately.",
+    "Harness is installed from a tagged release, not copied from development."
+  ],
+  "validation": {
+    "offline_suite": {
+      "status": "PASS",
+      "command": "JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests",
+      "tests": 270,
+      "skipped": 2
+    },
+    "configuration_export": "NOT_RUN",
+    "restore_trial": "NOT_RUN",
+    "publication": "NOT_RUN"
+  }
+}

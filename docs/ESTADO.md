@@ -15,6 +15,8 @@ trocar de branch nela não afeta o instalado.
 | Capacidade | Status | Prova (nível) | Onde |
 |---|---|---|---|
 | Docs canônicos (README, MANUAL, SPEC, ESTADO) | ✅ HE-DOC-01 | revisão | este conjunto |
+| Recuperação após formatação (HE-REC-01) | `PASS` contrato e inventário inicial; avanço do backup no HE-REC-02 abaixo | leitura inicial sem conteúdo de configurações: 7 skills pessoais com `SKILL.md`, Git original sem remoto, 82 mudanças pendentes; cobertura inicial parcial | `docs/evidence/HE_REC_01_WORKSTATION_INVENTORY.json`; SPEC §11; MANUAL §2.5 |
+| Backup privado e restaurador inicial (HE-REC-02) | `PASS` publicação, clone independente, hashes e restauração offline de arquivos; recuperação completa `NOT_RUN` | 20 skills, 4 configurações, histórico Git original; 17 testes; perfil vazio no Windows: 482 arquivos e um apontador; 486 hashes conferidos após novo clone; Git original preservado | [agent-environment PR #1 (Draft)](https://github.com/Williamitiro/agent-environment/pull/1); `docs/evidence/HE_REC_02_PRIVATE_BACKUP.json` |
 | Skills ECC versionadas no repositório (fonte padrão do attach) | ✅ HE-R1-01 | 10 testes offline + attach/remove real via CLI | `vendor/ecc/`; `tests/test_vendored_source.py` |
 | `harnessctl project-doctor/plan/attach/verify/remove`: **pacote 2** (só regras do projeto, sem cópia de skills) | ✅ HE-R1-03, serve Claude Code e Codex | 15 testes offline; ensaio: plan real na plataforma (0 escritas), repo novo e clone da plataforma com remoção exata | `scripts/harnessctl.py`; `tests/test_repo_layer.py`; `evidence/HE_R1_03_REPO_LAYER.json` |
 | Pacote 1 (antigo: skills copiadas no repo, `--preserve-contract`) | ⚠️ legado: ainda verifica e remove; `project-attach` responde `LEGACY_ATTACHED` com instrução de migração | testes offline | `tests/test_project_lifecycle.py` |
@@ -37,6 +39,12 @@ trocar de branch nela não afeta o instalado.
 | Relatório diário de funcionamento | ✅ código | 9 testes offline; rodado nas sessões reais de 07/11 (9 sessões). Só contagens e nomes, nenhum texto de conversa. **Não é benchmark** | `scripts/daily_report.py`; `tests/test_daily_report.py`; MANUAL §4 |
 
 ## 2. Pendências, em ordem
+
+**Antes de formatar (HE-REC-02):** o backup inicial já está publicado no repositório privado `agent-environment`
+(PR #1 Draft), com restauração de arquivos ensaiada em pasta vazia. Faltam descoberta nativa das skills,
+reinstalação e conectividade dos MCPs locais, plugins, autenticações, tarefas do Windows e conferência dos trabalhos
+locais dos projetos. O inventário registra as exclusões pendentes das skills, e o histórico original foi preservado
+em bundle; esta tarefa não decidiu reativá-las. A máquina ainda não está homologada para formatação.
 
 1. **Pendentes da ligação:** o PR #1 do cad (frente única, com outros trabalhos) e o PR #1 do itiro-negocios-ideias
    são decisão do proprietário. `frontend-resiplac` e `modelo-de-negocio-resiplac`: ligar depois de resolver as
