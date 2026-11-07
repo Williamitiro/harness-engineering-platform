@@ -91,6 +91,18 @@ resposta deve citar `tdd-workflow` e `verification-loop`. A `setup-harness` só 
 **Atualizar para uma versão nova** (ex.: `v1.1.0`): `git -C C:\dev\harness-engineering fetch --tags` e repita
 2.2 e 2.3 com a tag nova. A versão anterior continua na pasta dela, para voltar se precisar.
 
+### 2.5. Antes de formatar o computador
+
+**Ainda não há restauração completa homologada.** A instalação acima recupera o pacote do Harness; suas outras
+skills, configurações e MCPs precisam da entrega de recuperação (SPEC §11, HE-REC-02).
+
+O procedimento a entregar é: instalar os aplicativos → clonar o repositório privado de ambiente pessoal → rodar
+`restore.ps1` → entrar novamente nas contas → conferir skills e MCPs. O script ainda não está entregue.
+
+Antes de formatar, é preciso conferir a cópia no GitHub privado, provar a restauração em um perfil limpo e preservar
+trabalhos locais sem cópia externa. Senhas e tokens ficam em armazenamento seguro separado. O inventário inicial
+em `docs/evidence/HE_REC_01_WORKSTATION_INVENTORY.json` registra caminhos e nomes; ele não salva os conteúdos.
+
 ---
 
 ## 3. Preparar um repositório (uma vez por projeto)
