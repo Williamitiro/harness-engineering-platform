@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/multica-ai/andrej-karpathy-skills",
+  "commit": "2c606141936f1eeef17fa3043a72095b4765b9c2",
+  "license": "MIT (declared in SKILL.md frontmatter and .claude-plugin/plugin.json; the repository has no LICENSE file)",
+  "note": "Byte-identical copy at this commit (verified by Git blob SHA). Do not edit. Candidate kit for the R2 benchmark; not installed by harnessctl."
+}

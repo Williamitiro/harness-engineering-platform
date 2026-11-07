@@ -30,6 +30,19 @@ PACKAGE_VERSION = "0.5.0"
 SAMPLE_QUESTION = "Implement automated unit tests for a small Python function."
 SAMPLE_CLASSES = ["software-development", "project-documentation"]
 
+# Fixed, non-secret Windows runtime variables needed by native processes.
+# Do not inherit NODE_OPTIONS, custom env, npm tokens or any unknown variables.
+WINDOWS_NODE_OPERATING_ENV = (
+    "SystemDrive", "ComSpec", "PATHEXT", "OS",
+    "NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE", "PROCESSOR_IDENTIFIER",
+    "PROCESSOR_LEVEL", "PROCESSOR_REVISION",
+    "USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH",
+    "PROGRAMDATA", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432",
+    "CommonProgramFiles", "CommonProgramFiles(x86)", "CommonProgramW6432",
+    "ALLUSERSPROFILE", "PUBLIC", "USERNAME", "USERDOMAIN", "COMPUTERNAME",
+)
+
+
 
 class SmokePreflightError(RuntimeError):
     """Safe preflight error; messages contain no credential values."""
@@ -111,7 +124,7 @@ def isolated_child_env(parent: dict[str, str]) -> dict[str, str]:
             raise SmokePreflightError("TypeSafe provider and credential disagree")
         env["TYPESAFE_API_KEY"] = typesafe_key
 
-    for name in ("PATH", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR"):
+    for name in ("PATH", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR") + WINDOWS_NODE_OPERATING_ENV:
         if name in parent:
             env[name] = parent[name]
     return env

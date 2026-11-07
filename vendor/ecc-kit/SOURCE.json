@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/affaan-m/ECC",
+  "commit": "b38be6a7f6350964d59328b52f0624e1d1d552d1",
+  "license": "MIT",
+  "note": "Byte-identical copy of skills/search-first at this commit (verified by Git blob SHA). Kept apart from vendor/ecc, whose file set is pinned by the installer. Candidate kit for the R2 benchmark; not installed by harnessctl."
+}

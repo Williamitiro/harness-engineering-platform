@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "id": "HE-R1-04",
+  "observed_at_utc": "2026-11-04T01:41:12+00:00",
+  "harness_base_sha": "7139c004e5ab8361fa8b8836c3ce59347b46356e",
+  "note": "working tree had the uncommitted HE-R1-04 change applied",
+  "migration_trial_on_copy_of_real_installed_bytes": {
+    "source": "C:\\Users\\itiro\\.agents\\skills (setup-harness, tdd-workflow, verification-loop, .harness-machine.json) copied to a temporary home",
+    "plan_migrations": [
+      "UPGRADE_PACKAGE",
+      "MIGRATE_BOOTSTRAP"
+    ],
+    "verify_before": "BLOCKED UPGRADE_AVAILABLE",
+    "verify_after": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "descriptor_schema": 2,
+    "remove": "REMOVED_EXACT_OWNED_FILES",
+    "left_after_remove": [
+      ".agents",
+      ".agents/skills",
+      ".codex"
+    ]
+  },
+  "real_home_activation": {
+    "observed_at_utc": "2026-11-04T02:24:28+00:00",
+    "installed_from": "C:\\dev\\harness-engineering (detached at e42ccfc)",
+    "migrations": [
+      "UPGRADE_PACKAGE",
+      "MIGRATE_BOOTSTRAP"
+    ],
+    "verify": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "descriptor": {
+      "schema_version": 2,
+      "harnessctl": "C:\\dev\\harness-engineering\\scripts\\harnessctl.py"
+    },
+    "codex_discovery": {
+      "client_version": "codex-cli 0.166.0",
+      "model_turns_started": 0,
+      "setup-harness": "DISCOVERED",
+      "tdd-workflow": "DISCOVERED",
+      "verification-loop": "DISCOVERED"
+    },
+    "user_skill_repo_untracked_harness_paths": [
+      "setup-harness/",
+      "tdd-workflow/",
+      "verification-loop/",
+      ".harness-machine.json"
+    ],
+    "other_user_changes_touched": 0
+  },
+  "new_session_invocation": {
+    "claude_code": {
+      "observed_at_utc": "2026-11-04T02:35:59+00:00",
+      "client_version": "Claude Code 2.1.268",
+      "how": "new desktop session in empty C:\\dev\\teste-harness, prompt '/setup-harness' with pre-approval",
+      "skill": "INVOKED",
+      "flow": [
+        "machine-verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+        "git init",
+        "project-plan: PLANNED_NOT_INSTALLED (NEW_REPO)",
+        "project-attach --apply: FILES_INSTALLED_RUNTIME_NOT_VERIFIED",
+        "project-verify: OK"
+      ],
+      "independent_check": "project-verify OK from operator terminal; AGENTS.md, CLAUDE.md (@AGENTS.md), .harness/manifest.json present",
+      "outcome": "PASS",
+      "findings": [
+        "skill hidden from model skill list because disable-model-invocation=true (by design; only /setup-harness runs it)",
+        "skill says 'se nao estiver OK' but machine-verify returns FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+        "project-attach 'created' omits .harness/manifest.json"
+      ]
+    },
+    "codex": {
+      "observed_at_utc": "2026-11-04T02:35:59+00:00",
+      "client_version": "codex-cli 0.166.0",
+      "how": "codex exec -s workspace-write in empty C:\\dev\\teste-harness-codex, prompt '$setup-harness' with pre-approval",
+      "skill": "INVOKED (SKILL.md and harness-location.json read)",
+      "outcome": "BLOCKED_SANDBOX: first command failed, python not found; no files created",
+      "root_cause_probe_without_model": "codex sandbox -- <absolute python.exe>: CreateProcessAsUserW failed: 5 (Access denied); Windows restricted-token sandbox cannot execute user-installed Python",
+      "skill_defect": "on failure the skill told the user to reinstall the Harness on the computer, which was the wrong remedy",
+      "usage": {
+        "input_tokens": 152407,
+        "cached_input_tokens": 142336,
+        "output_tokens": 1875,
+        "reasoning_output_tokens": 729
+      },
+      "cost_usd": null
+    },
+    "codex_after_fixes": {
+      "observed_at_utc": "2026-11-04T02:48:20+00:00",
+      "client_version": "codex-cli 0.166.0",
+      "how": "codex exec --approve-for-me in empty C:\\dev\\teste-harness-codex, prompt '$setup-harness' with pre-approval",
+      "runs": [
+        {
+          "run": 2,
+          "fix": "skill asks for elevated harnessctl (0d5b21f)",
+          "outcome": "BLOCKED_GIT_OWNERSHIP: machine-verify and project-plan OK; git init ran inside the sandbox, .git owned by CodexSandboxOffline, Git refused 'dubious ownership'",
+          "usage": {
+            "input_tokens": 179893,
+            "cached_input_tokens": 167552,
+            "output_tokens": 2287
+          }
+        },
+        {
+          "run": 3,
+          "fix": "git init elevated + explained ownership error (09b128a)",
+          "outcome": "PASS",
+          "flow": [
+            "machine-verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+            "git init (elevated)",
+            "project-plan: PLANNED_NOT_INSTALLED",
+            "project-attach --apply: FILES_INSTALLED_RUNTIME_NOT_VERIFIED",
+            "project-verify: OK"
+          ],
+          "independent_check": "project-verify OK from operator terminal; .git owner GALAXY-BOOK\\itiro",
+          "workflow_skill_behavior": "after setup the agent read the new AGENTS.md, opened verification-loop/SKILL.md and ran a review plus security scan on its own (BEHAVIOR_OBSERVED, one run)",
+          "usage": {
+            "input_tokens": 275165,
+            "cached_input_tokens": 258944,
+            "output_tokens": 2630,
+            "reasoning_output_tokens": 579
+          },
+          "cost_usd": null
+        }
+      ]
+    }
+  },
+  "cost_usd": null
+}

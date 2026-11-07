@@ -1,0 +1,34 @@
+{
+  "status": "BLOCKED_G1",
+  "scope": "MXC_NEGATIVE_CANARIES_ONLY",
+  "fixture": "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-3hq11r0e",
+  "paid_calls": 0,
+  "broker_verified": false,
+  "timeout_s": 40,
+  "max_invocations": 1,
+  "retries": 0,
+  "policy_filesystem": {
+    ":root": "deny",
+    ":minimal": "read",
+    "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-3hq11r0e\\workspace": "write",
+    "C:\\dev\\harness-engineering": "deny",
+    "C:\\Users\\itiro": "deny",
+    "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-3hq11r0e\\protected": "deny",
+    "C:\\Users\\itiro\\AppData\\Local\\Temp\\he-jev-mxc-g1-3hq11r0e\\workspace\\denied-canary.txt": "deny"
+  },
+  "network_enabled": false,
+  "exit_code": 0,
+  "probes": {
+    "allowed_read": true,
+    "allowed_write": true,
+    "protected_read": "DENIED",
+    "golden_read": "DENIED",
+    "git_read": "DENIED",
+    "workspace_denied_read": "DENIED",
+    "outside_write": "DENIED",
+    "credential_environment_absent": true,
+    "network_external": "DENIED",
+    "network_loopback": "DENIED"
+  },
+  "canaries_passed": true
+}

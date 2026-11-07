@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "HE-R1-05",
+  "observed_at_utc": "2026-11-04",
+  "harness_installer_sha": "09b128a",
+  "target": {
+    "repo": "Williamitiro/plataforma-metalurgica",
+    "branch": "b-harness-instalacao",
+    "base": "origin/main 29e5c6a",
+    "commit": "2690e4ce2ae503b1eac5519e91d377796e7648bb",
+    "pr": 229,
+    "pr_state": "OPEN, sem merge"
+  },
+  "flow": [
+    "machine-verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "project-plan: PLANNED_NOT_INSTALLED (EXISTING_REPO; AGENTS.md PRESERVE, CLAUDE.md e manifest WOULD_CREATE)",
+    "project-attach --apply: FILES_INSTALLED_RUNTIME_NOT_VERIFIED",
+    "project-verify: OK (CLAUDE.md UNCHANGED), repetido depois do commit"
+  ],
+  "project_changes_beyond_harness": [
+    ".gitattributes: CLAUDE.md e .harness/** em LF (hash estavel em outro clone)",
+    "ESTADO_DO_PROJETO (1 linha), GLOSSARIO (2 linhas), indices regerados por tools/docs.py"
+  ],
+  "new_session_discovery": {
+    "codex": {
+      "client": "codex-cli 0.166.0",
+      "how": "codex exec -s read-only, sem comandos",
+      "branch_rule_from_AGENTS": "PASS",
+      "tdd_workflow": "DISCOVERED",
+      "verification_loop": "DISCOVERED",
+      "setup_harness_hidden": true,
+      "usage": {
+        "input_tokens": 24083,
+        "cached_input_tokens": 13440,
+        "output_tokens": 62
+      }
+    },
+    "claude_code": {
+      "client": "Claude Code 2.1.268 (desktop, Haiku, modo plan)",
+      "branch_rule_from_AGENTS_via_CLAUDE_md_import": "PASS",
+      "tdd_workflow": "DISCOVERED",
+      "verification_loop": "DISCOVERED",
+      "setup_harness_hidden": true,
+      "usage": null
+    },
+    "note": "claude -p da linha de comando nao esta logado nesta maquina; o teste do Claude foi feito por sessao nova do app"
+  },
+  "platform_suite": {
+    "command": "python -m pytest -q --basetemp <scratchpad longo>",
+    "result": "2040 passed, 554 skipped, 11 failed, 5 errors (45 min)",
+    "rerun_failures_short_basetemp": "14 passed",
+    "cause": "limite de caminho do Windows com pasta temporaria longa; mudanca nao toca codigo",
+    "docs_tests_after_edit": "tests/test_docs.py + tests/test_quebra_de_linha.py: 14 passed"
+  },
+  "independent_review": {
+    "by": "subagente Sonnet, nao autor",
+    "verdict": "APROVADO",
+    "items": "6/6 PASS"
+  },
+  "behavior": "NOT_RUN: nenhuma tarefa real feita com as skills na plataforma ainda (criterio 'tarefa real com QA externo' pendente)",
+  "cost_usd": null
+}

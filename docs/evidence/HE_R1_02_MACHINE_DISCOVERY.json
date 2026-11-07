@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "HE-R1-02",
+  "observed_at_utc": "2026-11-04T01:06:29+00:00",
+  "harness_base_sha": "11ad5c50bf71ce80d81d10cbe4292966479121e2",
+  "note": "working tree had the uncommitted HE-R1-02 change applied",
+  "machine_install": {
+    "home": "C:\\Users\\itiro",
+    "files_created": [
+      ".agents/skills/tdd-workflow/SKILL.md",
+      ".agents/skills/verification-loop/SKILL.md",
+      ".agents/skills/.harness-machine.json"
+    ],
+    "roots": [
+      {
+        "adapter": "codex",
+        "root": ".agents/skills",
+        "mode": "copy"
+      },
+      {
+        "adapter": "claude",
+        "root": ".claude/skills",
+        "mode": "alias",
+        "alias_of": "codex"
+      }
+    ],
+    "verify": "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "existing_files_modified": 0
+  },
+  "discovery": {
+    "codex": {
+      "client_version": "codex-cli 0.166.0",
+      "method": "app-server initialize + skills/list",
+      "model_turns_started": 0,
+      "tdd-workflow": "DISCOVERED",
+      "verification-loop": "DISCOVERED",
+      "scope": "user",
+      "leftover_processes": 0
+    },
+    "claude": {
+      "client_version": "Claude Code 2.1.268",
+      "method": "running session received the updated skill list right after install (hot reload)",
+      "tdd-workflow": "DISCOVERED",
+      "verification-loop": "DISCOVERED",
+      "model_turns_started_for_probe": 0
+    }
+  },
+  "invocation": "NOT_RUN",
+  "cost_usd": null
+}
