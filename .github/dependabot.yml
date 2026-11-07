@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Só as GitHub Actions do CI: o código do Harness é stdlib e não tem dependências de pacote.
+  # Dependabot apenas abre PR; nenhum merge automático.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

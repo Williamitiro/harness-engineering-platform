@@ -12,12 +12,15 @@ def ev(**kw):
 
 
 class ParseEventsTests(unittest.TestCase):
-    def test_usage_summed_across_turns(self):
+    def test_usage_is_cumulative_last_turn_wins(self):
+        # Codex rust-v0.166.0: turn.completed.usage = total acumulado da sessão; somar contaria em dobro.
         lines = [ev(type="turn.completed", usage={"input_tokens": 10, "cached_input_tokens": 4, "output_tokens": 2}),
-                 ev(type="turn.completed", usage={"input_tokens": 5, "output_tokens": 1, "reasoning_output_tokens": 3})]
-        u = b.parse_events(lines)["usage"]
-        self.assertEqual(u, {"input_tokens": 15, "cached_input_tokens": 4, "output_tokens": 3,
-                             "reasoning_output_tokens": 3})
+                 ev(type="turn.completed", usage={"input_tokens": 15, "cached_input_tokens": 4, "output_tokens": 3,
+                                                  "reasoning_output_tokens": 3})]
+        p = b.parse_events(lines)
+        self.assertEqual(p["usage"], {"input_tokens": 15, "cached_input_tokens": 4, "cache_write_input_tokens": None,
+                                      "output_tokens": 3, "reasoning_output_tokens": 3})
+        self.assertEqual(p["turns"], 2)
 
     def test_missing_usage_is_null_not_zero(self):
         parsed = b.parse_events([ev(type="item.completed", item={"type": "agent_message", "text": "oi"})])
