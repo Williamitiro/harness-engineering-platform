@@ -218,8 +218,8 @@ o operador e para qualquer agente, em qualquer repositório.
 | Tema | Decisão | Motivo |
 |---|---|---|
 | Framework de agentes | **Nenhum framework novo.** Harnesses nativos (Claude Code, Codex) + Agent Skills + `AGENTS.md`; MCP só quando o agente precisa chamar a ferramenta | padrões abertos que todas as ferramentas já leem; framework acrescenta uma camada sem ganho medido |
-| Conversas gerais e entre projetos | **Central:** pasta `C:\dev\central-inteligencia`, com Git local e sem remoto | pesquisa e decisão ficam fora do código; o Git dá histórico e desfazer das escritas do agente sem nada sair da máquina |
-| Implementação | no repositório dono do sistema, em branch ou worktree própria, entregue por PR | regras, testes e revisão do projeto já vivem lá |
+| Pesquisa, análise e decisão | **Central:** pasta `C:\dev\central-inteligencia`, com Git local e sem remoto. Não tem código e não coordena execução | pesquisa e decisão ficam fora do código; o Git dá histórico e desfazer das escritas do agente sem nada sair da máquina |
+| Coordenação e implementação | **um coordenador por repositório**, aberto no próprio repositório; não existe coordenador geral. A implementação acontece em branch ou worktree própria e é entregue por PR | o coordenador já tem o contexto do projeto e não precisa navegar por outros; regras, testes e revisão do projeto vivem lá |
 | Secretário sempre ligado | o **Hermes** no Resiplac Core é **candidato**. Hoje o perfil `personal-whatsapp` é uma superfície empresarial multiusuário (`context_scope=WORK`); não é secretário pessoal | estado registrado no Core |
 | Modelo do Hermes | manter o GLM 5.3 Flash até fechar a jornada de agenda; comparar outro modelo só depois (§10.5, regra 5) | uma variável por vez (princípio 4) |
 | Assistentes prontos (OpenAI Dots, Claude Duet, Grok Bot) | **referência; não adotar** | Duet só nos EUA, com lista de espera; Dots e Grok Bot rodam na nuvem do fornecedor; nenhuma lacuna medida justifica outra assinatura |
@@ -246,23 +246,27 @@ registrar no ESTADO.
 |---|---|
 | pesquisa avulsa, estudo, compra, ideia, assunto pessoal | Central |
 | assunto que cruza projetos, ou decisão de arquitetura | Central |
-| implementar ou corrigir um sistema | repositório do sistema |
+| saber em que ponto um sistema está, planejar e acompanhar o trabalho dele | coordenador do repositório do sistema |
+| implementar ou corrigir um sistema | repositório do sistema (sessão delegada pelo coordenador) |
 | pedido pelo WhatsApp com o PC desligado | Hermes, somente nos escopos homologados no Core |
 | guardar conhecimento | Vault, pela skill de captura (recibo obrigatório) |
 
-**Pacote de delegação** (da Central para um repositório): repositório, decisão tomada, escopo e não escopo, critério
-de aceite, evidência exigida e quem revisa. Sem o pacote, a sessão de destino não começa.
+**Pacote de delegação** (da Central para o coordenador do repositório): repositório, decisão tomada, escopo e não
+escopo, critério de aceite, evidência exigida e quem revisa. Sem o pacote, o trabalho não começa.
 
 ### 10.4 Coordenação dos trabalhos
 
-1. **Uma thread coordenadora**, aberta na Central, mantém a fila de frentes, distribui as lanes e audita. Ela não
-   implementa nem faz merge ou deploy: delega, confere a evidência e pede a decisão do operador.
-2. **Uma lane** = um repositório + uma branch ou worktree + um dono + um PR. Duas sessões nunca escrevem nos mesmos
+1. **Um coordenador por repositório**, numa thread aberta no próprio repositório. Ele lê o estado do projeto, mantém
+   a fila de trabalho daquele repositório, divide em lanes, delega a execução, audita e revisa. Ele não faz merge nem
+   deploy: confere a evidência e pede a decisão do operador. **Não existe coordenador geral.**
+2. **A Central não coordena execução.** Ela pesquisa, analisa e decide; a decisão pronta vira um pacote de delegação
+   entregue ao coordenador do repositório certo.
+3. **Uma lane** = um repositório + uma branch ou worktree + um dono + um PR. Duas sessões nunca escrevem nos mesmos
    arquivos.
-3. **Revisão independente:** quem implementou não aprova. Claude ↔ Codex pela skill `coordenacao-claude-codex`.
-4. **O estado de cada sistema vive no repositório dele** (Core: `docs/CURRENT_STATE.yaml`; Harness: `docs/ESTADO.md`).
-   A coordenação aponta para ele e não copia.
-5. Merge, deploy, push na `main`, chamada paga e escrita em produção: só com autorização explícita do operador para
+4. **Revisão independente:** quem implementou não aprova. Claude ↔ Codex pela skill `coordenacao-claude-codex`.
+5. **O estado de cada sistema vive no repositório dele** (Core: `docs/CURRENT_STATE.yaml`; Harness: `docs/ESTADO.md`).
+   O coordenador atualiza esse arquivo; a Central aponta para ele e não copia.
+6. Merge, deploy, push na `main`, chamada paga e escrita em produção: só com autorização explícita do operador para
    aquela ação.
 
 ### 10.5 Regras para agentes que agem
@@ -313,5 +317,5 @@ de aceite, evidência exigida e quem revisa. Sem o pacote, a sessão de destino 
 |---|---|---|
 | HE-OM-01 | Central criada: `CLAUDE.md` curto + mapa dos repositórios (nome, finalidade, onde fica o estado) | chat novo na Central responde onde fica cada sistema e qual é o estado dele, citando o arquivo |
 | HE-OM-02 | inventário do escopo da máquina (skills, MCPs, conectores vistos em `/mcp`), registrado no ESTADO | lista conferida numa sessão nova, fora de qualquer repositório |
-| HE-OM-03 | thread coordenadora em funcionamento | primeiro diagnóstico "onde estamos" e a fila de lanes aprovados pelo operador |
+| HE-OM-03 | coordenador do harness-engineering em funcionamento (depois, um por repositório ativo) | diagnóstico "onde estamos" e fila de lanes do repositório aprovados pelo operador |
 | HE-OM-04 | regra 3 de §10.5 nas rotinas agendadas | toda rotina nova termina com uma linha verificável; uma execução interrompida aparece como falha |

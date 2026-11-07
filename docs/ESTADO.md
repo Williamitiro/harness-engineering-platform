@@ -161,7 +161,7 @@ Conferido em 07/11/2026, somente leitura, nesta máquina e nos repositórios cit
 | Item | Status | Prova (nível) | Onde |
 |---|---|---|---|
 | Central `C:\dev\central-inteligencia` | `NOT_RUN`: a pasta não existe | — | HE-OM-01 |
-| Thread coordenadora | `NOT_RUN` | — | HE-OM-03 |
+| Coordenador do harness-engineering (um por repositório; sem coordenador geral) | `NOT_RUN` | — | HE-OM-03 |
 | Escopo da máquina: skills | 7 skills em `~/.agents/skills` (Git próprio), lidas pelo Claude Code via `~/.claude/skills`: `coordenacao-claude-codex`, `git-lane-checkpoint`, `resiplac-vault-capture-global`, `reverse-engineer-anything`, `setup-harness`, `tdd-workflow`, `verification-loop` | listagem da pasta; uma sessão aberta no harness-engineering recebeu a skill da Vault (`DISCOVERED`) | `~/.agents/skills/README.md` |
 | Escopo da máquina: MCPs de usuário | `gemini-notebook`, `rea`, `fish-audio` | `~/.claude.json`; carregados nesta sessão | — |
 | Conectores Gmail/Agenda no Claude Code | `NOT_RUN`: não conferido em `/mcp` | — | HE-OM-02 |
@@ -185,9 +185,10 @@ negativa continua `INCONCLUSIVE`; nova homologação ao vivo: `NOT_RUN`.
 
 **Pendências do modelo operacional, em ordem:**
 
-1. HE-OM-03: abrir a thread coordenadora; primeiro entregável = diagnóstico "onde estamos" + fila de lanes.
+1. HE-OM-03: abrir o coordenador do harness-engineering, no próprio repositório; primeiro entregável = diagnóstico
+   "onde estamos" + fila de lanes deste repositório. Os outros repositórios ganham o seu quando tiverem trabalho ativo.
 2. HE-OM-01 e HE-OM-02: criar a Central e registrar o inventário do escopo da máquina.
-3. Core, Entrega F (lane no `resiplac-core`, com revisão do Codex): diagnóstico só de leitura das tentativas de 02/11
+3. Core, Entrega F (para o coordenador do `resiplac-core`, com revisão do Codex): diagnóstico só de leitura das tentativas de 02/11
    → conjunto fixo de frases de agenda como teste offline da rota → corrigir a causa comprovada → roteiro ao vivo do
    runbook (seção 7) → só então comparar modelos.
 4. HE-OM-04: aplicar a regra de linha final verificável nas próximas rotinas agendadas.

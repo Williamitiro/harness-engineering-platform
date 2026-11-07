@@ -154,11 +154,13 @@ Para forçar o uso de uma skill, cite o nome dela: *"use o tdd-workflow para cor
 |---|---|
 | pesquisar, estudar, comparar, ter uma ideia, resolver algo pessoal | **Central** (`C:\dev\central-inteligencia`) |
 | decidir algo que envolve mais de um projeto | **Central** |
+| saber em que ponto um sistema está e o que fazer a seguir | o **coordenador** daquele sistema, aberto na pasta dele |
 | implementar ou corrigir um sistema | a pasta **do sistema** (Resiplac Core, plataforma, Nexus…) |
 | guardar o que vale a pena | peça *"salve isso na Vault"*: o agente só confirma com recibo |
 
-Quando uma conversa na Central vira trabalho num sistema, peça ao agente o **pacote de delegação** (repositório,
-decisão, escopo, critério de aceite, quem revisa) e abra a sessão no repositório com ele. As regras completas e o
+A Central não escreve código nem coordena execução. Quando uma decisão fica pronta, peça ao agente o **pacote de
+delegação** (repositório, decisão, escopo, critério de aceite, quem revisa) e entregue ao coordenador daquele
+repositório. Cada repositório tem o seu coordenador; não existe coordenador geral. As regras completas e o
 motivo de cada decisão estão na [SPEC §10](SPEC.md#10-modelo-operacional-onde-trabalhar-o-que-é-global-e-como-coordenar).
 
 ---
