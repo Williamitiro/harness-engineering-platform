@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import harnessctl  # noqa: E402
+import native_telemetry  # noqa: E402
 
 SPEC = ROOT / "benchmarks" / "r2" / "tasks.json"
 PLATFORM = Path(os.environ.get("HE_R2_PLATFORM", r"C:\dev\plataforma-metalurgica"))
@@ -38,9 +39,11 @@ def load_spec() -> dict:
 # --- telemetria --------------------------------------------------------------------------------------------------
 
 def parse_events(lines: list[str]) -> dict:
-    """Resumo do JSONL do `codex exec --json`. Uso ausente fica null; linhas que não são JSON são contadas."""
-    usage_keys = ("input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens")
-    usage = None
+    """Resumo do JSONL do `codex exec --json`. Uso ausente fica null; linhas que não são JSON são contadas.
+
+    O `usage` vem de `native_telemetry`: é o total acumulado da sessão (vale o último), nunca a soma dos turnos.
+    """
+    usage = native_telemetry.parse_codex(lines)["usage"]
     commands, messages, bad, turns = [], [], 0, 0
     for raw in lines:
         try:
@@ -51,12 +54,6 @@ def parse_events(lines: list[str]) -> dict:
         kind = event.get("type")
         if kind == "turn.completed":
             turns += 1
-            got = event.get("usage") or {}
-            if usage is None:
-                usage = {k: None for k in usage_keys}
-            for key in usage_keys:
-                if isinstance(got.get(key), int):
-                    usage[key] = (usage[key] or 0) + got[key]
         elif kind == "item.completed":
             item = event.get("item") or {}
             if item.get("type") == "command_execution":

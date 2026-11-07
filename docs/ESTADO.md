@@ -1,10 +1,13 @@
 # Estado do Harness Engineering
 
-**Atualizado em 05/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
+**Atualizado em 07/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
-Branch de trabalho: `codex/he-jev-007a` ([PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4),
-Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não contém nada abaixo de HE-OP.
+Branch de trabalho: `claude/harness-engineer-analysis-e80c76` ([PR #5](https://github.com/Williamitiro/harness-engineering-platform/pull/5),
+Draft, **sem revisão e sem merge**). O PR #5 contém o [PR #4](https://github.com/Williamitiro/harness-engineering-platform/pull/4)
+(`codex/he-jev-007a`) inteiro (conferido em 07/11 com `git merge-base --is-ancestor`). O `main` ainda não contém
+nada abaixo de HE-OP. HE-R2-01 e a revisão do CI (07/11) estão em `claude/infrastructure-review-20c8fa`, feita a partir
+da ponta do PR #5 (`2d786a2`).
 
 ## 1. O que existe e com que prova
 
@@ -20,7 +23,9 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | Ensaio real na plataforma metalúrgica | ✅ patch com QA específico; ❌ suíte global com 2 falhas preexistentes | `BEHAVIOR_OBSERVED` na mesma sessão; turno novo `NOT_RUN` | `evidence/HE_OP_03_PLATAFORMA_METALURGICA.json`; [PR #216](https://github.com/Williamitiro/plataforma-metalurgica/pull/216) |
 | Instalação permanente na plataforma | ✅ HE-R1-05 em PR, **sem merge**: `CLAUDE.md` + manifesto, `AGENTS.md` da plataforma preservado | `project-verify` OK; chat novo: Claude Code e Codex citam a regra de branch da plataforma e veem as 2 skills (`DISCOVERED`); suíte da plataforma 2040 passed, 16 falhas de caminho longo que passam com `--basetemp` curto; tarefa real com as skills `NOT_RUN` | `evidence/HE_R1_05_PLATAFORMA.json`; [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229) |
 | Camada 1 (máquina) para Claude Code + Codex: `machine-plan/install/verify/remove/discover` + `config/adapters.json` | ✅ HE-R1-02 (só as 2 skills ECC; a `setup-harness` entra no HE-R1-04) | 13 testes offline; **instalada nesta máquina**; `DISCOVERED` no Codex (`skills/list`, 0 turnos) e no Claude Code (sessão recebeu as skills) | `evidence/HE_R1_02_MACHINE_DISCOVERY.json`; `tests/test_machine_layer.py` |
-| Benchmark A/B (R2) | ❌ `NOT_RUN` | — | `scripts/harness_eval.py` existe, mas com bugs (§3) |
+| Benchmark A/B (R2) | ❌ `NOT_RUN`; falta o braço A isolado (HE-R2-02) | — | `scripts/harness_eval.py` |
+| Telemetria do runner (HE-R2-01): Claude em `stream-json --verbose` (trajetória, modelo, versão, skills, tokens com cache, custo estimado); Codex com os 5 campos de `usage`, último total (não a soma); `null` ≠ 0; `--model`/`--effort` fixados e registrados; versão do CLI no lugar do caminho do binário | ✅ código | 21 testes offline novos (parser + runner com subprocess simulado); semântica do `usage` do Codex lida no fonte `rust-v0.166.0` (`event_processor_with_jsonl_output.rs`). Execução real `NOT_RUN` | `scripts/native_telemetry.py`; `scripts/harness_eval.py`; `tests/test_native_telemetry.py`; `tests/test_harness_eval.py` |
+| CI | ✅ 07/11: actions fixadas por SHA (checkout v7.0.1, setup-python v7.1.0), Python 3.12 fixado, suíte offline também em **Windows**, `compileall` de tudo, Dependabot mensal só para actions; integração npm do `jev-code` (legado) só sob demanda | YAML validado localmente; **primeira execução no GitHub, sobretudo a do Windows, ainda não observada** | `.github/workflows/quality.yml`; `.github/dependabot.yml` |
 | Linha de base de qualidade no uso real (HE-R2) | ✅ medida no histórico da plataforma, sem chamada de modelo: 238 PRs; 24 com revisão independente contada; **20 defeitos confirmados**, 1,05 por PR revisado com código; tokens do Claude em 171 de 231 PRs (mediana 36 mil de saída); Codex 0 (só revisa, na `main`). Lote isolado de 21 execuções: 8 rodadas, **inválidas** (D51 da plataforma e Python bloqueado no sandbox do Codex) | 9 testes offline; contagem conferida contra as tabelas dos PRs #244, #245, #247; revisões sem tabela (#163, #166, #167, #82) ficam `null` | `scripts/quality_baseline.py`; `evidence/HE_R2_BASELINE_QUALIDADE.json`; `benchmarks/r2/` |
 | JEV via HTTPS (`jev_http.py`) | ✅ código e testes; smoke de 1 chamada observado | relatado pelo operador | `scripts/jev_http.py` |
 | Piloto JEV A×J (3 classificações) | ⚠️ "COMPLETED, 3/3 nas duas condições" relatado pelo operador; o recibo no repo é da tentativa anterior, `ABORTED` | sem recibo do sucesso | `evidence/HE_JEV_007B_PILOT.json` |
@@ -29,8 +34,9 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 
 ## 2. Pendências, em ordem
 
-1. **Revisar e fazer o merge do PR #4.** A `setup-harness` instalada aponta para `C:\dev\harness-engineering\scripts\harnessctl.py`;
-   se aquele checkout sair desta branch, ela quebra.
+1. **Revisar e fazer o merge do PR #5** (contém o PR #4; revisar o #5 cobre os dois, e o #4 pode ser fechado depois).
+   A `setup-harness` instalada aponta para `C:\dev\harness-engineering\scripts\harnessctl.py`; se aquele checkout sair
+   desta branch, ela quebra.
 2. **Plataforma: revisar e fazer o merge do [PR #229](https://github.com/Williamitiro/plataforma-metalurgica/pull/229)**
    (HE-R1-05). A correção de CRLF já entrou na `main` da plataforma (#224). Achado: com pasta temporária de caminho
    longo, 16 testes da plataforma falham no Windows; com `--basetemp` curto, passam.
@@ -65,12 +71,13 @@ Draft, CI verde em `1e9ca9c`, **sem revisão e sem merge**). O `main` ainda não
 | `CLAUDE.md` já existente não é lido, então o Harness não sabe se ele importa o `AGENTS.md` | o plano avisa (`PRESERVE_CHECK_IMPORT`); a linha `@AGENTS.md` precisa ser posta à mão | a `setup-harness` (HE-R1-04) orienta o usuário |
 | Claude Code 2.1.268 desta máquina não lê `AGENTS.md` sozinho (só a partir da 2.1.277) | em projeto sem `CLAUDE.md`, o Claude não vê as regras | resolvido pelo pacote 2, que cria `CLAUDE.md` com `@AGENTS.md` |
 | `~/.agents/skills` nesta máquina é um repositório Git do usuário | as 2 pastas e o recibo aparecem como arquivos não rastreados ali; o Harness não faz commit nem altera esse Git | decisão do usuário (commitar, ignorar ou deixar) |
-| `harness_eval.py` começa tokens em `0` (linhas 342–343), o Claude roda com `json` e perde a trajetória, o Codex descarta tokens de cache e de raciocínio | métricas erradas | HE-R2-01 |
+| `harness_eval.py` começa tokens em `0` (linhas 342–343), o Claude roda com `json` e perde a trajetória, o Codex descarta tokens de cache e de raciocínio | métricas erradas | ✅ HE-R2-01 (07/11) |
+| CLIs desta máquina atrás do upstream em 07/11: Claude Code 2.1.268 (npm: 2.1.319), Codex 0.166.0 (npm: 0.167.0) | o Claude local ainda não lê `AGENTS.md` sozinho (2.1.277+); benchmark deve fixar e registrar a versão usada | atualizar é mudança global: só com autorização; o runner já registra a versão |
 | O braço A do benchmark carregaria as skills globais | resultado falso de "empate" | HE-R2-02 |
 | Gabarito JEV no mesmo repositório, 30 casos visíveis, sem anotador independente | não serve para benchmark real | R4 |
 | Sem corte financeiro independente (limites são lógicos) | risco de gasto | antes de qualquer lote pago |
 | Linha de base com 24 PRs revisados (1,05 defeito por PR) | queda de 30% nos defeitos só aparece com ~140 PRs revisados por período (estimativa Poisson, 80% de poder, α=5%; mais se os dados variarem muito); antes × depois sem controle mistura efeito da skill com troca de modelo, tipo de tarefa e revisor | §2 itens 6 e 7 |
-| Fontes divergem se o `usage` do `turn.completed` no Codex é por turno ou acumulado na sessão | somar turnos pode contar tokens em dobro | conferir no HE-R2-01 |
+| Fontes divergiam se o `usage` do `turn.completed` no Codex é por turno ou acumulado na sessão | somar turnos contaria tokens em dobro | ✅ HE-R2-01: no fonte `rust-v0.166.0` é o total acumulado (`usage.total`) e o `exec` encerra após o 1º turno; `native_telemetry` e `r2_bench.parse_events` usam o último, e tudo `0` vira `null` |
 
 ## 4. Lições que viraram regra
 

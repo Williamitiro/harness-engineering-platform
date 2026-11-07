@@ -25,10 +25,30 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import harnessctl
+import native_telemetry
 
 
 class EvalError(RuntimeError):
     pass
+
+
+def probe_client_version(binary: str) -> str | None:
+    """`<cli> --version`, first line. Unknown is None, never the binary path."""
+    try:
+        res = subprocess.run(
+            [binary, "--version"],
+            capture_output=True, encoding="utf-8", errors="replace", check=False, timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    lines = (res.stdout or "").strip().splitlines()
+    return lines[0].strip() if res.returncode == 0 and lines else None
+
+
+def null_metrics() -> dict:
+    return {"duration_seconds": None, "input_tokens": None, "cached_input_tokens": None,
+            "cache_write_input_tokens": None, "output_tokens": None, "reasoning_output_tokens": None,
+            "turns": None, "cost_usd": None, "cost_source": "unknown", "cost_observed": False}
 
 
 def find_codex_binary() -> str | None:
@@ -188,36 +208,33 @@ def run_oracle(oracle_path: Path, target: Path) -> dict:
 def analyze_trajectory(events: list[dict], client: str) -> dict:
     """Conservative evidence classifier, never a tool router or an LLM judge.
 
-    Count only completed command executions with exit codes. A skill name in an
-    agent response, failed command or generic test run is not invocation/TDD.
+    Count only tool calls whose outcome was observed (Codex: exit code; Claude Code:
+    tool_result with is_error). A skill name in an agent response, failed command,
+    unanswered call or generic test run is not invocation/TDD.
     """
     import re
 
-    records = []
-    for item in events:
-        if item.get("type") != "item.completed":
-            continue
-        cmd = item.get("item", {})
-        if cmd.get("type") != "command_execution" or cmd.get("status") != "completed":
-            continue
-        exit_code = cmd.get("exit_code")
-        if type(exit_code) is not int:
-            continue
-        records.append({
-            "command": str(cmd.get("command", "")),
-            "output": str(cmd.get("aggregated_output", "")),
-            "exit_code": exit_code,
-        })
+    calls = native_telemetry.parse(client, events)["tool_calls"]
+    records = [c for c in calls if c["tool"] == "shell"]
 
-    successful = [r for r in records if r["exit_code"] == 0]
     successful_reads = set()
-    for r in successful:
-        cmd = r["command"].replace("\\", "/").lower()
-        output = r["output"].lower()
-        if not re.search(r"get-content|\bcat\b|\btype\b|\bsed\b", cmd):
+    for c in calls:
+        if c["succeeded"] is not True:
+            continue
+        output = (c["output"] or "").lower()
+        if c["tool"] == "skill":
+            name = c["skill"].split(":")[-1]  # plugin:skill
+            if name in harnessctl.ALLOWED:
+                successful_reads.add(name)
+            continue
+        if c["tool"] == "read":
+            where = c["path"].replace("\\", "/").lower()
+        elif c["tool"] == "shell" and re.search(r"get-content|\bcat\b|\btype\b|\bsed\b", c["command"].lower()):
+            where = c["command"].replace("\\", "/").lower()
+        else:
             continue
         for skill in harnessctl.ALLOWED:
-            if f"{skill}/skill.md" in cmd and (
+            if f"{skill}/skill.md" in where and (
                 f"name: {skill}" in output or f"# {skill}" in output
             ):
                 successful_reads.add(skill)
@@ -225,7 +242,7 @@ def analyze_trajectory(events: list[dict], client: str) -> dict:
     test_pattern = re.compile(r"(?:python(?:3)?\s+-m\s+)?(?:pytest|unittest)\b", re.I)
     tests = [(i, r) for i, r in enumerate(records) if test_pattern.search(r["command"])]
     red_green = any(
-        first["exit_code"] != 0 and second["exit_code"] == 0 and i < j
+        first["succeeded"] is False and second["succeeded"] is True and i < j
         for i, first in tests for j, second in tests
     )
     # Require separate commands with successful exit codes. Shell statements
@@ -234,7 +251,7 @@ def analyze_trajectory(events: list[dict], client: str) -> dict:
         "mypy", "ruff", "coverage",
     )
     verified = all(
-        any(k in r["command"].lower() and r["exit_code"] == 0 for r in records)
+        any(k in r["command"].lower() and r["succeeded"] is True for r in records)
         for k in verified_names
     )
     return {
@@ -250,6 +267,18 @@ def analyze_trajectory(events: list[dict], client: str) -> dict:
     }
 
 
+def blocked(experiment_id: str, client: str, task_dir: Path, condition: str, reason: str,
+            client_version: str | None = None, status: str = "BLOCKED") -> dict:
+    return {
+        "schema_version": 2, "experiment_id": experiment_id, "client": client,
+        "client_version": client_version, "task_id": task_dir.name, "condition": condition,
+        "isolation_verified": False,
+        "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
+        "acceptance": {"status": status, "tests_passed": None, "tests_total": None},
+        "metrics": null_metrics(), "verdict": "BLOCKED", "reason": reason,
+    }
+
+
 def execute_eval(
     client: str,
     task_dir: Path,
@@ -260,24 +289,18 @@ def execute_eval(
     dry_run: bool = False,
     timeout_seconds: int = 180,
     live_authorized: bool = False,
+    model: str | None = None,
+    effort: str | None = None,
 ) -> dict:
     experiment_id = f"eval-{client}-{condition}-{task_dir.name}"
     start_time = time.monotonic()
 
     if not dry_run and not live_authorized:
-        return {
-            "schema_version": 1,
-            "experiment_id": experiment_id,
-            "client": client,
-            "task_id": task_dir.name,
-            "condition": condition,
-            "isolation_verified": False,
-            "acceptance": {"status": "NOT_RUN", "tests_passed": None, "tests_total": None},
-            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
-            "metrics": {"duration_seconds": 0, "input_tokens": None, "output_tokens": None, "cost_usd": None},
-            "verdict": "BLOCKED",
-            "reason": "Live execution disabled by default. Requires external OS isolation and --live-in-preisolated-environment.",
-        }
+        return blocked(
+            experiment_id, client, task_dir, condition,
+            "Live execution disabled by default. Requires external OS isolation and --live-in-preisolated-environment.",
+            status="NOT_RUN",
+        )
 
     # Gate G1: Setup external canary
     poc_root = ROOT / ".poc"
@@ -291,17 +314,17 @@ def execute_eval(
     # Offline dry-run must not require installation, login or model API access.
     if dry_run:
         oracle_res = run_oracle(task_dir / "oracle.py", target)
-        elapsed = round(time.monotonic() - start_time, 3)
+        metrics = null_metrics()
+        metrics["duration_seconds"] = round(time.monotonic() - start_time, 3)
         return {
-            "schema_version": 1, "experiment_id": experiment_id, "client": client,
+            "schema_version": 2, "experiment_id": experiment_id, "client": client,
             "client_version": "NOT_PROBED_OFFLINE", "task_id": task_dir.name,
             "condition": condition, "isolation_verified": False,
             "canary_intact": canary.read_text(encoding="utf-8") == canary_token,
             "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
             "acceptance": {"status": oracle_res["status"], "tests_passed": oracle_res["tests_passed"],
                            "tests_total": oracle_res["tests_total"]},
-            "metrics": {"duration_seconds": elapsed, "input_tokens": None,
-                        "output_tokens": None, "cost_usd": None},
+            "metrics": metrics,
             "evidence": {"transcript": None, "oracle_log": oracle_res["output"], "diff": None},
             "verdict": "PREPARED", "skills_meta": skills_meta,
             "note": "No model called; canary intact does NOT prove OS/network isolation",
@@ -309,28 +332,12 @@ def execute_eval(
 
     binary = find_codex_binary() if client == "codex" else find_claude_binary()
     if not binary:
-        return {
-            "schema_version": 1, "experiment_id": experiment_id, "client": client,
-            "client_version": "NOT_INSTALLED", "task_id": task_dir.name,
-            "condition": condition, "isolation_verified": False,
-            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
-            "acceptance": {"status": "BLOCKED", "tests_passed": 0, "tests_total": 0},
-            "metrics": {"duration_seconds": 0, "input_tokens": None,
-                        "output_tokens": None, "cost_usd": None},
-            "verdict": "BLOCKED", "reason": f"Binary for {client} not found on system PATH",
-        }
+        return blocked(experiment_id, client, task_dir, condition,
+                       f"Binary for {client} not found on system PATH", client_version="NOT_INSTALLED")
     auth_ok, auth_msg = check_client_auth(client, binary)
     if not auth_ok:
-        return {
-            "schema_version": 1, "experiment_id": experiment_id, "client": client,
-            "client_version": binary, "task_id": task_dir.name,
-            "condition": condition, "isolation_verified": False,
-            "skills": {"discovered": False, "invoked": False, "procedure_executed": False},
-            "acceptance": {"status": "BLOCKED", "tests_passed": 0, "tests_total": 0},
-            "metrics": {"duration_seconds": 0, "input_tokens": None,
-                        "output_tokens": None, "cost_usd": None},
-            "verdict": "BLOCKED", "reason": auth_msg,
-        }
+        return blocked(experiment_id, client, task_dir, condition, auth_msg,
+                       client_version=probe_client_version(binary))
 
     # Live execution with native runtime
     prompt = (
@@ -338,81 +345,46 @@ def execute_eval(
         "Adhere to all workspace guidelines, test your implementation, and verify it before finishing."
     )
 
-    events: list[dict] = []
-    input_tokens = 0
-    output_tokens = 0
+    if client == "codex":
+        cmd = [binary, "exec", "--cd", str(target), "--skip-git-repo-check", "--ephemeral", "--json"]
+        if model:
+            cmd += ["-m", model]
+        if effort:
+            cmd += ["-c", f"model_reasoning_effort={effort}"]
+        cmd.append(prompt)
+        cwd = None
+    else:
+        # stream-json keeps the whole trajectory (tool calls, results, usage, estimated cost).
+        cmd = [binary, "-p", prompt, "--output-format", "stream-json", "--verbose"]
+        if model:
+            cmd += ["--model", model]
+        cwd = str(target)
+
     proc_stdout = ""
     proc_stderr = ""
-
-    if client == "codex":
-        cmd = [
-            binary,
-            "exec",
-            "--cd", str(target),
-            "--skip-git-repo-check",
-            "--ephemeral",
-            "--json",
-            prompt,
-        ]
-        try:
-            res = subprocess.run(
-                cmd,
-                input="",
-                encoding="utf-8",
-                errors="replace",
-                capture_output=True,
-                check=False,
-                timeout=timeout_seconds,
-            )
-            proc_stdout = res.stdout or ""
-            proc_stderr = res.stderr or ""
-            for line in proc_stdout.splitlines():
-                line = line.strip()
-                if line.startswith("{") and line.endswith("}"):
-                    try:
-                        parsed = json.loads(line)
-                        events.append(parsed)
-                        if parsed.get("type") == "turn.completed":
-                            usage = parsed.get("usage", {})
-                            input_tokens += usage.get("input_tokens", 0)
-                            output_tokens += usage.get("output_tokens", 0)
-                    except json.JSONDecodeError:
-                        pass
-        except subprocess.TimeoutExpired:
-            proc_stderr += f"\nTimeout expired after {timeout_seconds}s"
-    elif client == "claude":
-        cmd = [
-            binary,
-            "-p", prompt,
-            "--output-format", "json",
-        ]
-        try:
-            res = subprocess.run(
-                cmd,
-                cwd=str(target),
-                input="",
-                encoding="utf-8",
-                errors="replace",
-                capture_output=True,
-                check=False,
-                timeout=timeout_seconds,
-            )
-            proc_stdout = res.stdout or ""
-            proc_stderr = res.stderr or ""
-            try:
-                events = [json.loads(proc_stdout)]
-            except json.JSONDecodeError:
-                pass
-        except subprocess.TimeoutExpired:
-            proc_stderr += f"\nTimeout expired after {timeout_seconds}s"
+    timed_out = False
+    try:
+        res = subprocess.run(
+            cmd, cwd=cwd, input="", encoding="utf-8", errors="replace",
+            capture_output=True, check=False, timeout=timeout_seconds,
+        )
+        proc_stdout = res.stdout or ""
+        proc_stderr = res.stderr or ""
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        out = exc.stdout or ""
+        proc_stdout = out.decode("utf-8", "replace") if isinstance(out, bytes) else out
+        proc_stderr += f"\nTimeout expired after {timeout_seconds}s"
 
     elapsed = round(time.monotonic() - start_time, 3)
+    telemetry = native_telemetry.parse(client, proc_stdout.splitlines())
+    client_version = telemetry["client_version"] or probe_client_version(binary)
 
     # Gate G1 verification
     canary_intact = canary.is_file() and canary.read_text(encoding="utf-8") == canary_token
 
     # Gate G2 analysis (Levels 1 to 4)
-    traj = analyze_trajectory(events, client)
+    traj = analyze_trajectory(proc_stdout.splitlines(), client)
     skill_eval = {
         "discovered": traj["discovered"],
         "invoked": traj["invoked"],
@@ -430,29 +402,42 @@ def execute_eval(
     # An externally granted live exception is not itself evidence of isolation.
     verdict = "PROVISIONAL" if oracle_res["status"] == "PASS" and canary_intact else "FAIL"
 
+    metrics = null_metrics()
+    metrics["duration_seconds"] = elapsed
+    metrics.update(telemetry["usage"] or {})
+    metrics["turns"] = telemetry["turns"]
+    metrics.update(cost_usd=telemetry["cost"]["cost_usd"], cost_source=telemetry["cost"]["cost_source"],
+                   cost_observed=telemetry["cost"]["observed"])
+
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": experiment_id,
         "client": client,
-        "client_version": binary,
+        "client_version": client_version,
+        "model": {"requested": model, "observed": telemetry["model"]},
+        "effort": effort if client == "codex" else None,
         "task_id": task_dir.name,
         "condition": condition,
         "isolation_verified": False,
         "canary_intact": canary_intact,
         "skills": skill_eval,
+        "skills_available": telemetry["skills_available"],
         "acceptance": {
             "status": oracle_res["status"],
             "tests_passed": oracle_res["tests_passed"],
             "tests_total": oracle_res["tests_total"],
         },
-        "metrics": {
-            "duration_seconds": elapsed,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "cost_usd": None,
+        "metrics": metrics,
+        "telemetry": {
+            "usage_semantics": telemetry["usage_semantics"],
+            "raw_usage": telemetry["raw_usage"],
+            "session_id": telemetry["session_id"],
+            "errors": telemetry["errors"] + (["timeout"] if timed_out else []),
+            "non_json_lines": telemetry["non_json_lines"],
         },
         "evidence": {
             "transcript": proc_stdout[:4000],
+            "stderr": proc_stderr[-2000:],
             "oracle_log": oracle_res["output"],
             "diff": diff_output[:4000],
         },
@@ -474,6 +459,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="dry-run without calling native LLM")
     parser.add_argument("--live-in-preisolated-environment", action="store_true",
                         help="explicit opt-in after OS/container isolation is independently proven; never marks G1 PASS")
+    parser.add_argument("--model", default=None, help="pin the model; recorded as requested model")
+    parser.add_argument("--effort", default=None, help="Codex model_reasoning_effort; recorded")
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args(argv)
@@ -494,6 +481,8 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=args.dry_run,
         timeout_seconds=args.timeout,
         live_authorized=args.live_in_preisolated_environment,
+        model=args.model,
+        effort=args.effort,
     )
 
     out_json = json.dumps(result, indent=2, ensure_ascii=False)
