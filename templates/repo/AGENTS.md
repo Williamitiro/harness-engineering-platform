@@ -4,11 +4,14 @@ Instruções para qualquer agente de código (Codex, Claude Code via `CLAUDE.md`
 Este arquivo pertence ao projeto: edite à vontade.
 
 ## Como trabalhar
-- Ao criar funcionalidade, corrigir bug ou refatorar, use a skill `tdd-workflow`: primeiro um teste que falha,
-  depois o código mínimo que o faz passar, depois a limpeza.
-- Antes de dizer que terminou, use a skill `verification-loop`: build, testes, lint e revisão do diff.
-- Use sempre os comandos de teste e build **deste** projeto (seção abaixo). Não suponha npm, Node ou bash se o
-  projeto não usa.
+- Pergunta não é pedido de mudança: responda e pare. Só altere arquivos quando o pedido for explícito.
+- Faça só o que foi pedido, do jeito mais simples. Não refatore o que está ao lado nem crie abstração, opção ou
+  arquivo que ninguém pediu. Achou outro problema? Anote e pergunte.
+- Antes de criar função, classe ou dependência, procure no projeto e nas bibliotecas já instaladas algo que já
+  faça isso.
+- Ao corrigir um bug que dá para reproduzir, escreva primeiro o teste que falha por causa dele.
+- Antes de dizer que terminou, rode os testes e o build **deste** projeto (seção abaixo) e mostre o comando e o
+  resultado. Não suponha npm, Node ou bash se o projeto não usa.
 
 ## Limites
 - Nunca leia, imprima ou envie segredos, tokens ou credenciais.

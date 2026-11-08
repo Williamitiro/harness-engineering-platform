@@ -1,4 +1,4 @@
-"""HE-R1-02: machine layer — workflow skills installed once per computer, per detected tool."""
+"""HE-R1-02/HE-R1-06: machine layer — the Harness package (setup-harness) once per computer, per detected tool."""
 import importlib.util
 import json
 import os
@@ -51,8 +51,13 @@ class MachineLayerTests(unittest.TestCase):
         result = h.machine_plan(self.home, CATALOG, ADAPTERS)
         self.assertEqual(result["status"], "PLANNED_NOT_INSTALLED")
         self.assertEqual({r["adapter"]: r["mode"] for r in result["roots"]}, {"codex": "copy", "claude": "copy"})
-        self.assertIn(".claude/skills/tdd-workflow/SKILL.md", result["files"])
+        self.assertIn(".claude/skills/setup-harness/SKILL.md", result["files"])
+        self.assertFalse(any("tdd-workflow" in f or "verification-loop" in f for f in result["files"]))
         self.assertEqual(before, self.snapshot())
+
+    def test_package_is_only_setup_harness(self):
+        self.assertEqual(h.MACHINE_SKILL_NAMES, ["setup-harness"])
+        self.assertEqual({rel.split("/")[0] for rel in h.machine_files(CATALOG)}, {"setup-harness"})
 
     def test_install_reapply_verify_remove_exact(self):
         self.tools(".codex", ".claude")
@@ -63,10 +68,12 @@ class MachineLayerTests(unittest.TestCase):
         self.assertEqual(h.machine_install(self.home, CATALOG, ADAPTERS)["status"],
                          "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
         for root in (".agents/skills", ".claude/skills"):
-            for name, sha in CATALOG["ecc"]["skills"].items():
-                self.assertEqual(h.digest((self.home / root / name / "SKILL.md").read_bytes()), sha)
+            self.assertTrue((self.home / root / "setup-harness/SKILL.md").is_file())
+            for name in CATALOG["ecc"]["skills"]:
+                self.assertFalse((self.home / root / name).exists())
         record = json.loads((self.home / ".claude/skills" / h.MACHINE_STATE).read_text())
-        self.assertIn("MIT License", record["license_notice"])
+        self.assertNotIn("ecc_commit", record)
+        self.assertNotIn("license_notice", record)
         installed = self.snapshot()
         self.assertEqual(h.machine_install(self.home, CATALOG, ADAPTERS)["status"], "ALREADY_INSTALLED")
         self.assertEqual(installed, self.snapshot())
@@ -84,10 +91,10 @@ class MachineLayerTests(unittest.TestCase):
         self.assertEqual(roots["claude"]["mode"], "alias")
         self.assertEqual(roots["claude"]["alias_of"], "codex")
         h.machine_install(self.home, CATALOG, ADAPTERS)
-        self.assertTrue((self.home / ".claude/skills/tdd-workflow/SKILL.md").is_file())
+        self.assertTrue((self.home / ".claude/skills/setup-harness/SKILL.md").is_file())
         self.assertEqual(h.machine_verify(self.home, CATALOG, ADAPTERS)["status"], "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED")
         h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
-        self.assertFalse((self.home / ".agents/skills/tdd-workflow").exists())
+        self.assertFalse((self.home / ".agents/skills/setup-harness").exists())
         self.assertTrue((self.home / ".claude/skills").exists())
 
     def test_link_to_any_other_directory_blocks(self):
@@ -112,25 +119,34 @@ class MachineLayerTests(unittest.TestCase):
 
     def test_third_party_skill_with_same_name_blocks_everything(self):
         self.tools(".codex", ".claude")
-        foreign = self.home / ".claude/skills/tdd-workflow/SKILL.md"
+        foreign = self.home / ".claude/skills/setup-harness/SKILL.md"
         foreign.parent.mkdir(parents=True)
-        foreign.write_text("someone else's tdd")
+        foreign.write_text("someone else's setup")
         before = self.snapshot()
         with self.assertRaises(h.GateError):
             h.machine_install(self.home, CATALOG, ADAPTERS)
         self.assertEqual(before, self.snapshot())
 
+    def test_user_skill_named_like_a_retired_one_is_left_alone(self):
+        self.tools(".codex")
+        mine = self.home / ".agents/skills/tdd-workflow/SKILL.md"
+        mine.parent.mkdir(parents=True)
+        mine.write_text("my own tdd")
+        h.machine_install(self.home, CATALOG, ADAPTERS)
+        h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
+        self.assertEqual(mine.read_text(), "my own tdd")
+
     def test_modified_skill_blocks_verify_and_remove_and_is_preserved(self):
         self.tools(".codex")
         h.machine_install(self.home, CATALOG, ADAPTERS)
-        edited = self.home / ".agents/skills/verification-loop/SKILL.md"
+        edited = self.home / ".agents/skills/setup-harness/SKILL.md"
         edited.write_bytes(b"my edit")
         with self.assertRaises(h.GateError):
             h.machine_verify(self.home, CATALOG, ADAPTERS)
         with self.assertRaises(h.GateError):
             h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
         self.assertEqual(edited.read_bytes(), b"my edit")
-        self.assertTrue((self.home / ".agents/skills/tdd-workflow/SKILL.md").is_file())
+        self.assertTrue((self.home / ".agents/skills/setup-harness/agents/openai.yaml").is_file())
 
     def test_newly_detected_tool_is_added_on_rerun(self):
         self.tools(".codex")
@@ -138,7 +154,7 @@ class MachineLayerTests(unittest.TestCase):
         self.tools(".claude")
         self.assertEqual(h.machine_install(self.home, CATALOG, ADAPTERS)["status"],
                          "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
-        self.assertTrue((self.home / ".claude/skills/tdd-workflow/SKILL.md").is_file())
+        self.assertTrue((self.home / ".claude/skills/setup-harness/SKILL.md").is_file())
 
 
 class DiscoveryMatchTests(unittest.TestCase):

@@ -117,29 +117,63 @@ class MachinePackageV2Tests(unittest.TestCase):
             h.machine_install(self.home, CATALOG, ADAPTERS)
         self.assertEqual(before, self.snapshot())
 
-    def test_machine_package_v1_upgrades_and_then_removes_exactly(self):
-        before = self.snapshot()
+    def old_package(self, with_setup: bool):
+        """Machine package as installed up to v1.0.0: the 2 ECC skills (and, from HE-R1-04, setup-harness)."""
         skills, notice = h.machine_payload(CATALOG)
-        v1 = {f".agents/skills/{n}/SKILL.md": raw for n, raw in skills.items() if n in CATALOG["ecc"]["skills"]}
-        h.write_package(self.home, v1, ".agents/skills/" + h.MACHINE_STATE, {
+        files = {f".agents/skills/{n}/SKILL.md": raw for n, raw in skills.items()}
+        if with_setup:
+            files.update({f".agents/skills/{rel}": raw for rel, raw in h.setup_skill_files().items()})
+        h.write_package(self.home, files, ".agents/skills/" + h.MACHINE_STATE, {
             "schema_version": 1, "kind": "harness-machine", "adapter": "codex",
             "ecc_commit": CATALOG["ecc"]["commit"], "license_notice": notice})
+
+    def assert_upgrade_drops_ecc_skills(self):
         plan = h.machine_plan(self.home, CATALOG, ADAPTERS)
         self.assertEqual(plan["migrations"], [{"adapter": "codex", "action": "UPGRADE_PACKAGE"}])
         with self.assertRaises(h.GateError):
             h.machine_verify(self.home, CATALOG, ADAPTERS)  # outdated is not OK
         h.machine_install(self.home, CATALOG, ADAPTERS)
+        for name in CATALOG["ecc"]["skills"]:
+            self.assertFalse((self.root / name).exists())
+        self.assertTrue((self.root / "setup-harness/SKILL.md").is_file())
         self.assertEqual(h.machine_verify(self.home, CATALOG, ADAPTERS)["status"], "FILE_HASHES_OK_RUNTIME_NOT_VERIFIED")
+
+    def test_machine_package_v1_upgrades_and_then_removes_exactly(self):
+        before = self.snapshot()
+        self.old_package(with_setup=False)
+        self.assert_upgrade_drops_ecc_skills()
+        h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
+        self.assertEqual(before, self.snapshot())
+
+    def test_package_v1_0_0_upgrade_removes_the_two_ecc_skills(self):
+        before = self.snapshot()
+        self.old_package(with_setup=True)
+        self.assert_upgrade_drops_ecc_skills()
+        h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
+        self.assertEqual(before, self.snapshot())
+
+    def test_old_package_is_removable_by_the_new_code(self):
+        before = self.snapshot()
+        self.old_package(with_setup=True)
         h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
         self.assertEqual(before, self.snapshot())
 
     def test_outdated_package_with_edited_file_blocks_upgrade(self):
-        skills, notice = h.machine_payload(CATALOG)
-        v1 = {f".agents/skills/{n}/SKILL.md": raw for n, raw in skills.items() if n in CATALOG["ecc"]["skills"]}
-        h.write_package(self.home, v1, ".agents/skills/" + h.MACHINE_STATE, {
-            "schema_version": 1, "kind": "harness-machine", "adapter": "codex",
-            "ecc_commit": CATALOG["ecc"]["commit"], "license_notice": notice})
+        self.old_package(with_setup=True)
         (self.root / "tdd-workflow/SKILL.md").write_bytes(b"edited")
+        before = self.snapshot()
+        with self.assertRaises(h.GateError):
+            h.machine_install(self.home, CATALOG, ADAPTERS)
+        with self.assertRaises(h.GateError):
+            h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
+        self.assertEqual(before, self.snapshot())
+
+    def test_retired_skill_of_unknown_version_blocks(self):
+        # Record and file agree, but the bytes are not the approved ECC version.
+        h.write_package(self.home, {".agents/skills/tdd-workflow/SKILL.md": b"other tdd"},
+                        ".agents/skills/" + h.MACHINE_STATE,
+                        {"schema_version": 1, "kind": "harness-machine", "adapter": "codex",
+                         "ecc_commit": CATALOG["ecc"]["commit"]})
         before = self.snapshot()
         with self.assertRaises(h.GateError):
             h.machine_install(self.home, CATALOG, ADAPTERS)

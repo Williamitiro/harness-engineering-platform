@@ -25,14 +25,15 @@ Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harne
 
 ## 1. A ideia em 30 segundos
 
-O Harness é um **kit de regras e skills** que deixa o Claude Code e o Codex mais disciplinados: escrever o teste
-antes, verificar antes de dizer "pronto", não apagar trabalho dos outros.
+O Harness é um **kit pequeno de regras** (`AGENTS.md`) que deixa o Claude Code e o Codex mais disciplinados: fazer só
+o que foi pedido, procurar antes de escrever, rodar os testes do projeto antes de dizer "pronto" e não apagar
+trabalho dos outros. Metodologia genérica (TDD, verificação) os modelos já sabem; o kit só diz **quando** aplicar.
 
 Ele tem **duas partes**, e cada uma é instalada **uma vez**:
 
 | Parte | Onde fica | Quando você instala | O que contém |
 |---|---|---|---|
-| **No computador** | sua pasta de usuário (`C:\Users\itiro\.agents\skills`) | uma vez por computador | as skills genéricas, iguais para todos os projetos |
+| **No computador** | sua pasta de usuário (`C:\Users\itiro\.agents\skills`) | uma vez por computador | a skill `setup-harness`, que liga o Harness em cada projeto |
 | **No repositório** | dentro de cada projeto | uma vez por projeto | as regras **daquele** projeto (`AGENTS.md`) e um recibo do que foi instalado |
 
 ### ❌ O que você NÃO faz
@@ -45,7 +46,7 @@ faz essa entrega é a skill **`setup-harness`**, e você só precisa chamá-la.
 
 ## 2. Instalar no computador (uma vez só)
 
-O Harness é instalado a partir de uma **versão fixa** (ex.: `v1.0.0`), numa pasta só dele:
+O Harness é instalado a partir de uma **versão fixa** (ex.: `v1.1.0`), numa pasta só dele:
 
 | Pasta | Para quê |
 |---|---|
@@ -65,18 +66,19 @@ git clone https://github.com/Williamitiro/harness-engineering-platform.git C:\de
 **2.2. Ver o plano** (não grava nada):
 
 ```bash
-python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.0.0
+python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.1.0
 ```
 
 **2.3. Instalar:**
 
 ```bash
-python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.0.0 --apply
+python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.1.0 --apply
 ```
 
-Ele extrai a versão, instala as três skills (`setup-harness`, `tdd-workflow`, `verification-loop`) para o Claude Code
-e o Codex, confere os arquivos e aponta o atalho `current`. Se já havia uma instalação, ele a remove antes e, se a
-nova falhar, volta à anterior. Nunca sobrescreve uma skill sua com o mesmo nome.
+Ele extrai a versão, instala a skill `setup-harness` para o Claude Code e o Codex, confere os arquivos e aponta o
+atalho `current`. Se já havia uma instalação, ele a remove antes e, se a nova falhar, volta à anterior. Nunca
+sobrescreve uma skill sua com o mesmo nome. Vindo da `v1.0.0`, ele tira do computador as skills `tdd-workflow` e
+`verification-loop`, que saíram do pacote na `v1.1.0` (só se você não as editou).
 
 **2.4. Conferir:**
 
@@ -85,10 +87,10 @@ python C:\dev\harness-engineering\scripts\harness_release.py status
 ```
 
 Deve mostrar a versão (`release.tag`) e `machine_verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED` (arquivos íntegros).
-Depois, abra o Claude Code ou o Codex em qualquer pasta e pergunte *"Quais skills você tem disponíveis?"*. A
-resposta deve citar `tdd-workflow` e `verification-loop`. A `setup-harness` só aparece quando você a chama.
+Depois, abra o Claude Code ou o Codex em qualquer pasta e digite `/setup-harness verificar` (Claude Code) ou
+`$setup-harness verificar` (Codex): a skill deve responder. Ela só aparece quando você a chama.
 
-**Atualizar para uma versão nova** (ex.: `v1.1.0`): `git -C C:\dev\harness-engineering fetch --tags` e repita
+**Atualizar para uma versão nova** (ex.: `v1.2.0`): `git -C C:\dev\harness-engineering fetch --tags` e repita
 2.2 e 2.3 com a tag nova. A versão anterior continua na pasta dela, para voltar se precisar.
 
 ---
@@ -151,13 +153,26 @@ projeto que exige branch e PR, como a plataforma, rode numa branch nova e faça 
 
 ## 4. Trabalhar no dia a dia
 
-Depois do setup, **você não faz nada diferente.** Peça as tarefas como sempre. Quando fizer sentido, o agente usa
-sozinho:
+Depois do setup, **você não faz nada diferente.** Peça as tarefas como sempre. O agente segue as regras do
+`AGENTS.md` do projeto: pergunta não é pedido de mudança, só o que foi pedido, procurar antes de escrever, teste que
+reproduz o bug antes da correção e testes do projeto rodados antes do "pronto".
 
-- **`tdd-workflow`**: escreve um teste que falha, depois o código que o faz passar;
-- **`verification-loop`**: roda testes, lint e revisão antes de dizer "pronto".
+**O que garante a qualidade** não é skill: são os testes, o CI e a **revisão independente** de cada PR com código
+(outro agente ou outra sessão revisa o diff antes do merge; por exemplo, o Codex revisando no GitHub ou o
+`/code-review` do Claude Code). No histórico da plataforma, a revisão achou cerca de 1 defeito por PR revisado.
 
-Para forçar o uso de uma skill, cite o nome dela: *"use o tdd-workflow para corrigir este bug"*.
+**Quando algo deve virar regra, teste ou skill.** O sinal é você ter de explicar a mesma coisa ao agente pela
+segunda vez:
+
+| A explicação… | Vira |
+|---|---|
+| cabe em uma frase | uma linha no `AGENTS.md` do projeto |
+| é um erro que dá para detectar automaticamente | um teste, um check de CI ou um script |
+| é um procedimento de vários passos com comandos do seu ambiente (deploy, VPS, SSH, ferramenta própria) | uma skill **no repositório** (`.agents/skills/` e `.claude/skills/`) |
+| é um procedimento seu usado em vários repositórios (ex.: `git-lane-checkpoint`) | uma skill na sua pasta de usuário, com a sua aprovação |
+
+Skill que o relatório do dia (§4.1) não mostra em uso por 30 dias, remova. Não instale catálogos de skills de
+metodologia genérica: os estudos de 2026 mostram efeito quase nulo nos modelos atuais.
 
 ### 4.1. Relatório do dia
 
@@ -168,13 +183,13 @@ python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine
 python C:\Users\itiro\.harness-engineering\current\scripts\daily_report.py
 ```
 
-O primeiro confere se as skills do computador continuam intactas. O segundo lê as sessões do dia do Claude Code e
+O primeiro confere se a skill do computador continua intacta. O segundo lê as sessões do dia do Claude Code e
 do Codex no seu computador e mostra, por sessão: o repositório, se ele tem o Harness, quais skills o agente usou, se
 rodou testes (se algum falhou e depois passou, e se o último passou) e os tokens. Para outro dia, use
 `--date 2026-11-07`; para JSON, use `--json`. Nada sai do computador, e nenhum texto das conversas entra no relatório.
 
-**O que ele não diz:** se o trabalho ficou melhor. Isso só o benchmark responde (seção 6). Use o relatório para
-achar problemas de funcionamento, como uma skill que nunca é usada ou uma sessão que termina com teste falhando.
+**O que ele não diz:** se o trabalho ficou melhor (seção 6). Use o relatório para achar problemas de
+funcionamento, como uma skill que nunca é usada ou uma sessão que termina com teste falhando.
 
 ---
 
@@ -183,18 +198,20 @@ achar problemas de funcionamento, como uma skill que nunca é usada ou uma sess�
 | Quero… | O que digito no repositório | O que acontece |
 |---|---|---|
 | **Conferir** se está tudo certo | `/setup-harness verificar` | compara os arquivos com o recibo e diz OK ou o que mudou |
-| **Atualizar** depois de uma versão nova do Harness | §2, "Atualizar para uma versão nova"; depois, em cada repositório: `/setup-harness verificar` | o computador recebe as skills novas; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
+| **Atualizar** depois de uma versão nova do Harness | §2, "Atualizar para uma versão nova"; depois, em cada repositório: `/setup-harness verificar` | o computador recebe a versão nova; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
 | **Remover** do projeto | `/setup-harness remover` | mostra o que vai apagar (só o que ele criou) e pede confirmação |
-| **Remover do computador** | `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine-remove` (prévia) e depois o mesmo comando com `--apply` | apaga só as skills que o Harness instalou; se você editou alguma, ele para e não apaga nada |
+| **Remover do computador** | `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine-remove` (prévia) e depois o mesmo comando com `--apply` | apaga só o que o Harness instalou; se você editou algum arquivo, ele para e não apaga nada |
 
 ---
 
 ## 6. Saber se o Harness realmente ajuda
 
-Instalar não prova que ajuda: pesquisas de 2026 mostram que muitas skills populares **não mudam nada**, e algumas
-atrapalham. Por isso o Harness terá um **benchmark** que põe o mesmo agente para resolver as mesmas tarefas **com**
-e **sem** o kit e compara acerto, tempo, tokens e custo. Ele ainda não existe; quando existir, este manual terá a
-seção "Rodar o benchmark".
+**Não está medido, e o Harness não afirma que melhora a engenharia.** Pesquisas de 2026 mostram que a maioria das
+skills de metodologia genérica não muda o resultado dos modelos atuais. Com o volume de PRs revisados destes
+repositórios, um ganho dessa ordem nem apareceria numa medição antes × depois. Por isso o benchmark (R2) está
+**congelado**: o código (`scripts/harness_eval.py`) fica guardado para uma dúvida pontual, não para provar o kit.
+
+O que você acompanha no dia a dia: o CI verde, a revisão independente de cada PR com código e o relatório do dia.
 
 ---
 
@@ -207,7 +224,7 @@ seção "Rodar o benchmark".
 | "harnessctl não encontrado" | a pasta `C:\dev\harness-engineering` foi movida ou apagada | coloque-a de volta (passo 2.1) e refaça o passo 2.2 |
 | "installed by another Harness checkout" | o Harness foi instalado a partir de outra pasta | rode os comandos a partir da pasta indicada na mensagem, ou remova de lá e reinstale a partir de `C:\dev\harness-engineering` |
 | "UPGRADE_AVAILABLE" | há uma versão nova do Harness | refaça o passo 2.2: ele atualiza sozinho |
-| O agente não usa as skills | elas são opcionais e o agente decide quando usar | cite o nome da skill no pedido |
+| O agente não segue uma regra | a regra não está no `AGENTS.md` do projeto, ou está vaga | escreva-a numa frase no `AGENTS.md`; se o erro se repetir, vire um teste ou check de CI (§4) |
 | Quero ver o estado técnico | — | [ESTADO.md](ESTADO.md) |
 
 ---
