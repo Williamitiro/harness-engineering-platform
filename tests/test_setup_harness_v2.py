@@ -40,6 +40,17 @@ class SkillFileTests(unittest.TestCase):
         self.assertIn("permissão elevada", text)                   # Codex sandbox blocks user Python
         self.assertIn("Acesso negado", text)                        # the real Windows error, with its remedy
 
+    def test_skill_offers_missing_rules_for_an_existing_agents_md(self):
+        # HE-R1-07: the agent compares, shows what is missing and edits only with the operator's "sim".
+        text = SKILL.decode("utf-8")
+        self.assertIn("templates/repo/AGENTS.md", text)
+        self.assertIn("## Como trabalhar", text)
+        self.assertIn("já a cobre", text)
+        self.assertIn('só edite com o "sim"', text)
+        self.assertIn("passo 6", text)  # also offered on "verificar"
+        template = (ROOT / "templates/repo/AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("\n## Como trabalhar\n", template)  # the section the skill reads
+
     def test_skills_folder_has_fixed_bytes_on_every_machine(self):
         out = git("check-attr", "text", "--", "skills/setup-harness/SKILL.md")
         self.assertTrue(out.endswith("text: unset"), out)

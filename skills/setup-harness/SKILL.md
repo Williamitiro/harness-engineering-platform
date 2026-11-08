@@ -44,20 +44,21 @@ central `harnessctl`.
 ## O que o usuário pediu
 
 - **"verificar"** → `project-verify`. Explique: `UNCHANGED` (igual ao modelo), `EDITED_BY_PROJECT` (editado
-  pelo projeto, o que é normal) e `MISSING` (apagado). Pare aqui.
+  pelo projeto, o que é normal) e `MISSING` (apagado). Se o `AGENTS.md` é do projeto, pergunte se o usuário quer
+  conferir as regras de trabalho (passo 6 do setup). Pare aqui.
 - **"remover"** → `project-remove` sem `--apply` (prévia). Mostre o que será apagado e o que fica. Com o "sim",
   rode de novo com `--apply`. Pare aqui.
 - **qualquer outro pedido** → setup, abaixo.
 
 ## Setup
 
-1. Leia as regras do projeto (`AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`), só para saber se ele exige branch, PR
-   ou cópia isolada. Não as edite.
+1. Leia as regras do projeto (`AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`) para saber se ele exige branch, PR
+   ou cópia isolada. Não as edite agora: só os passos 5 e 6 propõem mudanças, e só com o "sim".
 2. Rode `project-plan`. Explique em linguagem simples:
    - `WOULD_CREATE`: arquivo novo, criado a partir do modelo do Harness;
    - `PRESERVE`: arquivo do projeto, mantido como está;
    - `BLOCKED_*`: pare, explique o motivo e não contorne;
-   - status `ATTACHED`: já instalado, então faça a verificação;
+   - status `ATTACHED`: já instalado, então faça a verificação e siga para o passo 6;
    - status `LEGACY_ATTACHED`: instalação antiga. Explique a migração (`project-remove --apply` e depois
      `project-attach --apply`) e peça aprovação.
 3. Peça o "sim" para esse plano. Se o usuário já aprovou exatamente esse plano, não pergunte de novo. Se o projeto
@@ -66,9 +67,24 @@ central `harnessctl`.
 5. Se o plano mostrou `PRESERVE_CHECK_IMPORT`, abra o `CLAUDE.md` existente. Se ele não tiver a linha
    `@AGENTS.md`, proponha acrescentá-la no topo e só edite com o "sim". Sem essa linha, o Claude Code pode não ver
    as regras do `AGENTS.md`.
-6. Em repositório novo, sugira preencher a seção "Comandos do projeto" do `AGENTS.md`.
-7. Relate o que foi criado, o que foi mantido e o próximo passo: commit e PR, feitos pelo usuário ou com pedido
-   explícito.
+6. **Regras de trabalho num `AGENTS.md` que já existia** (o plano mostrou `PRESERVE` para `AGENTS.md`, ou o status
+   é `ATTACHED` com um `AGENTS.md` do projeto). O modelo só é copiado para repositório sem `AGENTS.md`, então as
+   regras dele não chegam sozinhas aos outros:
+   - leia a seção `## Como trabalhar` do modelo em `<pasta do Harness>/templates/repo/AGENTS.md` (a pasta do
+     Harness é a que contém `scripts/harnessctl.py`);
+   - para cada regra, veja se o `AGENTS.md` do projeto já a cobre, mesmo com outras palavras ou num documento que
+     ele manda ler;
+   - mostre ao usuário as que faltam e as que já estão cobertas, citando a linha;
+   - proponha acrescentar só as que faltam, no idioma e no estilo do arquivo, numa seção que já exista. Troque
+     "os testes e o build deste projeto" pelo comando real do projeto, quando ele estiver escrito. Respeite os
+     limites do projeto (tamanho do arquivo, índice de documentos, registro de estado);
+   - se o `AGENTS.md` do projeto mandar usar uma skill que não existe mais (`tdd-workflow`, `verification-loop`),
+     proponha trocar essa menção pela regra equivalente;
+   - só edite com o "sim". Se o projeto exige branch ou PR, a edição vai junto com os arquivos do setup. Se tudo
+     já estiver coberto, diga isso e não mude nada.
+7. Em repositório novo, sugira preencher a seção "Comandos do projeto" do `AGENTS.md`.
+8. Relate o que foi criado, o que foi mantido, as regras acrescentadas ou já cobertas e o próximo passo: commit e
+   PR, feitos pelo usuário ou com pedido explícito.
 
 ## Limites
 
