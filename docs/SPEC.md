@@ -11,14 +11,17 @@ o ESTADO deve ser corrigido.
 
 ## 1. Missão e limites
 
-**Missão:** programar em 10–20 repositórios com Claude Code e Codex usando um kit pequeno de regras e skills, e
-**medir** se esse kit melhora qualidade, tempo e custo.
+**Missão:** programar em 10–20 repositórios com Claude Code e Codex usando um kit pequeno de **regras** no
+`AGENTS.md`. Quem garante a qualidade são os testes, o CI e a revisão independente de cada PR, não as skills. O
+Harness **não afirma** que o kit melhora qualidade, tempo ou custo: isso não está medido (§6).
 
-**O MVP (V1) tem quatro capacidades, nesta ordem:**
+**O MVP (V1) tem duas capacidades, nesta ordem:**
 1. instalar, verificar e remover o kit no computador e em cada repositório, sem apagar nada alheio;
-2. trabalhar com os agentes **nativos** (Claude Code primeiro, depois Codex);
-3. benchmark A/B real (sem kit × com kit) com verificador independente;
-4. registro de qualidade, tempo, tokens e custo, com a origem de cada número.
+2. trabalhar com os agentes **nativos** (Claude Code primeiro, depois Codex).
+
+O benchmark A/B e o registro de qualidade, que eram as capacidades 3 e 4, estão **congelados** desde HE-R1-06
+(07/11/2026): o efeito esperado de skills genéricas (≈0 nos estudos de 2026) fica abaixo do que o volume de PRs
+revisados destes repositórios consegue detectar.
 
 **Não é objetivo:** criar um runtime ou agente próprio, um servidor MCP ou daemon, hooks globais, instalar os 12
 upstreams do dossiê, ou tratar classificação JEV como benchmark de programação.
@@ -38,20 +41,26 @@ upstreams do dossiê, ou tratar classificação JEV como benchmark de programaç
 5. **Escopo fechado:** uma entrega por vez, com testes positivos e negativos e suíte offline verde.
 6. **Autorização explícita** para: escrever fora deste repositório, push, merge, deploy, chamadas pagas, instalar
    dependências, alterar configurações globais.
+7. **Regra antes de skill (HE-R1-06).** Uma lacuna observada vira, nesta ordem: uma linha no `AGENTS.md` do projeto
+   (cabe numa frase); um teste, check de CI ou script (dá para detectar automaticamente); uma skill **do
+   repositório** (procedimento de vários passos com comandos daquele ambiente). Uma skill só entra no pacote da
+   máquina se for um procedimento do operador usado em vários repositórios, com a aprovação dele. Skills de
+   metodologia genérica (TDD, verificação, debugging, planejamento) não entram: os modelos já as conhecem, e o
+   `AGENTS.md` diz quando aplicar.
 
 ## 3. Arquitetura: duas camadas e uma tabela de adaptadores
 
 ```
 FONTE (versionada)          C:\dev\harness-engineering
   skills/<nome>/SKILL.md      skills próprias do Harness (setup-harness)
-  vendor/ecc/                 cópia byte a byte do ECC pinado: 2 SKILL.md + LICENSE + SOURCE.json (sem conversão de fim de linha)
+  vendor/ecc/                 cópia byte a byte do ECC pinado: 2 SKILL.md + LICENSE + SOURCE.json; só para o pacote 1 legado e para remover a v1.0.0
   templates/repo/             AGENTS.md e CLAUDE.md (pacote 2) criados nos repositórios que não os têm
   templates/AGENTS.md|CLAUDE.md   versões antigas: pacote 1 legado e condição C do benchmark (hash congelado)
   config/adapters.json        onde cada ferramenta procura skills e regras
   scripts/harnessctl.py       o único instalador
 
 CAMADA 1 — MÁQUINA           uma vez por computador; vale para todos os repositórios
-  ~/.agents/skills/<nome>/            pasta canônica (padrão Agent Skills): setup-harness, tdd-workflow, verification-loop
+  ~/.agents/skills/<nome>/            pasta canônica (padrão Agent Skills): setup-harness (até v1.0.0: + tdd-workflow, verification-loop)
   ~/.agents/skills/.harness-machine.json   versão, hashes e origem
   setup-harness/harness-location.json      só o caminho do harnessctl de quem instalou: ~/.harness-engineering/<tag> (harness_release.py)
   apontadores, conforme adapters.json:
@@ -66,11 +75,11 @@ CAMADA 2 — REPOSITÓRIO       uma vez por projeto; só o que é do projeto
   .harness/manifest.json     recibo: arquivos e hashes do Harness, política de contrato, versão
 ```
 
-**Por que as skills genéricas ficam na máquina:** o padrão Agent Skills carrega cerca de 100 tokens por skill até que
-ela seja usada, então manter global custa pouco. Uma atualização vale para todos os repositórios, e o repositório
-fica dono só do que é dele. **Exceção:** copiar uma skill genérica para dentro do repositório (*vendoring*) apenas
-quando o projeto precisar dela congelada ou compartilhada só pelo clone. A decisão é tomada no plano, nunca por
-padrão.
+**O que fica na máquina:** só a `setup-harness` e, com aprovação do operador, um procedimento dele usado em vários
+repositórios (§2.7). O padrão Agent Skills carrega cerca de 100 tokens por skill até que ela seja usada, então uma
+skill global custa pouco parada, mas carrega o corpo inteiro quando dispara. Skills de um ambiente específico ficam
+no repositório. **Exceção:** copiar uma skill para dentro do repositório (*vendoring*) apenas quando o projeto
+precisar dela congelada ou compartilhada só pelo clone. A decisão é tomada no plano, nunca por padrão.
 
 **Tabela de adaptadores** (`config/adapters.json`, verificada em 03/11/2026 na documentação oficial):
 
@@ -120,14 +129,18 @@ continua byte a byte igual ao template aprovado; o restante fica. O Harness cont
 |---|---|---|
 | **R0** Fundação | docs canônicos (este conjunto), CI offline | README → MANUAL/SPEC/ESTADO; CI verde |
 | **R1** Uso diário | camada 1 + camada 2 para **Claude Code e Codex**; fonte ECC versionada no repo; `setup-harness` multi-ferramenta | repo novo e repo existente: passos 1–7 e remoção exata; descoberta observada nas duas ferramentas; 1 tarefa real com QA externo em cada uma |
-| **R2** Benchmark | runner A/B, telemetria, relatório; decisão sobre o Harbor | ≥2 tarefas reais, k=3 por braço, braço A isolado; relatório GANHO/EMPATE/REGRESSÃO/INCONCLUSIVO |
+| **R2** Benchmark ❄️ congelado (HE-R1-06) | runner A/B, telemetria, relatório; decisão sobre o Harbor | ≥2 tarefas reais, k=3 por braço, braço A isolado; relatório GANHO/EMPATE/REGRESSÃO/INCONCLUSIVO |
 | **R3** Mais ferramentas | Antigravity e outras via tabela; comparação Claude × Codex | descoberta + tarefa real por ferramenta, ou `BLOCKED_*` factual |
 | **R4** JEV | triagem opt-in no supervisor | ganho medido contra gabarito **humano**; desligado por padrão |
-| **R5–R6** Extras | Cloudflare, EGM, Warp, Superpowers, GStack… | um módulo por PR, só se o benchmark mostrar ganho |
+| **R5–R6** Extras | Cloudflare, EGM, Warp, Superpowers, GStack… | um módulo por PR, só para uma lacuna concreta (§2.7), com a aprovação do operador |
 
-**"Harness V1 pronto" = R1 + R2 com os gates acima.** Sem R2, o kit é um palpite.
+**"Harness V1 pronto" = R1 com o gate acima.** O R2 está congelado; sem ele, o Harness não declara ganho de
+qualidade, só que instala, verifica, remove e funciona nos dois agentes.
 
-## 6. Benchmark (R2)
+## 6. Benchmark (R2) — congelado
+
+**Congelado desde 07/11/2026 (HE-R1-06).** Não é pré-requisito da V1 nem roda por rotina. Retomar só para uma dúvida
+pontual que justifique o custo, com autorização do operador; nesse caso, o desenho abaixo continua normativo.
 
 **Pergunta 1:** o kit melhora o mesmo agente? (A = sem kit, B = com kit). **Pergunta 2:** qual agente resolve melhor
 as mesmas tarefas? Essa vem depois e é relatada separadamente.
@@ -185,7 +198,7 @@ algumas pioram o resultado. "Empate com menos retrabalho" é um resultado plaus�
 
 | Upstream | Uso | Release |
 |---|---|---|
-| [ECC](https://github.com/affaan-m/ECC) | `tdd-workflow`, `verification-loop`, pinados por SHA `b38be6a7…` e hash, licença MIT | R1 |
+| [ECC](https://github.com/affaan-m/ECC) | `tdd-workflow`, `verification-loop`, pinados por SHA `b38be6a7…` e hash, licença MIT; fora do pacote desde HE-R1-06 (só legado) | R1 (até v1.0.0) |
 | [Harbor](https://github.com/harbor-framework/harbor) | motor de benchmark, se o spike passar | R2 |
 | [jev-code](https://github.com/FrancoisChastel/jev-code) | só referência; usamos HTTP direto | R4 |
 | Cloudflare security-audit, Google EGM, Warp cloud-factory | um módulo por lacuna | R5 |
@@ -214,7 +227,8 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-R1-03 | R1 | camada 2 (pacote 2) multi-ferramenta: preservar contrato por padrão, `CLAUDE.md` com `@AGENTS.md`, sem copiar skills genéricas; pacote 1 continua verificável e removível | repo novo e repo existente; remoção exata |
 | HE-R1-04 | R1 | `setup-harness` reescrita: detecta a ferramenta (sem `client` fixo), subcomandos verificar/remover; passa a fazer parte do pacote da máquina, com migração do bootstrap antigo (`setup-skill-*`) | descoberta + uso em chat novo no Claude Code e no Codex; a instalação antiga é removida exatamente |
 | HE-R1-05 | R1 | instalação permanente na plataforma metalúrgica (via PR) | tarefa real com QA externo |
+| HE-R1-06 | R1 | simplificar o kit: pacote da máquina só com `setup-harness` (a v1.0.0 é atualizada e as 2 skills ECC saem, se intactas); modelo `AGENTS.md` com regras curtas no lugar de "use a skill X"; R2 congelado; V1 = R1 | testes offline: pacote só com `setup-harness`; atualização da v1.0.0 remove as 2 skills; skill antiga editada ou de versão desconhecida bloqueia sem escrever; skill do usuário com o mesmo nome fica intacta |
 | HE-R2-01 | R2 | corrigir o runner: `stream-json` no Claude, todos os campos no Codex, `null` ≠ 0, versão e modelo registrados | testes offline do parser |
-| HE-R2-02 | R2 | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
-| HE-R2-H | R2 | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |
-| HE-R2-03 | R2 | lote 8–12 tarefas | veredito auditável → **V1 pronto** |
+| HE-R2-02 | R2 ❄️ | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
+| HE-R2-H | R2 ❄️ | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |
+| HE-R2-03 | R2 ❄️ | lote 8–12 tarefas | veredito auditável |
