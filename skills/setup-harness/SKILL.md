@@ -70,18 +70,22 @@ central `harnessctl`.
 6. **Regras de trabalho num `AGENTS.md` que já existia** (o plano mostrou `PRESERVE` para `AGENTS.md`, ou o status
    é `ATTACHED` com um `AGENTS.md` do projeto). O modelo só é copiado para repositório sem `AGENTS.md`, então as
    regras dele não chegam sozinhas aos outros:
-   - leia a seção `## Como trabalhar` do modelo em `<pasta do Harness>/templates/repo/AGENTS.md` (a pasta do
-     Harness é a que contém `scripts/harnessctl.py`);
-   - para cada regra, veja se o `AGENTS.md` do projeto já a cobre, mesmo com outras palavras ou num documento que
-     ele manda ler;
-   - mostre ao usuário as que faltam e as que já estão cobertas, citando a linha;
-   - proponha acrescentar só as que faltam, no idioma e no estilo do arquivo, numa seção que já exista. Troque
+   - leia a seção `## Como trabalhar` do modelo em `<pasta do Harness>/templates/repo/AGENTS.md`. A pasta do
+     Harness fica dois níveis acima do `harnessctl` de "Antes de tudo", item 1; não procure outra cópia;
+   - compare com o `AGENTS.md` da branch onde o setup vai entrar (normalmente a `origin/main` atualizada), não com
+     o de outra branch do checkout;
+   - para cada item da lista do modelo, veja se o projeto já o cobre, mesmo com outras palavras ou num documento
+     que o `AGENTS.md` manda ler explicitamente para aquele ponto (não percorra o resto). Se o projeto tem regra
+     própria para o mesmo ponto, mesmo diferente (por exemplo, "não perguntar no meio da tarefa; anotar no PR"),
+     conta como coberto, e vale a do projeto. "Build" só conta onde o projeto tem build;
+   - mostre ao usuário os itens que faltam e os já cobertos, citando a linha;
+   - proponha acrescentar só os que faltam, no idioma e no estilo do arquivo, numa seção que já exista. Troque
      "os testes e o build deste projeto" pelo comando real do projeto, quando ele estiver escrito. Respeite os
      limites do projeto (tamanho do arquivo, índice de documentos, registro de estado);
-   - se o `AGENTS.md` do projeto mandar usar uma skill que não existe mais (`tdd-workflow`, `verification-loop`),
-     proponha trocar essa menção pela regra equivalente;
-   - só edite com o "sim". Se o projeto exige branch ou PR, a edição vai junto com os arquivos do setup. Se tudo
-     já estiver coberto, diga isso e não mude nada.
+   - se o `AGENTS.md` mandar usar `tdd-workflow` ou `verification-loop` (as duas skills que o Harness instalava
+     até a `v1.0.0`), proponha trocar a menção pela regra equivalente. Outras skills não são assunto deste passo;
+   - só edite com o "sim", seguindo as regras de branch, cópia isolada e PR do projeto (passo 3), mesmo quando o
+     setup não criou nenhum arquivo. Se tudo já estiver coberto, diga isso e não mude nada.
 7. Em repositório novo, sugira preencher a seção "Comandos do projeto" do `AGENTS.md`.
 8. Relate o que foi criado, o que foi mantido, as regras acrescentadas ou já cobertas e o próximo passo: commit e
    PR, feitos pelo usuário ou com pedido explícito.

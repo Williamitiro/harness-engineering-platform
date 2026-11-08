@@ -45,7 +45,9 @@ class SkillFileTests(unittest.TestCase):
         text = SKILL.decode("utf-8")
         self.assertIn("templates/repo/AGENTS.md", text)
         self.assertIn("## Como trabalhar", text)
-        self.assertIn("já a cobre", text)
+        self.assertIn("já o cobre", text)
+        self.assertIn("conta como coberto, e vale a do projeto", text)  # project rule wins
+        self.assertIn("origin/main", text)  # compare against the branch the setup lands on
         self.assertIn('só edite com o "sim"', text)
         self.assertIn("passo 6", text)  # also offered on "verificar"
         template = (ROOT / "templates/repo/AGENTS.md").read_text(encoding="utf-8")
