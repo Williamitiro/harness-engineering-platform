@@ -110,8 +110,11 @@ Toda operação do `harnessctl` e da skill `setup-harness` segue estes passos e 
 | 7 | **Registrar** | sim | manifesto + recibo com versão, hashes e resultado da descoberta |
 | ↩ | **Remover** (`remove`) | sim | prévia sem `--apply`; remove só o que o manifesto prova e que está inalterado |
 
-**Repositório existente:** respeitar as regras locais de branch e cópia isolada e entregar por PR. O contrato
-existente nunca é lido, concatenado, sobrescrito ou reivindicado: preservar é sempre o padrão. Skills de terceiros
+**Repositório existente:** respeitar as regras locais de branch e cópia isolada e entregar por PR. O instalador
+nunca lê, concatena, sobrescreve ou reivindica o contrato existente: preservar é sempre o padrão. **Exceção, pelo
+agente e com aprovação (HE-R1-07):** a skill `setup-harness` compara o `AGENTS.md` do projeto com a seção "Como
+trabalhar" do modelo, mostra as regras que faltam e as já cobertas e só acrescenta as que faltam, no estilo do
+arquivo, com o "sim" do operador. O arquivo continua sendo do projeto. Skills de terceiros
 em `.agents/skills` ou `.claude/skills` não são tocadas e não bloqueiam. Bloqueiam: link ou junction nos destinos
 (`AGENTS.md`, `CLAUDE.md`, `.harness`), diretório no lugar de um arquivo de regras e `.harness` alheio
 (`BLOCKED_PATH` / `BLOCKED_COLLISION`).
@@ -228,6 +231,7 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-R1-04 | R1 | `setup-harness` reescrita: detecta a ferramenta (sem `client` fixo), subcomandos verificar/remover; passa a fazer parte do pacote da máquina, com migração do bootstrap antigo (`setup-skill-*`) | descoberta + uso em chat novo no Claude Code e no Codex; a instalação antiga é removida exatamente |
 | HE-R1-05 | R1 | instalação permanente na plataforma metalúrgica (via PR) | tarefa real com QA externo |
 | HE-R1-06 | R1 | simplificar o kit: pacote da máquina só com `setup-harness` (a v1.0.0 é atualizada e as 2 skills ECC saem, se intactas); modelo `AGENTS.md` com regras curtas no lugar de "use a skill X"; R2 congelado; V1 = R1 | testes offline: pacote só com `setup-harness`; atualização da v1.0.0 remove as 2 skills; skill antiga editada ou de versão desconhecida bloqueia sem escrever; skill do usuário com o mesmo nome fica intacta |
+| HE-R1-07 | R1 | a `setup-harness` oferece as regras do modelo que faltam num `AGENTS.md` já existente (passo 6; também ao "verificar"), sem o instalador ler o projeto | teste offline do texto da skill (modelo, cobertura, só com "sim"); setup real num repositório com `AGENTS.md` próprio |
 | HE-R2-01 | R2 | corrigir o runner: `stream-json` no Claude, todos os campos no Codex, `null` ≠ 0, versão e modelo registrados | testes offline do parser |
 | HE-R2-02 | R2 ❄️ | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
 | HE-R2-H | R2 ❄️ | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |

@@ -127,6 +127,8 @@ O comando é o mesmo para projeto novo e projeto antigo. A skill descobre sozinh
 3. O agente vai:
    - **ler sem alterar nada** e mostrar o que encontrou: se já há `AGENTS.md`, `CLAUDE.md` ou skills próprias;
    - **preservar** as regras que já existem, sem apagar ou reescrever nada seu;
+   - comparar o seu `AGENTS.md` com as 5 regras de trabalho do Harness, mostrar quais faltam e quais já estão
+     cobertas, e propor acrescentar só as que faltam, no estilo do seu arquivo;
    - propor os arquivos novos e, se o projeto exigir, criar uma **branch** e um **PR** em vez de mexer na `main`;
    - pedir o seu "sim", aplicar e conferir.
 4. Revise o PR, como faria com qualquer outra mudança, e faça o merge.
@@ -161,10 +163,9 @@ Depois do setup, **você não faz nada diferente.** Peça as tarefas como sempre
 `AGENTS.md` do projeto. O modelo do Harness traz cinco: pergunta não é pedido de mudança, só o que foi pedido,
 procurar antes de escrever, teste que reproduz o bug antes da correção e testes do projeto rodados antes do "pronto".
 
-**Atenção:** o modelo só é copiado para projetos que **não tinham** `AGENTS.md`. Nos que já tinham (plataforma,
-Nexus Quant, Resiplac Core, Video Motion…), o Harness preserva o seu arquivo e essas regras **não chegam
-sozinhas**. Copie a seção "Como trabalhar" de `templates/repo/AGENTS.md` para o `AGENTS.md` do projeto, num PR
-daquele repositório, deixando de fora o que ele já cobre.
+Em projeto que **já tinha** `AGENTS.md`, o arquivo é preservado e as regras não são copiadas: o `/setup-harness`
+mostra as que faltam e propõe acrescentá-las, e só edita com o seu "sim" (§3.2). Num projeto já ligado, peça
+`/setup-harness verificar` e aceite a conferência das regras.
 
 **O que garante a qualidade** não é skill: são os testes, o CI e a **revisão independente** de cada PR com código
 (outro agente ou outra sessão revisa o diff antes do merge; por exemplo, o Codex revisando no GitHub ou o
