@@ -119,8 +119,9 @@ class MachinePackageV2Tests(unittest.TestCase):
 
     def old_package(self, with_setup: bool):
         """Machine package as installed up to v1.0.0: the 2 ECC skills (and, from HE-R1-04, setup-harness)."""
-        skills, notice = h.machine_payload(CATALOG)
-        files = {f".agents/skills/{n}/SKILL.md": raw for n, raw in skills.items()}
+        skills = h.check_source(h.VENDORED, CATALOG)  # same pinned bytes v1.0.0 installed
+        notice = (h.VENDORED / "LICENSE").read_text(encoding="utf-8")
+        files = {f".agents/skills/{s['name']}/SKILL.md": Path(s["source"]).read_bytes() for s in skills}
         if with_setup:
             files.update({f".agents/skills/{rel}": raw for rel, raw in h.setup_skill_files().items()})
         h.write_package(self.home, files, ".agents/skills/" + h.MACHINE_STATE, {
@@ -167,6 +168,31 @@ class MachinePackageV2Tests(unittest.TestCase):
         with self.assertRaises(h.GateError):
             h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)
         self.assertEqual(before, self.snapshot())
+
+    def old_record_without_pin(self):
+        state = self.root / h.MACHINE_STATE
+        record = json.loads(state.read_text())
+        del record["ecc_commit"]
+        state.write_text(json.dumps(record))
+
+    def test_old_package_without_the_ecc_pin_blocks(self):
+        self.old_package(with_setup=True)
+        self.old_record_without_pin()
+        before = self.snapshot()
+        for call in (lambda: h.machine_install(self.home, CATALOG, ADAPTERS),
+                     lambda: h.machine_remove(self.home, CATALOG, ADAPTERS, apply=True)):
+            with self.assertRaises(h.GateError):
+                call()
+        self.assertEqual(before, self.snapshot())
+
+    def test_new_package_with_an_ecc_pin_blocks(self):
+        h.machine_install(self.home, CATALOG, ADAPTERS)
+        state = self.root / h.MACHINE_STATE
+        record = json.loads(state.read_text())
+        record["ecc_commit"] = CATALOG["ecc"]["commit"]
+        state.write_text(json.dumps(record))
+        with self.assertRaises(h.GateError):
+            h.machine_verify(self.home, CATALOG, ADAPTERS)
 
     def test_retired_skill_of_unknown_version_blocks(self):
         # Record and file agree, but the bytes are not the approved ECC version.

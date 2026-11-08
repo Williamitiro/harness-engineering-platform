@@ -57,7 +57,7 @@ class MachineLayerTests(unittest.TestCase):
 
     def test_package_is_only_setup_harness(self):
         self.assertEqual(h.MACHINE_SKILL_NAMES, ["setup-harness"])
-        self.assertEqual({rel.split("/")[0] for rel in h.machine_files(CATALOG)}, {"setup-harness"})
+        self.assertEqual({rel.split("/")[0] for rel in h.setup_skill_files()}, {"setup-harness"})
 
     def test_install_reapply_verify_remove_exact(self):
         self.tools(".codex", ".claude")
@@ -117,7 +117,8 @@ class MachineLayerTests(unittest.TestCase):
         with self.assertRaises(h.GateError):
             h.machine_plan(self.home, CATALOG, ADAPTERS)
 
-    def test_third_party_skill_with_same_name_blocks_everything(self):
+    def test_collision_in_one_root_blocks_both_roots(self):
+        # All or nothing across roots; the single-root case is in test_setup_harness_v2.
         self.tools(".codex", ".claude")
         foreign = self.home / ".claude/skills/setup-harness/SKILL.md"
         foreign.parent.mkdir(parents=True)

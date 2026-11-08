@@ -63,7 +63,8 @@ novo, abra o PowerShell e rode:
 git clone https://github.com/Williamitiro/harness-engineering-platform.git C:\dev\harness-engineering
 ```
 
-**2.2. Ver o plano** (não grava nada):
+**2.2. Ver o plano** (não grava nada). Use a versão mais recente: `git -C C:\dev\harness-engineering tag` lista as
+que existem. Os exemplos usam `v1.1.0`; se ela ainda não aparecer na lista, use a última que aparecer.
 
 ```bash
 python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.1.0
@@ -78,7 +79,8 @@ python C:\dev\harness-engineering\scripts\harness_release.py install --tag v1.1.
 Ele extrai a versão, instala a skill `setup-harness` para o Claude Code e o Codex, confere os arquivos e aponta o
 atalho `current`. Se já havia uma instalação, ele a remove antes e, se a nova falhar, volta à anterior. Nunca
 sobrescreve uma skill sua com o mesmo nome. Vindo da `v1.0.0`, ele tira do computador as skills `tdd-workflow` e
-`verification-loop`, que saíram do pacote na `v1.1.0` (só se você não as editou).
+`verification-loop`, que saíram do pacote na `v1.1.0`. **Não as apague à mão antes:** o instalador antigo só remove o
+que encontra intacto e para se faltar um arquivo (veja "managed file missing" em §7).
 
 **2.4. Conferir:**
 
@@ -87,8 +89,10 @@ python C:\dev\harness-engineering\scripts\harness_release.py status
 ```
 
 Deve mostrar a versão (`release.tag`) e `machine_verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED` (arquivos íntegros).
-Depois, abra o Claude Code ou o Codex em qualquer pasta e digite `/setup-harness verificar` (Claude Code) ou
-`$setup-harness verificar` (Codex): a skill deve responder. Ela só aparece quando você a chama.
+Para ver que o Codex enxerga a skill, rode
+`python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine-discover`: `setup-harness` deve
+aparecer como `DISCOVERED`. No Claude Code, abra um chat novo, digite `/` e procure `setup-harness` na lista (não
+precisa executá-la). `/setup-harness verificar` confere o **repositório** aberto, não o computador.
 
 **Atualizar para uma versão nova** (ex.: `v1.2.0`): `git -C C:\dev\harness-engineering fetch --tags` e repita
 2.2 e 2.3 com a tag nova. A versão anterior continua na pasta dela, para voltar se precisar.
@@ -154,8 +158,13 @@ projeto que exige branch e PR, como a plataforma, rode numa branch nova e faça 
 ## 4. Trabalhar no dia a dia
 
 Depois do setup, **você não faz nada diferente.** Peça as tarefas como sempre. O agente segue as regras do
-`AGENTS.md` do projeto: pergunta não é pedido de mudança, só o que foi pedido, procurar antes de escrever, teste que
-reproduz o bug antes da correção e testes do projeto rodados antes do "pronto".
+`AGENTS.md` do projeto. O modelo do Harness traz cinco: pergunta não é pedido de mudança, só o que foi pedido,
+procurar antes de escrever, teste que reproduz o bug antes da correção e testes do projeto rodados antes do "pronto".
+
+**Atenção:** o modelo só é copiado para projetos que **não tinham** `AGENTS.md`. Nos que já tinham (plataforma,
+Nexus Quant, Resiplac Core, Video Motion…), o Harness preserva o seu arquivo e essas regras **não chegam
+sozinhas**. Copie a seção "Como trabalhar" de `templates/repo/AGENTS.md` para o `AGENTS.md` do projeto, num PR
+daquele repositório, deixando de fora o que ele já cobre.
 
 **O que garante a qualidade** não é skill: são os testes, o CI e a **revisão independente** de cada PR com código
 (outro agente ou outra sessão revisa o diff antes do merge; por exemplo, o Codex revisando no GitHub ou o
@@ -224,6 +233,7 @@ O que você acompanha no dia a dia: o CI verde, a revisão independente de cada 
 | "harnessctl não encontrado" | a pasta `C:\dev\harness-engineering` foi movida ou apagada | coloque-a de volta (passo 2.1) e refaça o passo 2.2 |
 | "installed by another Harness checkout" | o Harness foi instalado a partir de outra pasta | rode os comandos a partir da pasta indicada na mensagem, ou remova de lá e reinstale a partir de `C:\dev\harness-engineering` |
 | "UPGRADE_AVAILABLE" | há uma versão nova do Harness | refaça o passo 2.2: ele atualiza sozinho |
+| "managed file missing or modified: …/tdd-workflow/SKILL.md" (ou `verification-loop`) ao atualizar | a skill foi apagada ou editada à mão antes da atualização | se editou e quer guardar, copie a sua versão para outro lugar. Depois copie `C:\Users\itiro\.harness-engineering\v1.0.0\vendor\ecc\skills\<nome>\SKILL.md` para `C:\Users\itiro\.agents\skills\<nome>\SKILL.md` e repita o passo 2.3: a atualização a remove |
 | O agente não segue uma regra | a regra não está no `AGENTS.md` do projeto, ou está vaga | escreva-a numa frase no `AGENTS.md`; se o erro se repetir, vire um teste ou check de CI (§4) |
 | Quero ver o estado técnico | — | [ESTADO.md](ESTADO.md) |
 

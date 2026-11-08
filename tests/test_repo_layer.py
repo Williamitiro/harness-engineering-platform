@@ -52,6 +52,14 @@ class RepoLayerTests(unittest.TestCase):
         self.assertTrue(CLAUDE_TEMPLATE.startswith(b"@AGENTS.md\n"))
         self.assertNotIn(b"/SKILL.md", AGENTS_TEMPLATE)  # skills by name, never repo paths
 
+    def test_agents_template_names_no_retired_skill_and_keeps_the_test_rule(self):
+        # HE-R1-06: the machine package no longer installs the ECC skills; the template must not ask for them.
+        text = AGENTS_TEMPLATE.decode("utf-8")
+        for name in h.ALLOWED:
+            self.assertNotIn(name, text)
+        self.assertIn("rode os testes e o build **deste** projeto", text)
+        self.assertIn("Pergunta não é pedido de mudança", text)
+
     def test_new_repo_plan_is_read_only(self):
         before = self.snapshot()
         result = h.repo_inspect(self.repo)

@@ -881,25 +881,12 @@ def machine_roots(home: Path, adapters: dict) -> tuple[Path, list[dict], list[st
     return home, copies + links, skipped
 
 
-def machine_payload(catalog: dict) -> tuple[dict[str, bytes], str]:
-    """Bundled ECC skills {name: SKILL.md bytes} and the MIT notice (v1.0.0 package; no longer installed)."""
-    skills = check_source(VENDORED, catalog)
-    notice = owned_bytes(VENDORED / "LICENSE")
-    if digest(notice) != catalog["ecc"].get("license_sha256"):
-        raise GateError("ECC license differs from approved hash")
-    return {s["name"]: owned_bytes(Path(s["source"])) for s in skills}, notice.decode("utf-8")
-
-
 def setup_skill_files() -> dict[str, bytes]:
     """setup-harness for the machine package (HE-R1-04): no fixed client."""
     descriptor = {"schema_version": 2, "harnessctl": str(ROOT / "scripts/harnessctl.py")}
     return {"setup-harness/SKILL.md": owned_bytes(ROOT / "skills/setup-harness/SKILL.md"),
             "setup-harness/agents/openai.yaml": owned_bytes(ROOT / "skills/setup-harness/agents/openai.yaml"),
             "setup-harness/harness-location.json": (json.dumps(descriptor, indent=2) + "\n").encode("utf-8")}
-
-
-def machine_files(catalog: dict) -> dict[str, bytes]:
-    return setup_skill_files()
 
 
 def retired_machine_files(root: str, catalog: dict) -> dict[str, str]:
@@ -917,14 +904,16 @@ def classify_machine_root(home: Path, root: dict, files: dict[str, bytes], catal
     expected, state = root_package(root["root"], files)
     retired = retired_machine_files(root["root"], catalog)
     record = json.loads(owned_bytes(home / state))
-    # Packages up to v1.0.0 carry the ECC pin; newer ones carry none.
     if (not isinstance(record, dict) or record.get("kind") != "harness-machine"
-            or record.get("adapter") != root["adapter"]
-            or record.get("ecc_commit", catalog["ecc"]["commit"]) != catalog["ecc"]["commit"]):
+            or record.get("adapter") != root["adapter"]):
         raise GateError("machine ownership adapter or pin mismatch")
     entries = record.get("files")
     if not isinstance(entries, list) or not entries:
         raise GateError("invalid machine ownership record")
+    # Packages up to v1.0.0 list the ECC skills and carry their pin; newer packages carry neither.
+    lists_retired = any(isinstance(i, dict) and i.get("path") in retired for i in entries)
+    if (record.get("ecc_commit") != catalog["ecc"]["commit"]) if lists_retired else ("ecc_commit" in record):
+        raise GateError("machine ownership adapter or pin mismatch")
     seen, outdated = set(), False
     for item in entries:
         rel = item.get("path") if isinstance(item, dict) else None
@@ -993,7 +982,7 @@ def verify_legacy_bootstrap(home: Path, root: str) -> dict:
 
 def machine_plan(home: Path, catalog: dict, adapters: dict) -> dict:
     home, roots, skipped = machine_roots(home, adapters)
-    files = machine_files(catalog)
+    files = setup_skill_files()
     planned, installed, migrations = [], [], []
     for root in (r for r in roots if r["mode"] == "copy"):
         expected, state = root_package(root["root"], files)
@@ -1034,7 +1023,7 @@ def machine_install(home: Path, catalog: dict, adapters: dict) -> dict:
     if result["status"] == "ALREADY_INSTALLED":
         return result
     home = Path(result["home"])
-    files = machine_files(catalog)
+    files = setup_skill_files()
     actions = {(m["adapter"], m["action"]) for m in result["migrations"]}
     removed, done = [], []  # packages removed by this call (to restore) / packages written (to undo)
     try:
@@ -1067,7 +1056,7 @@ def machine_install(home: Path, catalog: dict, adapters: dict) -> dict:
 
 def machine_verify(home: Path, catalog: dict, adapters: dict) -> dict:
     home, roots, skipped = machine_roots(home, adapters)
-    files = machine_files(catalog)
+    files = setup_skill_files()
     for root in (r for r in roots if r["mode"] == "copy"):
         if not (home / root_package(root["root"], files)[1]).exists():
             raise GateError(f"NOT_INSTALLED: {root['adapter']} detected but machine-install not applied")
@@ -1079,7 +1068,7 @@ def machine_verify(home: Path, catalog: dict, adapters: dict) -> dict:
 
 def machine_remove(home: Path, catalog: dict, adapters: dict, apply: bool = False) -> dict:
     home, roots, _ = machine_roots(home, adapters)
-    files = machine_files(catalog)
+    files = setup_skill_files()
     owned = []
     for root in (r for r in roots if r["mode"] == "copy"):
         state = root_package(root["root"], files)[1]
