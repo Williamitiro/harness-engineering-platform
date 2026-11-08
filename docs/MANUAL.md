@@ -7,7 +7,7 @@ Este manual diz **o que você faz, em que ordem**. Ele não explica como o Harne
 >
 > | Passo | Claude Code | Codex |
 > |---|---|---|
-> | 1. Instalar no computador | ✅ feito neste computador, versão `v1.1.0` | ✅ idem |
+> | 1. Instalar no computador | ✅ feito neste computador, versão `v1.2.0` | ✅ idem |
 > | 2. Preparar um repositório | ✅ feito em 7 repositórios (no `main` deles); nos outros, `/setup-harness` | ✅ idem, com `$setup-harness` |
 > | 3. Trabalhar | ✅ normal | ✅ normal |
 > | 4. Ver se está funcionando (relatório do dia) | ✅ §4.1 | ✅ §4.1 |
@@ -51,7 +51,7 @@ O Harness é instalado a partir de uma **versão fixa** (ex.: `v1.1.0`), numa pa
 | Pasta | Para quê |
 |---|---|
 | `C:\dev\harness-engineering` | onde o Harness é **desenvolvido**. Trocar de branch aqui **não afeta** o que está instalado |
-| `C:\Users\itiro\.harness-engineering\v1.1.0` | a versão **instalada**: cópia exata da versão marcada, sem Git, que ninguém edita |
+| `C:\Users\itiro\.harness-engineering\v1.2.0` | a versão **instalada**: cópia exata da versão marcada, sem Git, que ninguém edita |
 | `C:\Users\itiro\.harness-engineering\current` | atalho para a versão em uso; é o caminho dos comandos deste manual |
 
 É o mesmo padrão de `pipx`, `uv tool` e Homebrew: o que está instalado não muda até você instalar outra versão.
