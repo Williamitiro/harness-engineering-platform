@@ -23,6 +23,8 @@ afirmações superadas.
    evidência bruta vai para `docs/evidence/` (JSON) ou `.poc/` (ignorado).
 6. Exigem autorização explícita do usuário: escrever em outro repositório ou na home, push, merge, deploy, chamadas
    pagas, instalar dependências ou alterar configuração global.
+- Disco: tudo que o repo gera fica em `_local\` (fora do Git): `backups\` (guardar; inclui dado de cliente), `artifacts\` (regenerável), `tmp\<curto>` (temporário; quem cria apaga). Nada em `C:\`, `C:\dev` ou no perfil.
+- Arquivo grande ou pouco usado sai de `_local\backups\` para `C:\Users\itiro\OneDrive\10-dev\harness-engineering\backups\`; nenhum outro lugar do OneDrive.
 
 ## Pedidos comuns do usuário
 - **"Instale (ou atualize) o Harness neste computador"** → MANUAL §2: `scripts/harness_release.py install --tag
