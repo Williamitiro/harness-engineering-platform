@@ -3,3 +3,6 @@
 __pycache__/
 .env
 .env.*
+
+# local: backups, artifacts e tmp (regra de disco no AGENTS.md)
+/_local/
