@@ -1,6 +1,6 @@
 # Estado do Harness Engineering
 
-**Atualizado em 07/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
+**Atualizado em 15/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
 **Tudo está no `main`** desde 07/11/2026: o merge do [PR #5](https://github.com/Williamitiro/harness-engineering-platform/pull/5)
@@ -37,6 +37,7 @@ trocar de branch nela não afeta o instalado.
 | Instalação por versão marcada (`harness_release.py install --tag … --apply` / `status`): extrai a tag sem `.git` em `~/.harness-engineering/<tag>`, troca a instalação (remove com o instalador antigo, instala e confere com o novo), aponta `current`; se a nova falhar, reinstala a anterior; sem `--apply` não grava nada | ✅ código; usada neste computador (`v1.0.0` e depois a troca para `v1.1.0`, `INSTALLED`) | 7 testes offline em home e repositório Git sintéticos: instalação nova, troca de versão com a antiga intacta, idempotência, prévia sem escrita, recusa de branch e de tag inexistente, recusa de pasta adulterada, volta automática à versão anterior | `scripts/harness_release.py`; `tests/test_harness_release.py`; MANUAL §2 |
 | Kit simplificado (HE-R1-06): pacote da máquina só com `setup-harness`; atualizar a partir da `v1.0.0` tira `tdd-workflow` e `verification-loop` (se intactas); modelo `AGENTS.md` com 5 regras curtas no lugar de "use a skill X"; R2 congelado e V1 = R1 (SPEC §1, §2.7, §5) | ✅ **instalado neste computador** na `v1.1.0` em 07/11/2026: `harness_release.py install --apply` → `INSTALLED`; `status` → `machine_verify: FILE_HASHES_OK_RUNTIME_NOT_VERIFIED`; `machine-discover` → Codex `setup-harness` `DISCOVERED`; `tdd-workflow` e `verification-loop` saíram de `~/.agents/skills`, as outras skills do usuário ficaram. Claude Code: `MANUAL_CHECK_REQUIRED` (chat novo). Regras no `AGENTS.md` dos 7 repositórios ligados no `main` em 08/11 (§2 item 2) | 8 testes offline novos e os de atualização reescritos: pacote só com `setup-harness`, atualização da v1.0.0 e do pacote anterior, remoção do pacote antigo pelo código novo, skill antiga editada ou de versão desconhecida bloqueia sem escrever, recibo antigo sem o pin do ECC (ou novo com ele) bloqueia, skill do usuário com nome de skill retirada fica intacta, modelo `AGENTS.md` não cita skill retirada. Uso em 03–07/11 (`daily_report.py`, 110 sessões): `tdd-workflow` em 9, `verification-loop` em 11; skills do ambiente (`resiplac-*`, `nexus-*`, `git-lane-checkpoint`) somam mais | `scripts/harnessctl.py`; `templates/repo/AGENTS.md`; `tests/test_machine_layer.py`; `tests/test_setup_harness_v2.py` |
 | `setup-harness` oferece as regras de trabalho que faltam num `AGENTS.md` já existente (HE-R1-07): passo 6 do setup e ao "verificar"; o agente compara com a seção "Como trabalhar" do modelo, mostra o que falta e o que já está coberto, e só edita com o "sim"; o instalador continua sem ler o projeto (SPEC §4) | ✅ **instalado na `v1.2.0`** em 08/11/2026 ([PR #13](https://github.com/Williamitiro/harness-engineering-platform/pull/13)): `INSTALLED`, `machine_verify` OK, Codex `DISCOVERED`. Ensaio só de leitura do passo 6 na plataforma-metalurgica: 5/5 cobertas, nada proposto, 7 ambiguidades corrigidas. Setup real com edição `NOT_RUN` | 1 teste offline novo (a skill aponta para o modelo, compara a cobertura e exige o "sim"; o modelo tem a seção "Como trabalhar"). Motivo: os 7 PRs de 07–08/11 foram feitos à mão porque o setup não oferecia as regras | `skills/setup-harness/SKILL.md`; `tests/test_setup_harness_v2.py` |
+| Plano de métricas para o portfólio (15/11/2026): 10 métricas, linha de base e registro CSV, só com dado existente | ✅ documento; instrumentação nova só proposta | [medido]: suíte 279 testes OK em 87 s; CI 90,5 % (100 % desde 04/11); 1ª execução 90,4 %; retrabalho 20,6 % dos commits; PR → merge mediana 0,9 h; tokens de saída por PR mediana 52,5 mil (9 de 13 PRs). [não medido]: tempo ativo, Codex por PR, US$, defeitos por PR neste repo | `metricas/PLANO-DE-METRICAS.md`; `metricas/registro.csv`; `evidence/METRICAS_BASELINE_2026-11-15.json` |
 | Relatório diário de funcionamento | ✅ código | 9 testes offline; rodado nas sessões reais de 07/11 (9 sessões). Só contagens e nomes, nenhum texto de conversa. **Não é benchmark** | `scripts/daily_report.py`; `tests/test_daily_report.py`; MANUAL §4 |
 
 ## 2. Pendências, em ordem
@@ -66,19 +67,21 @@ trocar de branch nela não afeta o instalado.
 5. **Revisão independente em todo PR com código** (hoje 24 de 238 PRs revisados na plataforma), com os recursos
    nativos: o Codex revisando no GitHub ou o `/code-review` do Claude Code. Exigir a revisão por proteção de branch no
    GitHub é configuração do repositório e precisa de autorização.
-6. **Kit da plataforma (PR #252):** `karpathy-guidelines`, `search-first` e `systematic-debugging` ficam em
+6. **Métricas:** acrescentar uma linha a `metricas/registro.csv` a cada entrega (plano §5). Instrumentação proposta
+   no plano §6 (tempo ativo por branch, Codex por PR, revisão em tabela neste repo) só com escopo próprio.
+7. **Kit da plataforma (PR #252):** `karpathy-guidelines`, `search-first` e `systematic-debugging` ficam em
    `.claude/skills/` da plataforma como estão. Não viram globais, e a medição antes × depois não vale como prova.
 
 **Congelados por HE-R1-06** (não retomar sem uma dúvida pontual e autorização; texto mantido como registro):
 
-7. ❄️ **HE-R2: medir no uso real.** Kit na plataforma em [PR #252](https://github.com/Williamitiro/plataforma-metalurgica/pull/252) (3 skills: `karpathy-guidelines`, `search-first`, `systematic-debugging`; 2 regras de escopo; suíte 2222 passed). Revisão independente APROVADO COM RESSALVAS; os 8 achados foram corrigidos em 15141eb, e o merge entrou em 05/11/2026 (`be0a3b4`). A partir daí, trabalhar normalmente e rodar
+8. ❄️ **HE-R2: medir no uso real.** Kit na plataforma em [PR #252](https://github.com/Williamitiro/plataforma-metalurgica/pull/252) (3 skills: `karpathy-guidelines`, `search-first`, `systematic-debugging`; 2 regras de escopo; suíte 2222 passed). Revisão independente APROVADO COM RESSALVAS; os 8 achados foram corrigidos em 15141eb, e o merge entrou em 05/11/2026 (`be0a3b4`). A partir daí, trabalhar normalmente e rodar
    `scripts/quality_baseline.py` a cada lote de PRs, comparando com a linha de base. Defeito só conta se a revisão
    independente o publicar em tabela citando o PR de origem. Antes: decidir a regra D51 (o Codex recusa tarefa nova) e
    o Python no sandbox do Codex. O lote isolado (`scripts/r2_bench.py`) fica só para dúvidas pontuais.
-8. ❄️ ~~Alinhar SPEC e ESTADO sobre o R2~~: resolvido por HE-R1-06, que tira o R2 do critério de "V1 pronto".
-9. ❄️ **Antes do primeiro lote do R2:** (a) aumentar a cobertura de revisão independente (hoje 24 de 238 PRs); (b) fixar
+9. ❄️ ~~Alinhar SPEC e ESTADO sobre o R2~~: resolvido por HE-R1-06, que tira o R2 do critério de "V1 pronto".
+10. ❄️ **Antes do primeiro lote do R2:** (a) aumentar a cobertura de revisão independente (hoje 24 de 238 PRs); (b) fixar
    no `quality_baseline.py`, antes de olhar os dados, a métrica, a janela e o limite que contam como ganho.
-10. ❄️ **Depois do R2: ciclo de melhoria contínua** (observar → hipótese com evidência → teste candidata × atual →
+11. ❄️ **Depois do R2: ciclo de melhoria contínua** (observar → hipótese com evidência → teste candidata × atual →
    aprovação humana → nova linha de base). O agente analista só propõe; não altera gabarito, testes nem regras de
    segurança. Começar só com ~100 PRs revisados na linha de base. Sem nova plataforma: `quality_baseline.py` já cobre
    ETL e correlação; DuckDB só se a análise descer a eventos por chamada de ferramenta. LangSmith e Phoenix ficam como

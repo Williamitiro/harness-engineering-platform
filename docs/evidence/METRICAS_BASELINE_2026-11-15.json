@@ -1,0 +1,223 @@
+{
+ "generated": "2026-11-15",
+ "evidence_level": "OPERATIONAL_LOG_ONLY_NOT_A_BENCHMARK",
+ "head": "8d6a3e2",
+ "suite": {
+  "command": "JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests",
+  "tests": 279,
+  "skipped": 2,
+  "result": "OK",
+  "seconds": 87.2,
+  "def_test_in_source": 284
+ },
+ "git": {
+  "commits": 141,
+  "period": [
+   "2026-11-01",
+   "2026-11-08"
+  ],
+  "fix_or_correction_commits": 29,
+  "tags": {
+   "v1.0.0": "2026-11-07",
+   "v1.1.0": "2026-11-07",
+   "v1.2.0": "2026-11-08"
+  }
+ },
+ "prs": {
+  "total": 14,
+  "merged": 13,
+  "open": 1,
+  "hours_open_to_merge_median": 0.9,
+  "hours_open_to_merge": [
+   0.4,
+   0.1,
+   0.1,
+   7.5,
+   0.9,
+   1.2,
+   0.0,
+   0.5,
+   0.1,
+   87.0,
+   114.7,
+   6.7,
+   27.8
+  ]
+ },
+ "ci": {
+  "source": "gh run list --limit 400 (workflow 'Harness Foundation - stdlib checks')",
+  "period": [
+   "2026-11-02",
+   "2026-11-09"
+  ],
+  "runs": 245,
+  "by_conclusion": {
+   "success": 220,
+   "cancelled": 2,
+   "failure": 23
+  },
+  "success_rate_excl_cancelled": 0.905,
+  "commits_tested": 136,
+  "first_run_success": 123,
+  "failures_by_date": {
+   "2026-11-03": 4,
+   "2026-11-02": 19
+  },
+  "runs_since_2026_11_04": 56,
+  "failures_since_2026_11_04": 0,
+  "main_push": {
+   "success": 11
+  }
+ },
+ "tokens_per_pr_claude": {
+  "source": "scripts/quality_baseline.py --repo C:/dev/harness-engineering --project-glob *harness-engineering*",
+  "prs_with_tokens": 9,
+  "of_merged": 13,
+  "median_output": 52517,
+  "median_input_uncached": 198013,
+  "median_cache_read": 17112975,
+  "sum_output": 914245,
+  "records": [
+   {
+    "pr": 5,
+    "output": 466434,
+    "input_uncached": 1997041,
+    "cache_read": 110086194,
+    "sessions": 2,
+    "lines": {
+     "code": 3931,
+     "tests": 2080,
+     "docs": 11979
+    }
+   },
+   {
+    "pr": 6,
+    "output": 109613,
+    "input_uncached": 314403,
+    "cache_read": 23473659,
+    "sessions": 1,
+    "lines": {
+     "code": 593,
+     "tests": 341,
+     "docs": 23
+    }
+   },
+   {
+    "pr": 7,
+    "output": 52517,
+    "input_uncached": 86505,
+    "cache_read": 17112975,
+    "sessions": 1,
+    "lines": {
+     "code": 363,
+     "tests": 180,
+     "docs": 51
+    }
+   },
+   {
+    "pr": 8,
+    "output": 32304,
+    "input_uncached": 37217,
+    "cache_read": 9983365,
+    "sessions": 1,
+    "lines": {
+     "code": 219,
+     "tests": 127,
+     "docs": 97
+    }
+   },
+   {
+    "pr": 10,
+    "output": 168010,
+    "input_uncached": 629289,
+    "cache_read": 26672421,
+    "sessions": 1,
+    "lines": {
+     "code": 48,
+     "tests": 131,
+     "docs": 195
+    }
+   },
+   {
+    "pr": 11,
+    "output": 52969,
+    "input_uncached": 198013,
+    "cache_read": 19149608,
+    "sessions": 1,
+    "lines": {
+     "code": 0,
+     "tests": 0,
+     "docs": 35
+    }
+   },
+   {
+    "pr": 12,
+    "output": 7263,
+    "input_uncached": 315577,
+    "cache_read": 3252339,
+    "sessions": 1,
+    "lines": {
+     "code": 0,
+     "tests": 0,
+     "docs": 29
+    }
+   },
+   {
+    "pr": 13,
+    "output": 21229,
+    "input_uncached": 68578,
+    "cache_read": 6975951,
+    "sessions": 1,
+    "lines": {
+     "code": 0,
+     "tests": 13,
+     "docs": 52
+    }
+   },
+   {
+    "pr": 14,
+    "output": 3906,
+    "input_uncached": 57328,
+    "cache_read": 2813482,
+    "sessions": 1,
+    "lines": {
+     "code": 0,
+     "tests": 0,
+     "docs": 8
+    }
+   }
+  ],
+  "codex": null,
+  "cost_usd": null,
+  "independent_review": {
+   "reviewed_prs": 0,
+   "findings": null
+  }
+ },
+ "agent_sessions": {
+  "source": "scripts/daily_report.py --date 2026-11-01..15 --json",
+  "all_repos": {
+   "sessions": 197,
+   "by_client": {
+    "claude": 157,
+    "codex": 40
+   },
+   "in_repo_with_harness": 136
+  },
+  "this_repo": {
+   "sessions": 16,
+   "by_client": {
+    "claude": 13,
+    "codex": 3
+   },
+   "with_tests": 12,
+   "last_test_passed": 12,
+   "red_then_green": 3,
+   "test_runs": 106,
+   "failed_test_runs": 4,
+   "tool_errors": 24
+  },
+  "limits": "logs locais retidos; sessões de 01-02/11 do Codex podem faltar; 'teste' = comando reconhecido"
+ },
+ "quality_platform_ref": "docs/evidence/HE_R2_BASELINE_QUALIDADE.json (238 PRs, 24 revisados, 20 defeitos, 1,05/PR revisado com código)"
+}
