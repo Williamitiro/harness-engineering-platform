@@ -1,0 +1,23 @@
+data;sistema;versao;metrica;valor;unidade;contexto;alternativa_valor;fonte_evidencia;publicavel;observacao
+2026-11-15;harness-engineering;8d6a3e2;M1_testes_suite;279;testes;suite offline OK, 2 skipped;;JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M1_tempo_suite;87,2;s;mesma execucao, Windows local;;idem;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M2_ci_sucesso;90,5;%;220 de 243 runs nao cancelados, 02/11-09/11;;gh run list --limit 400; docs/evidence/METRICAS_BASELINE_2026-11-15.json;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M2_ci_sucesso_desde_0411;100;%;56 de 56 runs, 04/11-09/11;;idem;sim;[medido] falhas so em 02-03/11 (fase JEV)
+2026-11-15;harness-engineering;8d6a3e2;M2_ci_main;11;runs;11 de 11 pushes no main verdes;;idem;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M3_ci_primeira_execucao;90,4;%;123 de 136 commits;;idem, agrupado por headSha;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M4_retrabalho_commits;20,6;%;29 de 141 commits fix/revert/corrig/errata, 01/11-08/11;;git log --format=%s;sim;[medido] pela mensagem, nao pelo diff
+2026-11-15;harness-engineering;8d6a3e2;M5_ids_backlog_em_commits;15;entregas;IDs HE-* citados em commits;;git log --oneline;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M5_versoes_marcadas;3;tags;v1.0.0 e v1.1.0 em 07/11, v1.2.0 em 08/11;;git tag;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M6_pr_aberto_merge_mediana;0,9;h;13 PRs merged, faixa 0,0-114,7 h;;gh pr list --state all --json createdAt,mergedAt;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M6_tempo_ativo_por_entrega;;h;;;;nao;[nao medido] ver plano secao 6
+2026-11-15;harness-engineering;8d6a3e2;M7_tokens_saida_por_pr_mediana;52517;tokens;Claude Code, 9 de 13 PRs com log casado;;scripts/quality_baseline.py --repo C:/dev/harness-engineering;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M7_tokens_entrada_sem_cache_por_pr_mediana;198013;tokens;input + cache_write, mesmos 9 PRs;;idem;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M7_tokens_saida_soma;914245;tokens;soma dos 9 PRs;;idem;sim;[medido] parcial, nao e total do repo
+2026-11-15;harness-engineering;8d6a3e2;M7_tokens_codex_por_pr;;tokens;0 PRs casados;;idem;nao;[nao medido]
+2026-11-15;harness-engineering;8d6a3e2;M7_custo_usd_por_pr;;USD;assinatura, sem cobranca por chamada;;;nao;[nao medido]
+2026-11-15;harness-engineering;8d6a3e2;M8_sessoes_teste_verde_no_fim;12;sessoes;12 de 12 sessoes com teste, 01/11-15/11;;scripts/daily_report.py --date 2026-11-DD --json;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M8_execucoes_teste;106;execucoes;4 falharam, 3 sessoes vermelho-verde;;idem;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M9_repos_ligados_main;7;repos;Harness no main;;docs/ESTADO.md secao 1;sim;[medido]
+2026-11-15;harness-engineering;8d6a3e2;M9_sessoes_em_repo_com_harness;69;%;136 de 197 sessoes Claude+Codex em todos os repos, 01/11-15/11;;scripts/daily_report.py;agregado;[medido] campo reflete o estado atual do repo
+2026-11-15;harness-engineering;8d6a3e2;M10_defeitos_por_pr_revisado;;defeitos/PR;0 de 13 PRs com revisao em tabela;;scripts/quality_baseline.py;nao;[nao medido]
+2026-11-15;plataforma-metalurgica;referencia;M10_defeitos_por_pr_revisado;1,05;defeitos/PR;20 defeitos em 19 PRs revisados com codigo (238 PRs);;docs/evidence/HE_R2_BASELINE_QUALIDADE.json;agregado;[medido] outro repositorio
