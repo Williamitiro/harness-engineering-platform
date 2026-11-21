@@ -76,6 +76,17 @@ jobs:
       - name: Ensure no live runtime LLM benchmark was executed in CI
         run: echo "CI validates tool code, offline dry-run and historic CSV arithmetic only. Live runtime LLM = NOT_RUN in CI."
 
+  # HE-DOC-02: a action deste repositório (action.yml) roda o docs-check contra a base do PR.
+  docs-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./
+
   # jev-code (MCP/Node) é legado (SPEC §7): baixar o pacote do npm em todo PR não traz prova nova.
   legacy-mcp-integration:
     if: github.event_name == 'workflow_dispatch' && inputs.legacy_mcp

@@ -21,3 +21,5 @@ data;sistema;versao;metrica;valor;unidade;contexto;alternativa_valor;fonte_evide
 2026-11-15;harness-engineering;8d6a3e2;M9_sessoes_em_repo_com_harness;69;%;136 de 197 sessoes Claude+Codex em todos os repos, 01/11-15/11;;scripts/daily_report.py;agregado;[medido] campo reflete o estado atual do repo
 2026-11-15;harness-engineering;8d6a3e2;M10_defeitos_por_pr_revisado;;defeitos/PR;0 de 13 PRs com revisao em tabela;;scripts/quality_baseline.py;nao;[nao medido]
 2026-11-15;plataforma-metalurgica;referencia;M10_defeitos_por_pr_revisado;1,05;defeitos/PR;20 defeitos em 19 PRs revisados com codigo (238 PRs);;docs/evidence/HE_R2_BASELINE_QUALIDADE.json;agregado;[medido] outro repositorio
+2026-11-21;harness-engineering;HE-DOC-02;M1_testes_suite;306;testes;suite offline OK, 2 skipped (27 novos de docs_gate);;JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests;sim;[medido]
+2026-11-21;harness-engineering;HE-DOC-02;M1_tempo_suite;109,4;s;mesma execucao, Windows local;;idem;sim;[medido]

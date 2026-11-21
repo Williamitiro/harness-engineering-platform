@@ -6,6 +6,7 @@ Contrato único para qualquer agente (Codex, Claude Code via `CLAUDE.md`, Cursor
 1. [docs/ESTADO.md](docs/ESTADO.md): o que funciona hoje e a próxima entrega.
 2. [docs/SPEC.md](docs/SPEC.md): regras, arquitetura, gates e backlog. **Normativa.**
 3. [docs/MANUAL.md](docs/MANUAL.md): o fluxo que o usuário segue. Mantenha-o coerente com o código.
+4. Só ao medir: [metricas/PLANO-DE-METRICAS.md](metricas/PLANO-DE-METRICAS.md).
 
 **Não leia `docs/historico/`** salvo quando uma tarefa pedir um fato específico de lá. É arquivo morto, com
 afirmações superadas.
@@ -20,7 +21,8 @@ afirmações superadas.
 4. Status sempre com nível de evidência (`PASS`, `FAIL`, `BLOCKED_*`, `NOT_RUN`, `INCONCLUSIVE`). Ausente é `null`,
    nunca `0`. Arquivo copiado não prova que a skill foi usada.
 5. Ao concluir: atualize `docs/ESTADO.md` (uma linha na tabela + pendências). **Não crie relatórios novos em `docs/`**;
-   evidência bruta vai para `docs/evidence/` (JSON) ou `.poc/` (ignorado).
+   evidência bruta vai para `docs/evidence/` (JSON) ou `.poc/` (ignorado). Lugares e tetos:
+   `.harness/docs-policy.json`; confira com `python scripts/harnessctl.py docs-check`.
 6. Exigem autorização explícita do usuário: escrever em outro repositório ou na home, push, merge, deploy, chamadas
    pagas, instalar dependências ou alterar configuração global.
 - Disco: tudo que o repo gera fica em `_local\` (fora do Git): `backups\` (guardar; inclui dado de cliente), `artifacts\` (regenerável), `tmp\<curto>` (temporário; quem cria apaga). Nada em `C:\`, `C:\dev` ou no perfil.

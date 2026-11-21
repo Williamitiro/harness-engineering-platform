@@ -37,7 +37,7 @@ upstreams do dossiê, ou tratar classificação JEV como benchmark de programaç
    benchmark. Hash local prova integridade, não autenticidade.
 3. **Ausente é `null`, nunca `0`.** Custo parcial nunca é apresentado como total.
 4. **Uma hipótese por falha.** Se um teste falha, classificar (contrato, integração ou infraestrutura) e corrigir a
-   menor peça. Não trocar de abordagem por tentativa e erro (lição JEV/Node, ver ESTADO §4).
+   menor peça. Não trocar de abordagem por tentativa e erro (lição JEV/Node, ver `historico/ESTADO_ATE_2026-11-21.md` §4).
 5. **Escopo fechado:** uma entrega por vez, com testes positivos e negativos e suíte offline verde.
 6. **Autorização explícita** para: escrever fora deste repositório, push, merge, deploy, chamadas pagas, instalar
    dependências, alterar configurações globais.
@@ -237,12 +237,13 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-R2-02 | R2 ❄️ | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
 | HE-R2-H | R2 ❄️ | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |
 | HE-R2-03 | R2 ❄️ | lote 8–12 tarefas | veredito auditável |
-| HE-DOC-02 | R1 | **próxima entrega.** Motor de organização de documentos (§11): política por repositório, três conferências (lugar, orçamento, índice), hook `PreToolUse` e `Stop` no computador para Claude Code e Codex, action de CI; aplicado primeiro neste repositório; nova tag | testes offline positivos e negativos de cada conferência e do hook (entrada simulada das duas ferramentas); repositório sem política: hook inerte; instalar e remover o hook em home sintética sem tocar hook alheio; ensaio real: `.md` no lugar errado recusado com o caminho certo, no Claude Code e no Codex (ou `BLOCKED_*` factual no Codex) |
+| HE-DOC-02 | R1 | **em curso** (código e testes prontos; faltam tag, hook instalado e ensaio real). Motor de organização de documentos (§11): política por repositório, três conferências (lugar, orçamento, índice), hook `PreToolUse` e `Stop` no computador para Claude Code e Codex, action de CI; aplicado primeiro neste repositório; nova tag | testes offline positivos e negativos de cada conferência e do hook (entrada simulada das duas ferramentas); repositório sem política: hook inerte; instalar e remover o hook em home sintética sem tocar hook alheio; ensaio real: `.md` no lugar errado recusado com o caminho certo, no Claude Code e no Codex (ou `BLOCKED_*` factual no Codex) |
 | HE-DOC-03 | R1 | limpeza dos repositórios (§11.4), um PR por repositório, depois do HE-DOC-02 instalado; piloto `williamitiro-web`, depois `plataforma-metalurgica` | por repositório: `docs-check` verde; `AGENTS.md`, estado e índice dentro do teto; nenhum arquivo apagado (só movido); links do índice válidos; suíte do repositório verde |
 
-## 11. Organização de documentos nos repositórios (HE-DOC-02 e HE-DOC-03) — planejado
+## 11. Organização de documentos nos repositórios (HE-DOC-02 e HE-DOC-03)
 
-**Decidido em 21/11/2026; nada construído (`NOT_RUN`).** Medição que motivou:
+**Decidido em 21/11/2026. Construído no HE-DOC-02:** `scripts/docs_gate.py` (também `harnessctl docs-*`),
+`action.yml` e a política deste repositório; hook instalado e ensaio real `NOT_RUN` (ESTADO §2). Medição que motivou:
 [`evidence/HE_DOC_02_MEDICAO_2026-11-21.json`](evidence/HE_DOC_02_MEDICAO_2026-11-21.json).
 
 **Objetivo:** o agente guarda cada documento no lugar certo sem o operador dizer onde, e começa cada sessão lendo
@@ -259,6 +260,10 @@ pouco. Tetos padrão, em bytes: `AGENTS.md` 8 KB, estado 5 KB, índice 10 KB (a 
 | Motor | este repositório, Python stdlib, comandos `docs-plan` e `docs-check` no `harnessctl` | as três conferências abaixo. Nunca copiado para os projetos |
 | Hook | computador, instalado junto com a tag (opt-in, §9) | chama o motor em `~/.harness-engineering/current`; **inerte em repositório sem política** |
 | CI | action neste repositório (público), fixada por tag | roda `docs-check` no PR dos repositórios com GitHub |
+
+Formato da política (v1): `entry`, `state`, `index` (caminho ou `null`), `limits` (bytes), `places` (tipo → lista de
+caminhos com `*` e `**`), `indexed` (tipos que precisam de link no índice) e `ignore`. Exemplo:
+[`.harness/docs-policy.json`](../.harness/docs-policy.json).
 
 ### 11.2. As três conferências
 

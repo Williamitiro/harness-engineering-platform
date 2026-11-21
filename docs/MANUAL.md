@@ -210,6 +210,7 @@ funcionamento, como uma skill que nunca é usada ou uma sessão que termina com 
 | **Conferir** se está tudo certo | `/setup-harness verificar` | compara os arquivos com o recibo e diz OK ou o que mudou |
 | **Atualizar** depois de uma versão nova do Harness | §2, "Atualizar para uma versão nova"; depois, em cada repositório: `/setup-harness verificar` | o computador recebe a versão nova; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
 | **Remover** do projeto | `/setup-harness remover` | mostra o que vai apagar (só o que ele criou) e pede confirmação |
+| **Ligar a conferência de documentos** (hook, opcional; altera a configuração global) | `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py docs-hook-plan` (prévia), depois o mesmo com `docs-hook-install --apply`; no Codex, aprove o hook em `/hooks` | o Claude Code e o Codex recusam `.md` no lugar errado e estado acima do teto, só em repositórios com `.harness/docs-policy.json`; `docs-hook-remove --apply` tira só a entrada do Harness |
 | **Remover do computador** | `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py machine-remove` (prévia) e depois o mesmo comando com `--apply` | apaga só o que o Harness instalou; se você editou algum arquivo, ele para e não apaga nada |
 
 ---
@@ -236,6 +237,7 @@ O que você acompanha no dia a dia: o CI verde, a revisão independente de cada 
 | "UPGRADE_AVAILABLE" | há uma versão nova do Harness | refaça o passo 2.2: ele atualiza sozinho |
 | "managed file missing or modified: …/tdd-workflow/SKILL.md" (ou `verification-loop`) ao atualizar | a skill foi apagada ou editada à mão antes da atualização | se editou e quer guardar, copie a sua versão para outro lugar. Depois copie `C:\Users\itiro\.harness-engineering\v1.0.0\vendor\ecc\skills\<nome>\SKILL.md` para `C:\Users\itiro\.agents\skills\<nome>\SKILL.md` e repita o passo 2.3: a atualização a remove |
 | O agente não segue uma regra | a regra não está no `AGENTS.md` do projeto, ou está vaga | escreva-a numa frase no `AGENTS.md`; se o erro se repetir, vire um teste ou check de CI (§4) |
+| "Harness (organização de documentos): … regra lugar" ao gravar um `.md` | o repositório tem `.harness/docs-policy.json` e o arquivo ia para fora dos caminhos dele | normal: o agente grava no caminho que a mensagem indica. Para conferir à mão: `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py docs-check --repo .` |
 | Quero ver o estado técnico | — | [ESTADO.md](ESTADO.md) |
 
 ---
