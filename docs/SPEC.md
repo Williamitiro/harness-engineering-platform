@@ -23,7 +23,7 @@ O benchmark A/B e o registro de qualidade, que eram as capacidades 3 e 4, estão
 (07/11/2026): o efeito esperado de skills genéricas (≈0 nos estudos de 2026) fica abaixo do que o volume de PRs
 revisados destes repositórios consegue detectar.
 
-**Não é objetivo:** criar um runtime ou agente próprio, um servidor MCP ou daemon, hooks globais, instalar os 12
+**Não é objetivo:** criar um runtime ou agente próprio, um servidor MCP ou daemon, hooks globais (exceção opt-in: o hook de documentos do §11), instalar os 12
 upstreams do dossiê, ou tratar classificação JEV como benchmark de programação.
 
 ## 2. Princípios (valem para qualquer mudança)
@@ -93,7 +93,8 @@ precisar dela congelada ou compartilhada só pelo clone. A decisão é tomada no
 | Outras | conforme a documentação delas | | `AGENTS.md` | uma entrada nova na tabela |
 
 Adicionar uma ferramenta = **uma entrada na tabela + teste de descoberta**, sem código novo por ferramenta. Plugins e
-hooks de cada ferramenta não são portáveis e não fazem parte do núcleo.
+hooks de cada ferramenta não são portáveis e não fazem parte do núcleo. Exceção planejada: o hook de documentos do
+§11, que usa só o que Claude Code e Codex têm em comum (`PreToolUse` e `Stop`).
 
 ## 4. Sequência canônica (igual para toda ferramenta e todo repositório)
 
@@ -236,3 +237,72 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-R2-02 | R2 ❄️ | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
 | HE-R2-H | R2 ❄️ | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |
 | HE-R2-03 | R2 ❄️ | lote 8–12 tarefas | veredito auditável |
+| HE-DOC-02 | R1 | **próxima entrega.** Motor de organização de documentos (§11): política por repositório, três conferências (lugar, orçamento, índice), hook `PreToolUse` e `Stop` no computador para Claude Code e Codex, action de CI; aplicado primeiro neste repositório; nova tag | testes offline positivos e negativos de cada conferência e do hook (entrada simulada das duas ferramentas); repositório sem política: hook inerte; instalar e remover o hook em home sintética sem tocar hook alheio; ensaio real: `.md` no lugar errado recusado com o caminho certo, no Claude Code e no Codex (ou `BLOCKED_*` factual no Codex) |
+| HE-DOC-03 | R1 | limpeza dos repositórios (§11.4), um PR por repositório, depois do HE-DOC-02 instalado; piloto `williamitiro-web`, depois `plataforma-metalurgica` | por repositório: `docs-check` verde; `AGENTS.md`, estado e índice dentro do teto; nenhum arquivo apagado (só movido); links do índice válidos; suíte do repositório verde |
+
+## 11. Organização de documentos nos repositórios (HE-DOC-02 e HE-DOC-03) — planejado
+
+**Decidido em 21/11/2026; nada construído (`NOT_RUN`).** Medição que motivou:
+[`evidence/HE_DOC_02_MEDICAO_2026-11-21.json`](evidence/HE_DOC_02_MEDICAO_2026-11-21.json).
+
+**Objetivo:** o agente guarda cada documento no lugar certo sem o operador dizer onde, e começa cada sessão lendo
+pouco. Tetos padrão, em bytes: `AGENTS.md` 8 KB, estado 5 KB, índice 10 KB (a política do repositório pode mudar).
+
+**Ordem fixa: primeiro o gate, depois a limpeza.** Limpar antes não se sustenta: os repositórios ganham dezenas de
+`.md` por mês, a maioria relatório de execução, evidência e pesquisa (um arquivo por tarefa).
+
+### 11.1. Peças
+
+| Peça | Onde | Conteúdo |
+|---|---|---|
+| Política | cada repositório: `.harness/docs-policy.json` (~20 linhas) | para cada tipo de documento (estado, índice, vigente, pesquisa, execução/evidência, arquivo), os caminhos **que o repositório já usa**; tetos; pastas fora do escopo (`vendor/`, `tests/`, skills). Nada é renomeado para caber num padrão |
+| Motor | este repositório, Python stdlib, comandos `docs-plan` e `docs-check` no `harnessctl` | as três conferências abaixo. Nunca copiado para os projetos |
+| Hook | computador, instalado junto com a tag (opt-in, §9) | chama o motor em `~/.harness-engineering/current`; **inerte em repositório sem política** |
+| CI | action neste repositório (público), fixada por tag | roda `docs-check` no PR dos repositórios com GitHub |
+
+### 11.2. As três conferências
+
+1. **Lugar:** `.md` novo só nos caminhos da política. A recusa diz o caminho certo para aquele tipo.
+2. **Orçamento:** entrada, estado e índice dentro do teto. Arquivo já acima do teto não pode crescer.
+3. **Índice:** documento vigente novo aparece no índice; os links do índice existem. Arquivo morto e documentos
+   datados de execução não são indexados um a um.
+
+As conferências olham só arquivo novo e crescimento, então o legado não bloqueia e não há arquivo de baseline.
+Mensagem de erro sempre com arquivo, regra e correção.
+
+### 11.3. Onde a conferência roda
+
+| Momento | Mecanismo | Limite conhecido |
+|---|---|---|
+| Ao gravar | hook `PreToolUse` (nega com o motivo) | não vê escrita feita por comando de shell |
+| Ao dizer "pronto" | hook `Stop` (devolve o que corrigir; nunca prende a sessão mais de uma vez) | — |
+| No PR | action de CI | só impede o merge com proteção de branch, que em repositório privado exige plano pago (plano do operador não verificado) |
+
+O hook não é barreira de segurança (as duas ferramentas dizem isso); é o que faz o agente se corrigir sozinho.
+Instalar o hook altera configuração global (`~/.claude/settings.json`, `~/.codex/hooks.json`): segue a sequência do
+§4, com plano e "sim", e a remoção tira só a entrada do Harness. Não toca hooks do usuário nem dos projetos
+(`resiplac-core`, `williamitiro-web` e `nexus-quant` já têm os seus).
+
+**A provar no HE-DOC-02:** se o hook executa no Codex em Windows (o sandbox já negou o Python do perfil, ESTADO §3)
+e a aprovação em `/hooks`. Se não executar: `BLOCKED_*` factual, e o Codex fica com o CI e uma linha no `AGENTS.md`.
+
+### 11.4. Limpeza de um repositório (HE-DOC-03)
+
+Um PR por repositório, respeitando as regras locais de branch. **Nada é apagado: o que sai é movido para a pasta de
+arquivo.**
+
+1. Inventário sem escrita: cada `.md` classificado (vigente, pesquisa, execução/evidência, arquivo, duplicado).
+2. "Sim" do operador **por pasta**, não por arquivo.
+3. Mover (`git mv`) o que não é vigente para a pasta de arquivo.
+4. Cortar `AGENTS.md`, estado e índice até o teto; o texto retirado vai para o arquivo.
+5. Refazer o índice e corrigir os links.
+6. `docs-check` verde, suíte do repositório verde, PR.
+
+Ordem: `williamitiro-web` (piloto), `plataforma-metalurgica` (maior ganho), `videos-motions`, `resiplac-core`,
+`modelo-de-negocio-resiplac`, os menores e `nexus-quant` por último (já tem o acervo arquivado e validadores
+próprios; recebe só a política mapeada sobre o que existe).
+
+### 11.5. Fora da primeira versão
+
+Frontmatter obrigatório, perfis por porte, busca indexada (SQLite FTS5), referências entre repositórios, aviso de
+documento desatualizado e sessão periódica de jardinagem. Cada um só entra por uma lacuna observada (§2.7).

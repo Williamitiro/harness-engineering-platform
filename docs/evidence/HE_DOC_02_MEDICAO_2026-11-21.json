@@ -1,0 +1,43 @@
+{
+  "id": "HE_DOC_02_MEDICAO",
+  "date": "2026-11-21",
+  "status": "MEASURED_LOCAL",
+  "method": "git ls-files '*.md' em cada checkout de C:\\dev, na branch em que estava; tamanhos do arquivo em disco; novos em 30 dias por git log --since='30 days ago' --diff-filter=A. Somente leitura.",
+  "limits": [
+    "checkouts fora do main medem a branch local, nao o main",
+    "arquivos nao versionados nao entram",
+    "novos_30d conta caminhos adicionados no historico da branch, inclusive os depois movidos ou apagados"
+  ],
+  "repos": [
+    {"repo": "nexus-quant", "branch": "main", "md": 1929, "md_docs": 1847, "novos_30d": 64, "agents_kb": 6.1, "workflows": 2, "harness": true, "notas": "docs/archive=1286; docs/CANONICAL_DOCUMENT_INDEX.md 12 KB; 39 dos novos em docs/engineering/runs; validadores proprios (check_agent_context_budget.py, validate_documentation_canonicalization.py)"},
+    {"repo": "videos-motions", "branch": "main", "md": 345, "md_docs": 134, "novos_30d": 356, "agents_kb": 18.1, "workflows": 0, "harness": true, "notas": null},
+    {"repo": "plataforma-metalurgica", "branch": "main", "md": 304, "md_docs": 106, "novos_30d": 188, "agents_kb": 31.2, "workflows": 1, "harness": true, "notas": "evidence=174; docs/INDICE.md 188 KB; docs/canon/ESTADO_DO_PROJETO.md 609 KB; core.hooksPath=.githooks"},
+    {"repo": "agent-environment", "branch": "codex/initial-recovery", "md": 274, "md_docs": 0, "novos_30d": 274, "agents_kb": 0.7, "workflows": 0, "harness": false, "notas": "payload=269 (copia de skills, fora do escopo)"},
+    {"repo": "modelo-de-negocio-resiplac", "branch": "main", "md": 114, "md_docs": 10, "novos_30d": 5, "agents_kb": 10.0, "workflows": 0, "harness": false, "notas": "4 indices, o maior com 45 KB"},
+    {"repo": "resiplac-core", "branch": "main", "md": 93, "md_docs": 33, "novos_30d": 80, "agents_kb": 13.7, "workflows": 2, "harness": true, "notas": "hook PreToolUse proprio (.claude/hooks/fronteira.mjs)"},
+    {"repo": "harness-engineering", "branch": "codex/workstation-recovery-plan", "md": 77, "md_docs": 45, "novos_30d": 77, "agents_kb": 2.4, "workflows": 1, "harness": false, "notas": "docs/historico=40; vendor=22; docs/ESTADO.md 21 KB"},
+    {"repo": "frontend-resiplac", "branch": "codex/criterios-video-preview", "md": 66, "md_docs": 27, "novos_30d": 0, "agents_kb": null, "workflows": 0, "harness": false, "notas": null},
+    {"repo": "nexus-engineering-control", "branch": "main", "md": 41, "md_docs": 37, "novos_30d": 1, "agents_kb": 2.6, "workflows": 2, "harness": true, "notas": "scripts/check_canonical.py proprio"},
+    {"repo": "williamitiro-web", "branch": "docs/analise-estrategia-2026-11-21", "md": 32, "md_docs": 28, "novos_30d": 33, "agents_kb": 5.8, "workflows": 0, "harness": false, "notas": "hook Stop proprio (scripts/trava-pronto.mjs); docs/referencias/INDICE.md 57 KB"},
+    {"repo": "engenharia-reversa", "branch": "codex/fasttrade-data-study", "md": 28, "md_docs": 8, "novos_30d": 0, "agents_kb": 6.7, "workflows": 0, "harness": false, "notas": null},
+    {"repo": "negocios-com-evidencia", "branch": "docs/canonical-foundation", "md": 20, "md_docs": 2, "novos_30d": 0, "agents_kb": null, "workflows": 0, "harness": false, "notas": null},
+    {"repo": "itiro-negocios-ideias", "branch": "docs/initial-research-2026-10-11", "md": 17, "md_docs": 0, "novos_30d": 3, "agents_kb": 1.3, "workflows": 0, "harness": true, "notas": "todos na raiz"},
+    {"repo": "central-inteligencia", "branch": "main", "md": 12, "md_docs": 0, "novos_30d": 12, "agents_kb": 2.4, "workflows": 0, "harness": false, "notas": null},
+    {"repo": "mcp", "branch": "main", "md": 7, "md_docs": 0, "novos_30d": 7, "agents_kb": 3.7, "workflows": 0, "harness": false, "notas": "sem remoto"},
+    {"repo": "jev", "branch": "main", "md": 1, "md_docs": 1, "novos_30d": 1, "agents_kb": null, "workflows": 0, "harness": false, "notas": "sem remoto"}
+  ],
+  "machine": {
+    "claude_code": "2.1.268",
+    "codex_cli": "0.166.0",
+    "python": "3.12.10",
+    "sqlite_fts5": true,
+    "husky_or_pre_commit_in_any_repo": false,
+    "global_core_hooksPath": null,
+    "user_claude_hooks": null,
+    "github_plan": null
+  },
+  "not_run": [
+    "hook do Codex em Windows (sandbox x Python do perfil)",
+    "protecao de branch nos repositorios privados"
+  ]
+}

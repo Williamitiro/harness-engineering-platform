@@ -1,6 +1,6 @@
 # Estado do Harness Engineering
 
-**Atualizado em 15/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
+**Atualizado em 21/11/2026.** Este é o único lugar com status. Ao concluir uma entrega, atualize a tabela §1 e as
 pendências §2. Não crie relatórios novos.
 
 **Tudo está no `main`** desde 07/11/2026: o merge do [PR #5](https://github.com/Williamitiro/harness-engineering-platform/pull/5)
@@ -39,8 +39,16 @@ trocar de branch nela não afeta o instalado.
 | `setup-harness` oferece as regras de trabalho que faltam num `AGENTS.md` já existente (HE-R1-07): passo 6 do setup e ao "verificar"; o agente compara com a seção "Como trabalhar" do modelo, mostra o que falta e o que já está coberto, e só edita com o "sim"; o instalador continua sem ler o projeto (SPEC §4) | ✅ **instalado na `v1.2.0`** em 08/11/2026 ([PR #13](https://github.com/Williamitiro/harness-engineering-platform/pull/13)): `INSTALLED`, `machine_verify` OK, Codex `DISCOVERED`. Ensaio só de leitura do passo 6 na plataforma-metalurgica: 5/5 cobertas, nada proposto, 7 ambiguidades corrigidas. Setup real com edição `NOT_RUN` | 1 teste offline novo (a skill aponta para o modelo, compara a cobertura e exige o "sim"; o modelo tem a seção "Como trabalhar"). Motivo: os 7 PRs de 07–08/11 foram feitos à mão porque o setup não oferecia as regras | `skills/setup-harness/SKILL.md`; `tests/test_setup_harness_v2.py` |
 | Plano de métricas para o portfólio (15/11/2026): 10 métricas, linha de base e registro CSV, só com dado existente | ✅ documento; instrumentação nova só proposta | [medido]: suíte 279 testes OK em 87 s; CI 90,5 % (100 % desde 04/11); 1ª execução 90,4 %; retrabalho 20,6 % dos commits; PR → merge mediana 0,9 h; tokens de saída por PR mediana 52,5 mil (9 de 13 PRs). [não medido]: tempo ativo, Codex por PR, US$, defeitos por PR neste repo | `metricas/PLANO-DE-METRICAS.md`; `metricas/registro.csv`; `evidence/METRICAS_BASELINE_2026-11-15.json` |
 | Relatório diário de funcionamento | ✅ código | 9 testes offline; rodado nas sessões reais de 07/11 (9 sessões). Só contagens e nomes, nenhum texto de conversa. **Não é benchmark** | `scripts/daily_report.py`; `tests/test_daily_report.py`; MANUAL §4 |
+| Organização de documentos nos repositórios (HE-DOC-02 motor e hook; HE-DOC-03 limpeza) | 📋 planejado em 21/11/2026; código `NOT_RUN` | [medido] 16 repositórios de `C:\dev`: plataforma com `AGENTS.md` 31 KB, índice 188 KB, estado 609 KB e 188 `.md` novos em 30 dias; 9 sem CI. [documentação] `PreToolUse` e `Stop` existem no Claude Code e no Codex. [não testado] hook do Codex em Windows | SPEC §11; `evidence/HE_DOC_02_MEDICAO_2026-11-21.json` |
 
 ## 2. Pendências, em ordem
+
+**Próxima entrega (decidida em 21/11/2026): HE-DOC-02**, e depois **HE-DOC-03** (SPEC §10 e §11). Passos do
+HE-DOC-02, nesta ordem: (a) motor `docs-plan`/`docs-check` com as três conferências e testes; (b) hook `PreToolUse` e
+`Stop` instalado e removido pelo `harnessctl`, com o "sim" do operador (altera configuração global); (c) action de CI;
+(d) política e limpeza deste repositório (o `ESTADO.md` tem 21 KB, acima do teto de 5 KB); (e) tag nova e instalação;
+(f) ensaio real no Claude Code e no Codex. Só então o HE-DOC-03, começando pelo `williamitiro-web`. Pendente do
+operador: informar o plano do GitHub (proteção de branch em repositório privado).
 
 1. **Pendentes da ligação:** o PR #1 do cad (frente única, com outros trabalhos) e o PR #1 do itiro-negocios-ideias
    são decisão do proprietário. `frontend-resiplac` e `modelo-de-negocio-resiplac`: ligar depois de resolver as
