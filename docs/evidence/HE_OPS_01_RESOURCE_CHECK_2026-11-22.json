@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "kind": "resource-check",
+  "status": "FAIL",
+  "checked_at": "2026-11-22T17:37:00.772937-03:00",
+  "platform": "win32",
+  "checks": [
+    {
+      "id": "disk_free",
+      "rule": "espaço livre",
+      "status": "PASS",
+      "value": 32.9,
+      "limit": 20
+    },
+    {
+      "id": "commit",
+      "rule": "memória comprometida <= RAM + folga",
+      "status": "PASS",
+      "value": 18.0,
+      "limit": 39.7
+    },
+    {
+      "id": "pagefile",
+      "rule": "tamanho do pagefile",
+      "status": "FAIL",
+      "value": 18.3,
+      "limit": 16,
+      "cause": "pagefile inchado: só encolhe depois que a memória comprometida cai e o PC reinicia",
+      "fix": "baixar a memória comprometida e então reiniciar"
+    },
+    {
+      "id": "threejs_servers",
+      "rule": "servidores do plugin 3D",
+      "status": "FAIL",
+      "value": 3,
+      "limit": 2,
+      "cause": "plugin parallax-threejs ligado em todas as sessões (abre um Chrome ao iniciar)",
+      "fix": "desligar parallax-threejs na conta e ligar só nos repositórios de 3D"
+    },
+    {
+      "id": "plugin_ram",
+      "rule": "RAM de servidores MCP de navegador e seus Chromes",
+      "status": "FAIL",
+      "value": 3.5,
+      "limit": 2,
+      "cause": "servidores MCP de navegador e Chromes escondidos ocupando RAM",
+      "fix": "arquivar as sessões paradas; ver 'owners' para saber quem os mantém"
+    },
+    {
+      "id": "orphan_profiles",
+      "rule": "perfis de Chrome órfãos no Temp",
+      "status": "FAIL",
+      "value": 33,
+      "limit": 5,
+      "cause": "perfis de Chrome deixados para trás por servidores MCP",
+      "fix": "limpeza-de-disco: limpar.ps1 -Itens perfis (simular, mostrar, aplicar após o sim)"
+    },
+    {
+      "id": "orphan_trees",
+      "rule": "processos de navegador/MCP com o pai morto",
+      "status": "PASS",
+      "value": 0,
+      "limit": 0
+    },
+    {
+      "id": "claude_processes",
+      "rule": "sessões claude abertas (sem os processos do app)",
+      "status": "PASS",
+      "value": 6,
+      "limit": 15
+    },
+    {
+      "id": "claude_worktrees",
+      "rule": "worktrees do Claude em todos os repositórios",
+      "status": "FAIL",
+      "value": 54,
+      "limit": 30,
+      "cause": "worktrees acumuladas (cada uma pode ter seu node_modules)",
+      "fix": "arquivar sessões de PR mesclado; no app, limpar worktrees; avaliar worktree.symlinkDirectories"
+    },
+    {
+      "id": "history",
+      "rule": "histórico de conversas (Claude + Codex)",
+      "status": "PASS",
+      "value": 7.9,
+      "limit": 20
+    },
+    {
+      "id": "heavy_plugin_off",
+      "rule": "parallax-threejs desligado (local ou na conta)",
+      "status": "FAIL",
+      "value": "sem entrada local; 3 servidores rodando",
+      "limit": "desligado ou servidores no limite",
+      "cause": "o plugin da conta está ligado em todo repositório",
+      "fix": "o dono desliga em claude.ai › Personalizar › Plugins e religa só para o 3D"
+    },
+    {
+      "id": "user_mcp",
+      "rule": "MCP local no escopo do usuário fora da lista",
+      "status": "PASS",
+      "value": [],
+      "limit": [
+        "gemini-notebook"
+      ]
+    }
+  ],
+  "owners": [
+    {
+      "owner_pid": 12616,
+      "owner": "claude.exe",
+      "processes": 21,
+      "ram_gb": 1.2
+    },
+    {
+      "owner_pid": 22780,
+      "owner": "claude.exe",
+      "processes": 21,
+      "ram_gb": 1.17
+    },
+    {
+      "owner_pid": null,
+      "owner": "aberto pelo app, sem sessão",
+      "processes": 21,
+      "ram_gb": 1.17
+    }
+  ],
+  "worktrees_by_repo": {
+    "williamitiro-web": 10,
+    "videos-motions": 9,
+    "resiplac-core": 7,
+    "negocios-com-evidencia": 5,
+    "nexus-quant": 5,
+    "central-inteligencia": 4,
+    "frontend-resiplac": 3,
+    "harness-engineering": 3,
+    "modelo-de-negocio-resiplac": 2,
+    "plataforma-metalurgica": 2,
+    "engenharia-reversa": 1,
+    "itiro-negocios-ideias": 1,
+    "mcp": 1,
+    "nexus-engineering-control": 1
+  },
+  "codex_worktrees": 1,
+  "codex_mcp_enabled": [
+    "blender-lab",
+    "node_repl"
+  ],
+  "history_gb_by_tool": {
+    "claude": 7.2,
+    "codex": 0.7
+  },
+  "reminders": [
+    "No app: conferir o arquivamento automático (auto_archive_on_pr_close, auto_archive_inactive_days)."
+  ],
+  "note": "Somente leitura: nada foi apagado, fechado ou alterado."
+}

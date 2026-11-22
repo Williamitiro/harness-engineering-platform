@@ -3,7 +3,7 @@
   "updated": "2026-11-22",
   "what": "situação da organização de documentos por repositório; a Fase 2 atualiza uma linha por repositório",
   "legend": {
-    "PASS": "planta no main e project-verify com docs PASS",
+    "PASS": "planta no main e documentos PASS no project-verify (que inclui o docs-verify); sem .harness/manifest.json o project-verify dá NOT_ATTACHED e o PASS é o do docs-verify (williamitiro-web, harness-engineering-platform)",
     "SKIPPED_BY_OWNER": "pulado por decisão do dono",
     "BLOCKED_OPEN_PR": "espera PR aberto do próprio repositório; nada foi gravado",
     "null": "não observado"
@@ -134,7 +134,7 @@
       "docs": "PASS",
       "o_que": "Harness ligado; CLAUDE.md criado; 5 regras do modelo; main local por avanço rápido",
       "pendencia": "smoke_test.py NOT_RUN (usa a conta real e gasta cota)",
-      "verified": "2026-11-22 (PR lido no GitHub e conferido em clone, antes do merge)"
+      "verified": "2026-11-22, local: branch e main local conferidas num clone local (docs-check --base main, project-verify OK com docs PASS); sem GitHub, porque não há remoto"
     },
     {
       "repo": "jev",
@@ -159,8 +159,8 @@
       "repo": "itiro-negocios-ideias",
       "status": "BLOCKED_OPEN_PR",
       "planta_no_main": null,
-      "motivo": "conteúdo e ligação do Harness no PR #1 aberto (main com 2 .md)",
-      "proximo": "/setup-harness depois do merge do PR #1"
+      "motivo": "conteúdo no PR #1 aberto (main com 2 .md); a ligação do Harness já entrou na branch do #1 pelo PR #2",
+      "proximo": "depois do merge do #1: project-verify na main; /setup-harness só se ele apontar algo pendente"
     },
     {
       "repo": "frontend-resiplac",
@@ -170,5 +170,6 @@
       "proximo": "/setup-harness depois dos PRs"
     }
   ],
-  "phase2": "fechada em 22/11/2026"
+  "phase2": "fechada em 22/11/2026",
+  "harness_version_installed": "v1.5.0 (hashes conferidos; descoberta em runtime NOT_RUN)"
 }
