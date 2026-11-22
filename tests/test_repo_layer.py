@@ -283,6 +283,23 @@ class RepoLayerTests(unittest.TestCase):
         result = h.repo_verify(self.repo)
         self.assertEqual((result["status"], result["docs"]["status"]), ("OK", "PASS"), result["docs"])
 
+    def test_documents_not_run_is_never_reported_as_ok(self):
+        # v1.4.1: a check that could not run (git failed, timeout) is not success, for scripts reading the code.
+        h.repo_attach(self.repo)
+        with patch.object(h, "docs_verify", return_value={"status": "NOT_RUN", "reason": "git falhou"}):
+            result = h.repo_verify(self.repo)
+            self.assertEqual(result["status"], "DOCS_NOT_RUN")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(h.main(["project-verify", "--repo", str(self.repo)]), 1)
+
+    def test_plan_lists_the_policy_template_only_when_it_would_be_copied(self):
+        self.write("AGENTS.md")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            h.main(["project-plan", "--repo", str(self.repo)])
+        self.assertNotIn(".harness/docs-policy.json", json.loads(out.getvalue())["templates"])
+
     def test_verify_reports_document_failure(self):
         h.repo_attach(self.repo)
         self.write("RELATORIO_SOLTO.md")

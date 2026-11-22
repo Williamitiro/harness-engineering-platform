@@ -19,12 +19,14 @@ writes made by shell commands, and lets the session continue on any internal err
 from __future__ import annotations
 
 import argparse
+from functools import lru_cache
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
+from urllib.parse import unquote
 
 POLICY = ".harness/docs-policy.json"
 DEFAULT_LIMITS = {"entry": 8192, "state": 5120, "index": 10240}
@@ -36,6 +38,12 @@ TOOLS = {  # tool: (detect dir, config file, PreToolUse matcher)
     "codex": (".codex", ".codex/hooks.json", "apply_patch"),
 }
 LINK = re.compile(r"\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+INLINE_CODE = re.compile(r"(`+)(?!`).*?(?<!`)\1(?!`)")  # one line: a stray backtick hides nothing else
+LINE_SUFFIX = re.compile(r":\d+(?::\d+)?\Z")  # editor-style file.md:12 or :12:3
+# Only a document or source file takes a line suffix; example.com:8080 is a host and port, not a file.
+LINE_FILE = re.compile(r"\.(?:md|markdown|mdx|txt|rst|json|ya?ml|toml|py|js|mjs|cjs|ts|tsx|jsx|sh|ps1|css|html?|csv)\Z",
+                       re.IGNORECASE)
 NT = os.name == "nt"
 
 
@@ -45,6 +53,7 @@ class PolicyError(ValueError):
 
 # ---------------------------------------------------------------- policy and matching
 
+@lru_cache(maxsize=1024)
 def glob_regex(pattern: str) -> re.Pattern:
     out, i = [], 0
     while i < len(pattern):
@@ -77,7 +86,9 @@ def load_policy(root: Path) -> dict | None:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise PolicyError(f"{POLICY}: JSON inválido") from exc
-    places = data.get("places") if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        raise PolicyError(f"{POLICY}: precisa ser um objeto JSON")
+    places = data.get("places")
     if data.get("schema_version") != 1 or not isinstance(places, dict) or not places:
         raise PolicyError(f"{POLICY}: precisa de schema_version 1 e places")
     for kind, pats in places.items():
@@ -86,11 +97,14 @@ def load_policy(root: Path) -> dict | None:
     for role in ROLES:
         if data.get(role) is not None and not isinstance(data[role], str):
             raise PolicyError(f"{POLICY}: {role} precisa ser um caminho ou null")
-    limits = {**DEFAULT_LIMITS, **(data.get("limits") or {})}
-    if any(not isinstance(v, int) or v <= 0 for v in limits.values()):
+    own = data.get("limits", {})
+    if not isinstance(own, dict):
+        raise PolicyError(f"{POLICY}: limits precisa ser um objeto (papel: bytes)")
+    limits = {**DEFAULT_LIMITS, **own}
+    if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in limits.values()):
         raise PolicyError(f"{POLICY}: limits precisam ser inteiros positivos (bytes)")
     indexed = data.get("indexed", [])
-    if not isinstance(indexed, list) or any(k not in places for k in indexed):
+    if not isinstance(indexed, list) or any(not isinstance(k, str) or k not in places for k in indexed):
         raise PolicyError(f"{POLICY}: indexed só pode citar tipos de places")
     ignore = data.get("ignore", [])
     if not isinstance(ignore, list) or any(not isinstance(p, str) for p in ignore):
@@ -98,11 +112,24 @@ def load_policy(root: Path) -> dict | None:
     return {**data, "limits": limits, "indexed": indexed, "ignore": ignore}
 
 
+def specificity(pattern: str) -> tuple[int, int]:
+    """(folders and names with no wildcard, literal characters). docs/historico/** (2, ...) beats docs/** (1, ...);
+    docs/old/** beats **/CHANGELOG.md (a folder outweighs a long name); **/*.md and *.md tie, and the first kind
+    listed wins. The "**/" prefix adds nothing."""
+    parts = [p for p in pattern.split("/") if p not in ("", "**")]
+    literal = "".join(parts).replace("*", "").replace("?", "")
+    return sum(1 for p in parts if "*" not in p and "?" not in p), len(literal)
+
+
 def kind_of(policy: dict, rel: str) -> str | None:
+    """The kind of the most specific pattern that matches; on a tie, the first kind listed. So an archive folder
+    inside docs/ keeps its kind even when a broader docs/** kind is listed first (review of v1.4.0)."""
+    best, best_score = None, (-1, -1)
     for kind, pats in policy["places"].items():
-        if matches(rel, pats):
-            return kind
-    return None
+        for pat in pats:
+            if specificity(pat) > best_score and glob_regex(pat).match(rel):
+                best, best_score = kind, specificity(pat)
+    return best
 
 
 def roles_of(policy: dict, rel: str) -> list[str]:
@@ -140,9 +167,14 @@ def budget_fix(policy: dict, role: str, rel: str) -> str:
         return (f"corte o texto, ou leve a regra de uma área para um documento próprio e deixe no {rel} só a linha "
                 f"de gatilho \"{TRIGGER}\"; regra geral fica por inteiro")
     if role == "state":
-        return f"deixe no estado só o que vale hoje e mova o detalhe superado para {archive_place(policy)} (git mv)"
+        return (f"faça git mv do estado inteiro para {archive_place(policy)} (com a data no nome) e comece um estado "
+                "novo e curto, só com o que vale hoje")
     return ("agrupe os links, ou dê a uma pasta o próprio índice (um tipo próprio em places, fora de "
             "\"indexed\") e deixe aqui um link só para ele")
+
+
+def first_upper(text: str) -> str:
+    return text[:1].upper() + text[1:]
 
 
 def check_change(policy: dict, rel: str, old: int | None, new: int) -> list[dict]:
@@ -164,7 +196,7 @@ def check_change(policy: dict, rel: str, old: int | None, new: int) -> list[dict
                 room = (f"sobram {limit - (old or 0)} bytes até o teto e a mudança pede {new - (old or 0)}; "
                         f"faltam {new - limit}")
             found.append(violation(rel, "orcamento", f"{role} ficaria com {new} bytes, teto {limit}{why}",
-                                   f"{room}. {budget_fix(policy, role, rel)}"))
+                                   f"{room}. {first_upper(budget_fix(policy, role, rel))}"))
     return found
 
 
@@ -172,14 +204,42 @@ def key(rel: str) -> str:
     return rel.lower() if NT else rel
 
 
+def without_fences(text: str) -> str:
+    """The text outside fenced code blocks, CommonMark style: a fence closes with the same character, at least as
+    many times; a backtick fence whose info string has a backtick is not a fence (```x``` is inline code); an
+    unclosed fence runs to the end, as it renders. CRLF-safe."""
+    out, fence = [], None
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        if fence:
+            char, size = fence
+            stripped = body.lstrip(" ")
+            if len(body) - len(stripped) <= 3 and stripped.rstrip(" \t") == char * len(stripped.rstrip(" \t")) \
+                    and len(stripped.rstrip(" \t")) >= size:
+                fence = None
+            continue
+        opening = FENCE_OPEN.match(body)
+        if opening and not (opening.group(1)[0] == "`" and "`" in opening.group(2)):
+            fence = (opening.group(1)[0], len(opening.group(1)))
+            continue
+        out.append(line)
+    return "".join(out)
+
+
 def index_links(root: Path, index: str, text: str) -> tuple[set[str], list[dict]]:
     """(link targets, broken links); each broken entry carries `target` (repository-relative, posix)."""
     base = PurePosixPath(index).parent
     targets, broken = set(), []
-    for raw in LINK.findall(text):
+    # Examples inside code blocks and inline code are not links (review of v1.4.0).
+    prose = INLINE_CODE.sub("", without_fences(text))
+    for raw in LINK.findall(prose):
         target = raw.split("#", 1)[0]
+        # Editor-style SPEC.md:12 is a file and a line, not a URL scheme "SPEC.md:".
+        if LINE_SUFFIX.search(target) and LINE_FILE.search(LINE_SUFFIX.sub("", target)):
+            target = LINE_SUFFIX.sub("", target)
         if not target or re.match(r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE) or target.startswith("/"):
             continue
+        target = unquote(target)  # docs/Meu%20Guia.md is docs/Meu Guia.md
         rel = os.path.normpath(str(base / target)).replace("\\", "/")
         targets.add(key(rel))
         if not (root / rel).exists():
@@ -265,6 +325,8 @@ def run_check(root: Path, policy: dict, base: str | None = None, since: float | 
             continue
         if since is not None and path.stat().st_mtime < since:
             continue  # untouched in this session
+        if not rel.lower().endswith(".md") and not roles_of(policy, rel):
+            continue  # neither lugar nor orcamento looks at it: never read a video or a binary (review of v1.4.0)
         old = old_sizes.get(key(rel))
         if old is None:
             new_files.append(rel)
@@ -285,8 +347,13 @@ def run_plan(root: Path) -> dict:
             # Two folder levels: docs/adr and docs/historico are different kinds, not one "docs".
             parent = "/".join(rel.split("/")[:-1][:2]) or "."
             dirs[parent] = dirs.get(parent, 0) + 1
+        top: dict[str, int] = {}
+        for rel in tracked:
+            first = rel.split("/")[0] if "/" in rel else "."
+            top[first] = top.get(first, 0) + 1
         guess = lambda words: next((p for p in tracked if any(w in p.upper() for w in words)), None)
         return {"status": "NO_POLICY", "writes": 0, "md_files": len(tracked), "md_by_dir": dict(sorted(dirs.items())),
+                "md_by_top": dict(sorted(top.items())),
                 "skeleton": {"schema_version": 1, "entry": "AGENTS.md" if (root / "AGENTS.md").is_file() else None,
                              "state": guess(("ESTADO", "STATE", "STATUS")), "index": guess(("INDICE", "INDEX")),
                              "limits": DEFAULT_LIMITS, "places": {"vigente": ["<caminhos que o repositório já usa>"]},
@@ -343,9 +410,11 @@ def run_verify(root: Path) -> dict:
     # Broken index links are already listed above, from the whole index.
     # Files already listed as outside the policy (staged, not committed) are not listed twice.
     listed = {key(r) for r in plan["outside"]}
+    over = {key(info["file"]) for info in plan["budget"].values() if info["over"]}
     pending = [v for v in run_check(root, policy)["violations"]
                if not (v["rule"] == "indice" and v["message"].startswith("link quebrado"))
-               and not (v["rule"] == "lugar" and key(v["file"]) in listed)]
+               and not (v["rule"] == "lugar" and key(v["file"]) in listed)
+               and not (v["rule"] == "orcamento" and key(v["file"]) in over)]
     problems += [f"{v['file']}: regra {v['rule']}: {v['message']}" for v in pending]
     budget = {role: {**info, "pct": round(100 * info["bytes"] / info["limit"]) if info["bytes"] is not None else None}
               for role, info in plan["budget"].items()}

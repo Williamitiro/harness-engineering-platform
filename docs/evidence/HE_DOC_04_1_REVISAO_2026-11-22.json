@@ -1,0 +1,126 @@
+{
+  "id": "HE-DOC-04.1",
+  "date": "2026-11-22",
+  "kind": "revisao_independente",
+  "what": "revisão só leitura do diff 9781593..19002bd (tag v1.4.0), numa sessão separada (Opus, esforço alto), sem ver as conclusões da primeira revisão",
+  "status": "PASS",
+  "status_rule": "nenhum princípio quebrado; todos os achados abaixo corrigidos com teste na branch claude/he-doc-04-1",
+  "findings": [
+    {
+      "n": 1,
+      "severity": "bug",
+      "where": "docs_gate.index_links",
+      "what": "links que abrem (%20, sufixo :12, exemplo em bloco de código) dados como quebrados no verify",
+      "fix": "unquote, sufixo de linha antes do teste de esquema, blocos e trechos de código ignorados",
+      "outcome": "fixed"
+    },
+    {
+      "n": 2,
+      "severity": "risco",
+      "where": "docs_gate.kind_of",
+      "what": "o primeiro tipo que casava valia: docs/** antes de docs/historico/** fazia o arquivo morto virar vigente",
+      "fix": "vale o padrão mais específico; skill explica",
+      "outcome": "fixed"
+    },
+    {
+      "n": 3,
+      "severity": "risco",
+      "where": "harnessctl.with_docs",
+      "what": "docs.status NOT_RUN mantinha OK e código 0",
+      "fix": "DOCS_NOT_RUN, código 1",
+      "outcome": "fixed"
+    },
+    {
+      "n": 4,
+      "severity": "risco",
+      "where": "docs_gate.load_policy",
+      "what": "planta [] / null / limits 5 dava traceback",
+      "fix": "PolicyError, PLANTA_INVALIDA",
+      "outcome": "fixed"
+    },
+    {
+      "n": 5,
+      "severity": "risco",
+      "where": "docs_gate.run_check",
+      "what": "lia inteiro todo arquivo mudado (vídeo de GB)",
+      "fix": "só .md e papéis são medidos",
+      "outcome": "fixed"
+    },
+    {
+      "n": 6,
+      "severity": "risco",
+      "where": "SKILL.md, regras de limpeza",
+      "what": "paradas sem a reescrita do AGENTS.md; 85% ambíguo; git mv contra corte do estado",
+      "fix": "proposta inclui a tabela das regras que saem; 85% do teto com exemplos; corte do estado por git mv do estado inteiro e estado novo",
+      "outcome": "fixed"
+    },
+    {
+      "n": 7,
+      "severity": "risco",
+      "where": "docs_gate.run_plan / SKILL.md",
+      "what": "monorepo: uma pergunta por pacote",
+      "fix": "md_by_top; skill agrupa com mais de 15 pastas",
+      "outcome": "fixed"
+    },
+    {
+      "n": 8,
+      "severity": "detalhe",
+      "where": "SKILL.md",
+      "what": "--base origin/main fixo",
+      "fix": "branch padrão do remoto",
+      "outcome": "fixed"
+    },
+    {
+      "n": 9,
+      "severity": "detalhe",
+      "where": "docs_gate.run_verify",
+      "what": "estado acima do teto e crescendo listado duas vezes",
+      "fix": "uma vez",
+      "outcome": "fixed"
+    },
+    {
+      "n": 10,
+      "severity": "detalhe",
+      "where": "docs/ESTADO.md",
+      "what": "linha dizia tag pendente",
+      "fix": "atualizada",
+      "outcome": "fixed"
+    },
+    {
+      "n": 11,
+      "severity": "detalhe",
+      "where": "harnessctl project-plan",
+      "what": "templates listava a planta quando ela só será proposta",
+      "fix": "listada só com WOULD_CREATE",
+      "outcome": "fixed"
+    }
+  ],
+  "also": [
+    "mensagem do porteiro: a correção começa com maiúscula",
+    "skill: o que um programa lê é arquivado no lugar (tipo arquivo na planta), lição do videos-motions"
+  ],
+  "reverify_after_fix": {
+    "repos": [
+      "williamitiro-web",
+      "nexus-quant",
+      "resiplac-core",
+      "plataforma-metalurgica",
+      "harness-engineering-platform",
+      "videos-motions (PR 38, 8e3d589)"
+    ],
+    "docs": "PASS nos 6",
+    "by_kind": "igual ao da v1.4.0 nos 6",
+    "writes_in_repos": 0
+  },
+  "second_review": {
+    "what": "subagente que só recebeu o diff da v1.4.1",
+    "status": "PASS",
+    "findings_fixed": [
+      "blocos de código pela regra CommonMark (fecho mais longo, ```x``` no começo da linha, CRLF): não escondem mais o resto do índice",
+      "especificidade por pastas escritas sem curinga e depois letras; **/ não conta; empate, o primeiro tipo",
+      "planta: limits que não é objeto, booleano como teto e indexed com item que não é texto dão PLANTA_INVALIDA",
+      "host:porta não é tomado por arquivo com linha",
+      "skill: bytes exatos dos 85%, arquivar no lugar só o superado, DOCS_NOT_RUN listado; mensagem do estado igual à regra de limpeza"
+    ]
+  }
+}

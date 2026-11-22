@@ -59,7 +59,9 @@ class SkillFileTests(unittest.TestCase):
         stage = text[text.index("7. **Documentos**"):text.index("8. **CI:**")]
         self.assertLess(text.index("4. Rode `project-attach --apply` e depois `project-verify`"), text.index(stage))
         for needle in (".harness/docs-policy.json", "docs-plan", "SEM_PLANTA", "pastas **que o repositório já usa**",
-                       '"sim" por pasta', "só confira", "--base origin/main", "`docs.status` `PASS`"):
+                       '"sim" por pasta', "só confira", "--base origin/<padrão>", "refs/remotes/origin/HEAD", "`docs.status` `PASS`",
+                       "md_by_top", "Vale o padrão mais específico", "empate, vale o tipo listado primeiro",
+                       "`DOCS_NOT_RUN` não é sucesso"):
             self.assertIn(needle, stage)
         self.assertIn("PROPOSE_WITH_DOCS_PLAN", text)  # project-plan shows whether the policy will be proposed
         verify = text[text.index('- **"verificar"**'):text.index('- **"remover"**')]
@@ -72,7 +74,9 @@ class SkillFileTests(unittest.TestCase):
         for needle in ("Nada é apagado", "git mv", "claramente superado", "Na dúvida, fica",
                        "em código, scripts, testes e configuração", "não mexa no programa", "Validador próprio",
                        "fora da lista `indexed`", "Vai mexer em X? Leia antes, obrigatório: <link>",
-                       "Regra em vigor nunca vai para a pasta de arquivo", "corte até 85% dele", "até 10 KB",
+                       "Regra em vigor nunca vai para a pasta de arquivo", "no máximo 85% do teto", "4.352", "6.963", "8.704", "até 10 KB",
+                       "Arquivo vigente que um programa lê continua vigente", "não resuma regra geral", "Corte do estado",
+                       "arquivar no lugar", "quais regras saem do `AGENTS.md` e para onde",
                        "Planta e corte do estado no mesmo PR", "não regere", "já falhava", "Não guarde cópia",
                        "teste negativo desfeito", "subagente que não fez o trabalho", "regra sumida é erro",
                        "nenhum arquivo que não é documentação mudou", "Paradas da limpeza",
