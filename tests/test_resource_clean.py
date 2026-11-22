@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 from pathlib import Path
 import stat
 import subprocess
@@ -56,7 +57,7 @@ class Base(unittest.TestCase):
 
 class SessionsCase(unittest.TestCase):
     def plan(self, sessions, states):
-        with unittest.mock.patch.object(cl, "worktree_state", side_effect=lambda p: {"state": states[p.name]}):
+        with unittest.mock.patch.object(cl, "worktree_state", side_effect=lambda p: {"state": states[re.split(r"[\\/]", str(p))[-1]]}):
             return {x["session_id"]: x for x in cl.plan_sessions(sessions, NOW)}
 
     def s(self, sid, wt, **kw):
@@ -85,6 +86,12 @@ class SessionsCase(unittest.TestCase):
         self.assertEqual({k: v["safety"] for k, v in got.items()}, {"m1": "manter", "m2": "manter", "active": "manter"})
         both = self.plan(sessions[:2], {"shared": "clean"})
         self.assertEqual({v["safety"] for v in both.values()}, {"seguro"})
+
+    def test_worktree_paths_read_on_any_os(self):
+        self.assertTrue(cl.is_worktree(r"C:\dev\r\.claude\worktrees\a"))
+        self.assertTrue(cl.is_worktree("/home/u/dev/r/.claude/worktrees/a"))
+        self.assertFalse(cl.is_worktree(r"C:\dev\nexus-quant"))
+        self.assertFalse(cl.is_worktree(None))
 
     def test_no_sessions_file_plans_nothing(self):
         self.assertEqual(cl.plan_sessions(None, NOW), [])

@@ -185,6 +185,11 @@ def plan_npm(home: Path) -> list[dict]:
                   bytes=size)]
 
 
+def is_worktree(cwd: str | None) -> bool:
+    """A session folder inside `<repo>/.claude/worktrees/` (the app reports Windows paths; any OS reads them)."""
+    return bool(re.search(r"[\\/]\.claude[\\/]worktrees[\\/][^\\/]+", cwd or ""))
+
+
 def plan_sessions(sessions: list[dict] | None, now: float) -> list[dict]:
     """Classify the app's sessions (list_sessions output). Archiving is done by the agent with archive_session."""
     if sessions is None:
@@ -194,7 +199,7 @@ def plan_sessions(sessions: list[dict] | None, now: float) -> list[dict]:
     for s in live:
         cwd = s.get("cwd") or ""
         if cwd not in states:
-            states[cwd] = worktree_state(Path(cwd)) if "worktrees" in Path(cwd).parts else {"state": "repo_root"}
+            states[cwd] = worktree_state(Path(cwd)) if is_worktree(cwd) else {"state": "repo_root"}
 
     def verdict(s: dict) -> tuple[str, str]:
         st = states[s.get("cwd") or ""]["state"]
@@ -228,11 +233,11 @@ def plan_sessions(sessions: list[dict] | None, now: float) -> list[dict]:
             # a worktree shared with a session that must stay is not freed by archiving: keep both
             sharing = [o for o in live if o is not s and o.get("cwd") == s.get("cwd") and first.get(o.get("sessionId"),
                        ("manter",))[0] == "manter"]
-            if sharing and "worktrees" in Path(s.get("cwd") or "").parts:
+            if sharing and is_worktree(s.get("cwd")):
                 safety, reason = "manter", "worktree compartilhada com sessão que fica"
         cwd = Path(s.get("cwd") or "")
         # what archiving frees: the worktree, if no other session keeps it (measured only for candidates)
-        freed = size_of(cwd) if safety != "manter" and "worktrees" in cwd.parts and not any(
+        freed = size_of(cwd) if safety != "manter" and is_worktree(s.get("cwd")) and not any(
             o is not s and o.get("cwd") == s.get("cwd") for o in live) else 0
         out.append(_item("archive_session", safety, "app", s.get("title") or sid, reason, session_id=sid,
                          cwd=s.get("cwd"), pr=s.get("prNumber"), bytes=freed))
