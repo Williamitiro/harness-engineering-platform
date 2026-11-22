@@ -87,6 +87,21 @@ class SessionsCase(unittest.TestCase):
         both = self.plan(sessions[:2], {"shared": "clean"})
         self.assertEqual({v["safety"] for v in both.values()}, {"seguro"})
 
+    def test_parent_whose_archive_takes_a_kept_child_is_owner_decision(self):
+        # measured 22/11: archiving "Forja" also archived its idle side session "SICIDN" (no PR, recent)
+        sessions = [self.s("forja", "a", prState="MERGED"),
+                    self.s("sicidn", "b", startedBy="forja"),
+                    self.s("busy", "c", startedBy="forja", isRunning=True),
+                    self.s("withpr", "d", startedBy="forja", prState="OPEN")]
+        got = self.plan(sessions, {"a": "clean", "b": "clean", "c": "clean", "d": "clean"})
+        self.assertEqual(got["forja"]["safety"], "decisao")
+        self.assertIn("leva junto: sicidn", got["forja"]["reason"])
+        self.assertEqual(got["forja"]["also_archives"], ["sicidn"])  # running / open-PR children stay
+        merged_kid = self.plan([self.s("forja", "a", prState="MERGED"),
+                                self.s("kid", "b", startedBy="forja", prState="MERGED")],
+                               {"a": "clean", "b": "clean"})
+        self.assertEqual(merged_kid["forja"]["safety"], "seguro")  # the child would be archived anyway
+
     def test_worktree_paths_read_on_any_os(self):
         self.assertTrue(cl.is_worktree(r"C:\dev\r\.claude\worktrees\a"))
         self.assertTrue(cl.is_worktree("/home/u/dev/r/.claude/worktrees/a"))
