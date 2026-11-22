@@ -206,6 +206,42 @@ rodou testes (se algum falhou e depois passou, e se o último passou) e os token
 **O que ele não diz:** se o trabalho ficou melhor (seção 6). Use o relatório para achar problemas de
 funcionamento, como uma skill que nunca é usada ou uma sessão que termina com teste falhando.
 
+### 4.2. Orçamento do computador (disco e memória)
+
+Quando o disco estiver acabando, o PC estiver lento ou no fim do dia:
+
+```powershell
+python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py resource-check
+```
+
+Até sair a próxima versão marcada, esse comando só existe na pasta de desenvolvimento do Harness: rode
+`python scripts\harnessctl.py resource-check` de dentro dela.
+
+Ele **só lê** e responde em uns segundos. Para cada regra (espaço livre, memória comprometida, pagefile, Chromes
+escondidos dos servidores MCP, processos órfãos, sessões abertas, worktrees, histórico, plugin pesado ligado), mostra
+`PASS` ou `FAIL`, o número medido, o limite, a causa e o que fazer. No fim, lista quem mantém os processos de
+navegador vivos: cada sessão (`claude.exe` e o número do processo), "órfão", quando a sessão dona já fechou, ou
+"sem sessão dona", quando quem abriu foi o próprio app. Os processos internos do app não contam como sessões. O que
+não deu para medir sai `NOT_RUN`, e o veredito fica `INCONCLUSIVE`. Os limites ficam em `config/resource_budget.json`.
+
+Ele não apaga nem fecha nada. Use `--json` para a saída completa e `--output _local\artifacts\recursos.json`
+para guardar.
+
+**Para liberar espaço, peça ao agente "limpar o disco".** A skill `limpeza-de-disco` faz, nesta ordem:
+
+1. mede (`resource-check`) e lê, no app, as sessões e o arquivamento automático;
+2. monta o plano (`resource-clean plan`), que só lê e separa tudo em três blocos:
+   - **seguro**: o agente faz depois do seu "sim" (perfis de Chrome órfãos, `_local\tmp` parado, processos
+     órfãos, cache do npm, sessões com PR mesclado e nada pendente);
+   - **decisão sua**: sessões paradas sem PR, ligar o arquivamento automático do app, desligar o plugin
+     pesado na conta;
+   - **manter**: trabalho não enviado, PR aberto, sessão rodando, worktree compartilhada. Ninguém mexe;
+3. mostra os três blocos com os tamanhos e pergunta uma vez;
+4. depois do "sim", aplica (`resource-clean apply`), arquiva as sessões pelo app e confere de novo.
+
+Cada item é conferido outra vez na hora de aplicar: o que mudou (um perfil que voltou a ser usado, um processo
+que já não é o mesmo) sai `SKIPPED`, e não é forçado. Sem o "sim", nada é apagado.
+
 ---
 
 ## 5. Conferir, atualizar e remover

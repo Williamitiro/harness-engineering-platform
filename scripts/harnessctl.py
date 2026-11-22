@@ -1390,12 +1390,23 @@ def main(argv: list[str] | None = None) -> int:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import docs_gate
         return docs_gate.main([argv[0][len("docs-"):], *argv[1:]])
+    if argv and argv[0] == "resource-check":
+        # HE-OPS-01: read-only resource budget of this computer (SPEC §10).
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import resource_check
+        return resource_check.main(argv[1:])
+    if argv and argv[0] == "resource-clean":
+        # HE-OPS-02: cleanup plan (read-only) and apply (only after the owner's yes).
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import resource_clean
+        return resource_clean.main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
         "Lifecycle: project-attach / project-verify / project-remove. "
         "Personal bootstrap: setup-skill-plan / setup-skill-install / setup-skill-verify / setup-skill-remove. "
         "Documents (SPEC §11): docs-plan / docs-check / docs-verify / docs-hook-plan / docs-hook-install / docs-hook-verify / "
         "docs-hook-remove. "
+        "Computer resources: resource-check (read-only), resource-clean plan / apply. "
         "Use COMMAND --help for their separate options."))
     parser.add_argument("action", choices=("plan", "install", "verify", "remove"))
     parser.add_argument("--source", type=Path, help="pre-fetched ECC Git checkout at pinned commit")

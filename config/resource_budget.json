@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "note": "HE-OPS-01 (SPEC §10): orçamento de recursos do computador para sessões de agente. Conferido por harnessctl resource-check, que só lê. Limites medidos nesta máquina em 17-22/11/2026 (skill limpeza-de-disco).",
+  "limits": {
+    "disk_free_gb_min": 20,
+    "commit_over_ram_gb_max": 8,
+    "pagefile_gb_max": 16,
+    "threejs_servers_max": 2,
+    "plugin_ram_gb_max": 2,
+    "orphan_profiles_max": 5,
+    "orphan_trees_max": 0,
+    "claude_processes_max": 15,
+    "claude_worktrees_max": 30,
+    "history_gb_max": 20
+  },
+  "plugin_pattern": "threejs-devtools-mcp|chrome-devtools-mcp|@playwright[\\\\/]mcp|playwright-mcp|ms-playwright-mcp|puppeteer_dev_chrome_profile|playwright_chromiumdev",
+  "threejs_pattern": "threejs-devtools-mcp",
+  "profile_prefixes": ["puppeteer_dev_chrome_profile", "playwright_chromiumdev_profile"],
+  "heavy_plugin": "parallax-threejs",
+  "user_mcp_allowed": ["gemini-notebook"],
+  "owner_names": ["claude.exe", "codex.exe", "claude", "codex"],
+  "app_pattern": "--type=|\\\\WindowsApps\\\\"
+}
