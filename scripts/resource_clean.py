@@ -34,7 +34,8 @@ import resource_check as rc  # noqa: E402
 STALE_HOURS = 48
 IDLE_SESSION_DAYS = 7
 PLAN_MAX_AGE_S = 2 * 3600
-HARNESS_KINDS = ("orphan_tree", "orphan_profile", "repo_tmp", "npm_cache")
+HARNESS_KINDS = ("orphan_tree", "orphan_profile", "repo_tmp", "npm_cache", "offload_backup")
+OFFLOAD_MIN_BYTES = 100 * 2**20
 
 
 class CleanError(ValueError):
@@ -174,6 +175,70 @@ def plan_repo_tmp(dev_root: Path, procs: list[dict] | None, now: float) -> list[
     return out
 
 
+def onedrive_dev_root(home: Path) -> Path:
+    """The only OneDrive place allowed for repository backups: OneDrive/10-dev/<repo>/backups/."""
+    base = os.environ.get("OneDrive")
+    return (Path(base) if base else home / "OneDrive") / "10-dev"
+
+
+def backup_readers(repo: Path, name: str) -> list[str] | None:
+    """Tracked files that point at `_local/backups/<name>` (None when Git cannot be read)."""
+    pattern = r"_local[\\/]+backups[\\/]+" + re.escape(name) + r"([\\/\"' ]|$)"
+    try:
+        done = subprocess.run(["git", "-C", str(repo), "grep", "-l", "-E", "-e", pattern], capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=60,
+                              env=dict(os.environ, GIT_OPTIONAL_LOCKS="0"))
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if done.returncode == 1:
+        return []
+    return [line for line in done.stdout.splitlines() if line] if done.returncode == 0 else None
+
+
+def has_links(path: Path) -> bool:
+    if rc._is_link(path):
+        return True
+    if not path.is_dir():
+        return False
+    for base, dirs, _files in os.walk(path, followlinks=False):
+        if any(rc._is_link(Path(base) / d) for d in dirs):
+            return True
+    return False
+
+
+def plan_offload(dev_root: Path, home: Path, keep: dict[str, str] | None = None) -> list[dict]:
+    """Big entries of `<repo>/_local/backups` that no tracked file reads: the owner may move them to OneDrive."""
+    od = onedrive_dev_root(home)
+    if not od.parent.is_dir() or not dev_root.is_dir():
+        return []
+    out = []
+    for repo in sorted(p for p in dev_root.iterdir() if p.is_dir() and not rc._is_link(p)):
+        backups = repo / "_local" / "backups"
+        if not backups.is_dir() or rc._is_link(backups):
+            continue
+        for entry in sorted(backups.iterdir()):
+            size = size_of(entry)
+            if size < OFFLOAD_MIN_BYTES:
+                continue
+            dest = od / repo.name / "backups" / entry.name
+            readers = backup_readers(repo, entry.name)
+            if f"{repo.name}/{entry.name}" in (keep or {}):
+                safety, reason = "manter", (keep or {})[f"{repo.name}/{entry.name}"]
+            elif readers is None:
+                safety, reason = "manter", "não deu para ler o Git do repositório"
+            elif readers:
+                safety, reason = "manter", "o repositório lê: " + ", ".join(readers[:3])
+            elif has_links(entry):
+                safety, reason = "manter", "tem link ou junction dentro"
+            elif dest.exists():
+                safety, reason = "manter", "já existe no OneDrive com esse nome"
+            else:
+                safety, reason = "decisao", "ninguém no repositório lê; vai para o OneDrive e fica só na nuvem"
+            out.append(_item("offload_backup", safety, "harness", str(entry), reason, bytes=size, dest=str(dest),
+                             repo=repo.name))
+    return out
+
+
 def plan_npm(home: Path) -> list[dict]:
     cache = npm_cache_dir(home)
     if not cache.is_dir() or shutil.which("npm") is None:
@@ -280,7 +345,8 @@ def build_plan(snap: dict, budget: dict, dev_root: Path, temp: Path | None, home
     now = time.time() if now is None else now
     procs = snap.get("processes")
     items = (plan_processes(procs, budget) + plan_profiles(temp, procs, budget) + plan_repo_tmp(dev_root, procs, now)
-             + plan_npm(home) + plan_sessions(sessions, now) + plan_settings(snap, app_settings, budget))
+             + plan_npm(home) + plan_offload(dev_root, home, budget.get("offload_keep")) + plan_sessions(sessions, now)
+             + plan_settings(snap, app_settings, budget))
     for i, item in enumerate(items, 1):
         item["id"] = f"{item['kind']}-{i}"
     totals = {s: sum(x["bytes"] for x in items if x["safety"] == s) for s in ("seguro", "decisao", "manter")}
@@ -329,7 +395,7 @@ def kill_tree(pid: int) -> None:
         os.kill(pid, 15)
 
 
-def recheck(item: dict, plan: dict, snap: dict, budget: dict, now: float) -> str | None:
+def recheck(item: dict, plan: dict, snap: dict, budget: dict, now: float, home: Path) -> str | None:
     """Reason to skip, or None when the item is still exactly what the plan said."""
     kind, target = item["kind"], item["target"]
     procs = snap.get("processes")
@@ -362,7 +428,81 @@ def recheck(item: dict, plan: dict, snap: dict, budget: dict, now: float) -> str
         return None
     if kind == "npm_cache":
         return None if shutil.which("npm") else "npm não encontrado"
+    if kind == "offload_backup":
+        repo = Path(plan["dev_root"]) / str(item.get("repo"))
+        expected = onedrive_dev_root(home) / str(item.get("repo")) / "backups" / path.name
+        if path.parent != repo / "_local" / "backups" or not _inside(path, Path(plan["dev_root"])):
+            return "fora de <repo>/_local/backups"
+        if f"{item.get('repo')}/{path.name}" in budget.get("offload_keep", {}):
+            return "protegido no orçamento (offload_keep)"
+        if Path(item.get("dest") or "") != expected:
+            return "destino fora de OneDrive/10-dev/<repo>/backups"
+        if expected.exists() or expected.with_name(expected.name + ".partial").exists():
+            return "já existe no OneDrive com esse nome"
+        if backup_readers(repo, path.name) != []:
+            return "o repositório lê (ou o Git não pôde ser lido)"
+        if has_links(path):
+            return "tem link ou junction dentro"
+        if procs is None or in_use(str(path), cmds):
+            return "em uso agora"
+        return None
     return "tipo não aplicável pelo Harness"
+
+
+def file_manifest(path: Path) -> dict[str, tuple[int, str]]:
+    """{relative path: (size, sha256)} of every file, without following links."""
+    import hashlib
+
+    def digest(f: Path) -> tuple[int, str]:
+        h = hashlib.sha256()
+        with f.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(4 * 2**20), b""):
+                h.update(chunk)
+        return f.stat().st_size, h.hexdigest()
+    if path.is_file():
+        return {".": digest(path)}
+    out = {}
+    for base, dirs, files in os.walk(path, followlinks=False):
+        dirs[:] = [d for d in dirs if not rc._is_link(Path(base) / d)]
+        for name in files:
+            f = Path(base) / name
+            out[f.relative_to(path).as_posix()] = digest(f)
+    return out
+
+
+def mark_online_only(path: Path) -> bool | None:
+    """OneDrive 'Free up space' (attrib +U -P). None outside Windows; False when attrib failed."""
+    if sys.platform != "win32":
+        return None
+    targets = [str(path)] + ([str(path / "*")] if path.is_dir() else [])
+    ok = True
+    for t in targets:
+        args = ["attrib", "+U", "-P", t] + (["/S", "/D"] if t.endswith("*") else [])
+        ok = subprocess.run(args, capture_output=True, timeout=600).returncode == 0 and ok
+    return ok
+
+
+def offload(src: Path, dest: Path) -> dict:
+    """Copy to OneDrive, prove the copy is identical, mark it online-only, and only then delete the original."""
+    partial = dest.with_name(dest.name + ".partial")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists() or partial.exists():
+        raise FileExistsError(str(dest))
+    try:
+        if src.is_dir():
+            shutil.copytree(src, partial)
+        else:
+            shutil.copy2(src, partial)
+        if file_manifest(src) != file_manifest(partial):
+            raise OSError("a cópia no OneDrive não confere com o original; original mantido")
+    except BaseException:
+        if partial.exists() or rc._is_link(partial):  # never leave a half copy in OneDrive
+            remove_tree(partial)
+        raise
+    partial.rename(dest)
+    online = mark_online_only(dest)
+    remove_tree(src)
+    return {"dest": str(dest), "online_only": online}
 
 
 def apply_plan(plan: dict, ids: set[str] | None, safe: bool, really: bool, budget: dict, home: Path,
@@ -385,7 +525,7 @@ def apply_plan(plan: dict, ids: set[str] | None, safe: bool, really: bool, budge
     before = shutil.disk_usage(plan["dev_root"] if Path(plan["dev_root"]).exists() else home).free
     results = []
     for item in chosen:
-        why = recheck(item, plan, snap, budget, now)
+        why = recheck(item, plan, snap, budget, now, home)
         if why:
             results.append({"id": item["id"], "status": "SKIPPED", "reason": why})
             continue
@@ -398,6 +538,10 @@ def apply_plan(plan: dict, ids: set[str] | None, safe: bool, really: bool, budge
             elif item["kind"] == "npm_cache":
                 subprocess.run([shutil.which("npm"), "cache", "clean", "--force"], capture_output=True,
                                timeout=300, check=True)
+            elif item["kind"] == "offload_backup":
+                moved = offload(Path(item["target"]), Path(item["dest"]))
+                results.append({"id": item["id"], "status": "DONE", "target": item["target"], **moved})
+                continue
             else:
                 remove_tree(Path(item["target"]))
             results.append({"id": item["id"], "status": "DONE", "target": item["target"]})

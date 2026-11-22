@@ -19,5 +19,9 @@
   "heavy_plugin": "parallax-threejs",
   "user_mcp_allowed": ["gemini-notebook"],
   "owner_names": ["claude.exe", "codex.exe", "claude", "codex"],
-  "app_pattern": "--type=|\\\\WindowsApps\\\\"
+  "app_pattern": "--type=|\\\\WindowsApps\\\\",
+  "offload_keep": {
+    "videos-motions/projects": "catálogo de fotos e modelos do William (CLAUDE.md global): fica no disco",
+    "resiplac-core/catalogo-produtos": "catálogo de produtos da Resiplac (CLAUDE.md global): fica no disco"
+  }
 }

@@ -31,7 +31,8 @@ LIMIT_KEYS = {
     "orphan_profiles_max", "orphan_trees_max", "claude_processes_max", "claude_worktrees_max", "history_gb_max",
 }
 BUDGET_KEYS = {"schema_version", "note", "limits", "plugin_pattern", "threejs_pattern", "profile_prefixes",
-               "heavy_plugin", "user_mcp_allowed", "owner_names", "app_pattern"}
+               "heavy_plugin", "user_mcp_allowed", "owner_names", "app_pattern",
+               "offload_keep"}
 
 PS_SNAPSHOT = r"""
 $ErrorActionPreference = 'Stop'
@@ -85,6 +86,10 @@ def read_budget(path: Path) -> dict:
     for key in ("profile_prefixes", "user_mcp_allowed", "owner_names"):
         if not isinstance(budget.get(key), list) or not all(isinstance(x, str) for x in budget[key]):
             raise BudgetError(f"{key} must be a list of strings")
+    keep = budget.setdefault("offload_keep", {})
+    if not isinstance(keep, dict) or not all(isinstance(k, str) and k.count("/") == 1 and isinstance(v, str) and v
+                                             for k, v in keep.items()):
+        raise BudgetError("offload_keep must map \"<repo>/<entry>\" to a reason")
     if not isinstance(budget.get("heavy_plugin"), str) or not budget["heavy_plugin"]:
         raise BudgetError("heavy_plugin required")
     return budget
