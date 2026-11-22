@@ -233,8 +233,9 @@ para guardar.
 2. monta o plano (`resource-clean plan`), que só lê e separa tudo em três blocos:
    - **seguro**: o agente faz depois do seu "sim" (perfis de Chrome órfãos, `_local\tmp` parado, processos
      órfãos, cache do npm, sessões com PR mesclado e nada pendente);
-   - **decisão sua**: sessões paradas sem PR, ligar o arquivamento automático do app, desligar o plugin
-     pesado na conta;
+   - **decisão sua**: sessões paradas sem PR, desligar o plugin pesado na conta e backups grandes que nenhum
+     arquivo do repositório lê, que vão para `OneDrive\10-dev\<repo>\backups\` e ficam só na nuvem (a cópia é
+     conferida antes de o original sair; os catálogos de fotos e de produtos nunca saem);
    - **manter**: trabalho não enviado, PR aberto, sessão rodando, worktree compartilhada. Ninguém mexe;
 3. mostra os três blocos com os tamanhos e pergunta uma vez;
 4. depois do "sim", aplica (`resource-clean apply`), arquiva as sessões pelo app e confere de novo.

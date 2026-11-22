@@ -232,7 +232,8 @@ class BudgetCase(unittest.TestCase):
                        lambda b: b["limits"].update(pagefile_gb_max=-1), lambda b: b["limits"].update(pagefile_gb_max=True),
                        lambda b: b["limits"].update(unknown_max=1), lambda b: b.update(plugin_pattern="("),
                        lambda b: b.update(schema_version=2), lambda b: b.update(user_mcp_allowed="gemini"),
-                       lambda b: b.update(heavy_plugin="")):
+                       lambda b: b.update(heavy_plugin=""), lambda b: b.update(offload_keep={"semrepo": "x"}),
+                       lambda b: b.update(offload_keep={"r/e": ""}), lambda b: b.update(offload_keep=["r/e"])):
             data = copy.deepcopy(base)
             mutate(data)
             bad.append(data)
