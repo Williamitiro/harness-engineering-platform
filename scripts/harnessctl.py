@@ -1325,10 +1325,17 @@ def main(argv: list[str] | None = None) -> int:
         return bootstrap_main(argv)
     if argv and argv[0].startswith("machine-"):
         return machine_main(argv)
+    if argv and argv[0].startswith("docs-"):
+        # HE-DOC-02: document organization gate (SPEC §11), stdlib module next to this one.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import docs_gate
+        return docs_gate.main([argv[0][len("docs-"):], *argv[1:]])
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
         "Lifecycle: project-attach / project-verify / project-remove. "
         "Personal bootstrap: setup-skill-plan / setup-skill-install / setup-skill-verify / setup-skill-remove. "
+        "Documents (SPEC §11): docs-plan / docs-check / docs-hook-plan / docs-hook-install / docs-hook-verify / "
+        "docs-hook-remove. "
         "Use COMMAND --help for their separate options."))
     parser.add_argument("action", choices=("plan", "install", "verify", "remove"))
     parser.add_argument("--source", type=Path, help="pre-fetched ECC Git checkout at pinned commit")

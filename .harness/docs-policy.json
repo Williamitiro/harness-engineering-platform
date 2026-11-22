@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "note": "HE-DOC-02 (SPEC §11): onde cada tipo de documento mora neste repositório. Conferido por harnessctl docs-check.",
+  "entry": "AGENTS.md",
+  "state": "docs/ESTADO.md",
+  "index": "AGENTS.md",
+  "limits": {"entry": 8192, "state": 5120, "index": 10240},
+  "places": {
+    "vigente": ["README.md", "CLAUDE.md", "docs/SPEC.md", "docs/MANUAL.md", "metricas/*.md"],
+    "evidencia": ["docs/evidence/**"],
+    "pesquisa": ["benchmarks/**"],
+    "arquivo": ["docs/historico/**"]
+  },
+  "indexed": ["vigente"],
+  "ignore": ["vendor/**", "skills/**", "templates/**", "tests/**", ".poc/**", "_local/**", ".claude/**", ".github/**"]
+}
