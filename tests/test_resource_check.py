@@ -50,7 +50,6 @@ class EvaluateCase(unittest.TestCase):
             "pagefile": lambda s: s.update(pagefile_gb=16.5),
             "claude_worktrees": lambda s: s.update(claude_worktrees={"a": 20, "b": 11}),
             "history": lambda s: s.update(history_gb={"claude": 15.0, "codex": 6.0}),
-            "heavy_plugin_off": lambda s: s.update(enabled_plugins={"parallax-threejs@x": True}),
             "user_mcp": lambda s: s.update(user_mcp=["gemini-notebook", "rea"]),
             "claude_processes": lambda s: s["processes"].extend(
                 proc(100 + i, 1, "claude.exe", created=100 + i) for i in range(15)),
@@ -74,12 +73,18 @@ class EvaluateCase(unittest.TestCase):
         snap.update(disk_free_gb=20.0, commit_gb=40.0, pagefile_gb=16.0, claude_worktrees={"a": 30})
         self.assertEqual(rc.evaluate(snap, BUDGET)["status"], "PASS")
 
-    def test_missing_heavy_plugin_entry_fails(self):
+    def test_heavy_plugin_judged_by_local_switch_or_effect(self):
+        many = [proc(200 + i, 10, "node.exe", "node threejs-devtools-mcp", created=200) for i in range(4)]
         snap = healthy()
         snap["enabled_plugins"] = {"hyperframes@h": True}
         check = by_id(rc.evaluate(snap, BUDGET))["heavy_plugin_off"]
+        self.assertEqual(check["status"], "PASS")  # switched off in the account: 1 server, within the limit
+        snap["processes"] += many
+        check = by_id(rc.evaluate(snap, BUDGET))["heavy_plugin_off"]
         self.assertEqual(check["status"], "FAIL")
-        self.assertIn("sem entrada", check["value"])
+        self.assertIn("sem entrada local; 5 servidores", check["value"])
+        snap["enabled_plugins"] = {"parallax-threejs@m": False}
+        self.assertEqual(by_id(rc.evaluate(snap, BUDGET))["heavy_plugin_off"]["status"], "PASS")
 
     def test_orphan_profiles_ignore_profiles_in_use(self):
         snap = healthy()
@@ -168,8 +173,19 @@ class ReviewFindingsCase(unittest.TestCase):
         rep = rc.evaluate(snap, BUDGET)
         self.assertEqual(by_id(rep)["claude_processes"]["value"], 1)
         labels = {g["owner"] for g in rep["owners"]}
-        self.assertIn("sem sessão dona", labels)  # started by the app, not by a session
+        self.assertIn("aberto pelo app, sem sessão", labels)  # started by the app, not by a session
         self.assertNotIn("órfão (pai morto)", labels)
+
+    def test_app_parent_explorer_dead_is_not_orphan(self):
+        # measured after a reboot: MCP <- app Claude.exe <- explorer.exe <- (dead userinit)
+        snap = healthy()
+        app = r"C:\Program Files\WindowsApps\Claude_6\app\Claude.exe"
+        snap["processes"] = [proc(8112, 7904, "explorer.exe", created=1),
+                             proc(14540, 8112, "Claude.exe", f'"{app}"', 2) | {"exe": app},
+                             proc(15000, 14540, "node.exe", "node chrome-devtools-mcp", 3)]
+        rep = rc.evaluate(snap, BUDGET)
+        self.assertEqual(by_id(rep)["orphan_trees"]["value"], 0)
+        self.assertEqual([g["owner"] for g in rep["owners"]], ["aberto pelo app, sem sessão"])
 
     def test_playwright_on_windows_is_counted(self):
         snap = healthy()
@@ -193,8 +209,11 @@ class ReviewFindingsCase(unittest.TestCase):
     def test_heavy_plugin_settings_shapes(self):
         snap = healthy()
         snap["enabled_plugins"] = {}
+        snap["processes"] += [proc(300 + i, 10, "node.exe", "node threejs-devtools-mcp", 300) for i in range(3)]
         self.assertEqual(by_id(rc.evaluate(snap, BUDGET))["heavy_plugin_off"]["status"], "FAIL")
         snap["enabled_plugins"] = None
+        self.assertEqual(by_id(rc.evaluate(snap, BUDGET))["heavy_plugin_off"]["status"], "NOT_RUN")
+        snap["enabled_plugins"], snap["processes"] = {}, None
         self.assertEqual(by_id(rc.evaluate(snap, BUDGET))["heavy_plugin_off"]["status"], "NOT_RUN")
 
 

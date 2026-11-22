@@ -224,8 +224,23 @@ navegador vivos: cada sessão (`claude.exe` e o número do processo), "órfão",
 "sem sessão dona", quando quem abriu foi o próprio app. Os processos internos do app não contam como sessões. O que
 não deu para medir sai `NOT_RUN`, e o veredito fica `INCONCLUSIVE`. Os limites ficam em `config/resource_budget.json`.
 
-Ele não apaga nem fecha nada. A limpeza é com a skill `limpeza-de-disco`, que mostra a lista e espera o seu "sim".
-Use `--json` para a saída completa e `--output _local\artifacts\recursos.json` para guardar.
+Ele não apaga nem fecha nada. Use `--json` para a saída completa e `--output _local\artifacts\recursos.json`
+para guardar.
+
+**Para liberar espaço, peça ao agente "limpar o disco".** A skill `limpeza-de-disco` faz, nesta ordem:
+
+1. mede (`resource-check`) e lê, no app, as sessões e o arquivamento automático;
+2. monta o plano (`resource-clean plan`), que só lê e separa tudo em três blocos:
+   - **seguro**: o agente faz depois do seu "sim" (perfis de Chrome órfãos, `_local\tmp` parado, processos
+     órfãos, cache do npm, sessões com PR mesclado e nada pendente);
+   - **decisão sua**: sessões paradas sem PR, ligar o arquivamento automático do app, desligar o plugin
+     pesado na conta;
+   - **manter**: trabalho não enviado, PR aberto, sessão rodando, worktree compartilhada. Ninguém mexe;
+3. mostra os três blocos com os tamanhos e pergunta uma vez;
+4. depois do "sim", aplica (`resource-clean apply`), arquiva as sessões pelo app e confere de novo.
+
+Cada item é conferido outra vez na hora de aplicar: o que mudou (um perfil que voltou a ser usado, um processo
+que já não é o mesmo) sai `SKIPPED`, e não é forçado. Sem o "sim", nada é apagado.
 
 ---
 

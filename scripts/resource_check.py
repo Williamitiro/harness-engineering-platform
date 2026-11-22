@@ -258,23 +258,30 @@ def owners(procs: list[dict], members: list[dict], owner_names: list[str], app_p
     agent on the way are 'no session' (e.g. started by the app itself)."""
     live = {p["pid"]: p for p in procs}
     agents = {p["pid"] for p in agent_sessions(procs, owner_names, app_pattern)}
+    member_ids = {p["pid"] for p in members}
     groups: dict[Any, dict] = {}
     for p in members:
-        cur, seen, owner, dead = p, set(), None, False
+        cur, seen, owner, dead, app = p, set(), None, False, False
         while cur is not None and cur["pid"] not in seen:
             seen.add(cur["pid"])
             if cur["pid"] in agents and cur is not p:
                 owner = cur
                 break
+            if cur is not p and is_app_process(cur, app_pattern):
+                app = True  # the desktop app itself started it: stop here (its own parent is explorer)
+                break
             parent = live.get(cur.get("ppid"))
             if parent is not None and cur.get("created") is not None and parent.get("created") is not None \
                     and parent["created"] > cur["created"]:
                 parent = None
-            if parent is None and cur.get("ppid") not in (0, None):
+            # orphan only when a browser/MCP process lost its parent (same rule as orphan_roots); an ordinary
+            # ancestor with a dead parent (explorer, a shell) says nothing about the session
+            if parent is None and cur["pid"] in member_ids:
                 dead = True
             cur = parent
-        key = owner["pid"] if owner else ("dead" if dead else "none")
-        label = owner["name"] if owner else ("órfão (pai morto)" if dead else "sem sessão dona")
+        key = owner["pid"] if owner else ("dead" if dead else ("app" if app else "none"))
+        label = owner["name"] if owner else ("órfão (pai morto)" if dead else
+                                             ("aberto pelo app, sem sessão" if app else "sem sessão dona"))
         g = groups.setdefault(key, {"owner_pid": owner["pid"] if owner else None, "owner": label,
                                     "processes": 0, "ram_gb": 0.0})
         g["processes"] += 1
@@ -358,12 +365,18 @@ def evaluate(snap: dict, budget: dict) -> dict:
     if plugins is None:
         heavy_off, heavy_val = None, None
     else:
+        # the account switch (claude.ai) is not visible from here: judge by effect too (servers running)
         offs = sorted(k for k, v in plugins.items() if k.split("@")[0] == budget["heavy_plugin"] and v is False)
-        heavy_off, heavy_val = bool(offs), (offs[0] + " = false") if offs else "sem entrada (vale o ligado da conta)"
-    checks.append(_check("heavy_plugin_off", f"{budget['heavy_plugin']} desligado em ~/.claude/settings.json",
-                         heavy_val, "false", heavy_off,
-                         "o plugin da conta vale para todo repositório",
-                         "decisão do dono: desligar no computador e ligar no .claude/settings.json dos repositórios de 3D"))
+        quiet = tjs is not None and len(tjs) <= L["threejs_servers_max"]
+        heavy_off = bool(offs) or quiet
+        heavy_val = (offs[0] + " = false") if offs else (
+            f"sem entrada local; {len(tjs)} servidores rodando" if tjs is not None else "sem entrada local")
+        if not offs and tjs is None:
+            heavy_off = None
+    checks.append(_check("heavy_plugin_off", f"{budget['heavy_plugin']} desligado (local ou na conta)",
+                         heavy_val, "desligado ou servidores no limite", heavy_off,
+                         "o plugin da conta está ligado em todo repositório",
+                         "o dono desliga em claude.ai › Personalizar › Plugins e religa só para o 3D"))
     mcp = snap.get("user_mcp")
     extra = None if mcp is None else [m for m in mcp if m not in budget["user_mcp_allowed"]]
     checks.append(_check("user_mcp", "MCP local no escopo do usuário fora da lista", extra, budget["user_mcp_allowed"],
