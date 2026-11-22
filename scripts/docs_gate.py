@@ -19,6 +19,7 @@ writes made by shell commands, and lets the session continue on any internal err
 from __future__ import annotations
 
 import argparse
+from functools import lru_cache
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -37,9 +38,12 @@ TOOLS = {  # tool: (detect dir, config file, PreToolUse matcher)
     "codex": (".codex", ".codex/hooks.json", "apply_patch"),
 }
 LINK = re.compile(r"\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})[^\n]*\n.*?(?:^ {0,3}\1[ \t]*$|\Z)", re.MULTILINE | re.DOTALL)
+FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 INLINE_CODE = re.compile(r"(`+)(?!`).*?(?<!`)\1(?!`)")  # one line: a stray backtick hides nothing else
 LINE_SUFFIX = re.compile(r":\d+(?::\d+)?\Z")  # editor-style file.md:12 or :12:3
+# Only a document or source file takes a line suffix; example.com:8080 is a host and port, not a file.
+LINE_FILE = re.compile(r"\.(?:md|markdown|mdx|txt|rst|json|ya?ml|toml|py|js|mjs|cjs|ts|tsx|jsx|sh|ps1|css|html?|csv)\Z",
+                       re.IGNORECASE)
 NT = os.name == "nt"
 
 
@@ -49,6 +53,7 @@ class PolicyError(ValueError):
 
 # ---------------------------------------------------------------- policy and matching
 
+@lru_cache(maxsize=1024)
 def glob_regex(pattern: str) -> re.Pattern:
     out, i = [], 0
     while i < len(pattern):
@@ -92,13 +97,14 @@ def load_policy(root: Path) -> dict | None:
     for role in ROLES:
         if data.get(role) is not None and not isinstance(data[role], str):
             raise PolicyError(f"{POLICY}: {role} precisa ser um caminho ou null")
-    if not isinstance(data.get("limits") or {}, dict):
+    own = data.get("limits", {})
+    if not isinstance(own, dict):
         raise PolicyError(f"{POLICY}: limits precisa ser um objeto (papel: bytes)")
-    limits = {**DEFAULT_LIMITS, **(data.get("limits") or {})}
-    if any(not isinstance(v, int) or v <= 0 for v in limits.values()):
+    limits = {**DEFAULT_LIMITS, **own}
+    if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in limits.values()):
         raise PolicyError(f"{POLICY}: limits precisam ser inteiros positivos (bytes)")
     indexed = data.get("indexed", [])
-    if not isinstance(indexed, list) or any(k not in places for k in indexed):
+    if not isinstance(indexed, list) or any(not isinstance(k, str) or k not in places for k in indexed):
         raise PolicyError(f"{POLICY}: indexed só pode citar tipos de places")
     ignore = data.get("ignore", [])
     if not isinstance(ignore, list) or any(not isinstance(p, str) for p in ignore):
@@ -106,15 +112,19 @@ def load_policy(root: Path) -> dict | None:
     return {**data, "limits": limits, "indexed": indexed, "ignore": ignore}
 
 
-def specificity(pattern: str) -> int:
-    """Literal characters of a pattern: docs/historico/** (14) is more specific than docs/** (5)."""
-    return len(pattern.replace("*", "").replace("?", ""))
+def specificity(pattern: str) -> tuple[int, int]:
+    """(folders and names with no wildcard, literal characters). docs/historico/** (2, ...) beats docs/** (1, ...);
+    docs/old/** beats **/CHANGELOG.md (a folder outweighs a long name); **/*.md and *.md tie, and the first kind
+    listed wins. The "**/" prefix adds nothing."""
+    parts = [p for p in pattern.split("/") if p not in ("", "**")]
+    literal = "".join(parts).replace("*", "").replace("?", "")
+    return sum(1 for p in parts if "*" not in p and "?" not in p), len(literal)
 
 
 def kind_of(policy: dict, rel: str) -> str | None:
     """The kind of the most specific pattern that matches; on a tie, the first kind listed. So an archive folder
     inside docs/ keeps its kind even when a broader docs/** kind is listed first (review of v1.4.0)."""
-    best, best_score = None, -1
+    best, best_score = None, (-1, -1)
     for kind, pats in policy["places"].items():
         for pat in pats:
             if specificity(pat) > best_score and glob_regex(pat).match(rel):
@@ -157,8 +167,8 @@ def budget_fix(policy: dict, role: str, rel: str) -> str:
         return (f"corte o texto, ou leve a regra de uma área para um documento próprio e deixe no {rel} só a linha "
                 f"de gatilho \"{TRIGGER}\"; regra geral fica por inteiro")
     if role == "state":
-        return (f"deixe no estado só o que vale hoje; para guardar o estado antigo inteiro, faça git mv dele para "
-                f"{archive_place(policy)} e comece um estado novo e curto")
+        return (f"faça git mv do estado inteiro para {archive_place(policy)} (com a data no nome) e comece um estado "
+                "novo e curto, só com o que vale hoje")
     return ("agrupe os links, ou dê a uma pasta o próprio índice (um tipo próprio em places, fora de "
             "\"indexed\") e deixe aqui um link só para ele")
 
@@ -194,16 +204,38 @@ def key(rel: str) -> str:
     return rel.lower() if NT else rel
 
 
+def without_fences(text: str) -> str:
+    """The text outside fenced code blocks, CommonMark style: a fence closes with the same character, at least as
+    many times; a backtick fence whose info string has a backtick is not a fence (```x``` is inline code); an
+    unclosed fence runs to the end, as it renders. CRLF-safe."""
+    out, fence = [], None
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        if fence:
+            char, size = fence
+            stripped = body.lstrip(" ")
+            if len(body) - len(stripped) <= 3 and stripped.rstrip(" \t") == char * len(stripped.rstrip(" \t")) \
+                    and len(stripped.rstrip(" \t")) >= size:
+                fence = None
+            continue
+        opening = FENCE_OPEN.match(body)
+        if opening and not (opening.group(1)[0] == "`" and "`" in opening.group(2)):
+            fence = (opening.group(1)[0], len(opening.group(1)))
+            continue
+        out.append(line)
+    return "".join(out)
+
+
 def index_links(root: Path, index: str, text: str) -> tuple[set[str], list[dict]]:
     """(link targets, broken links); each broken entry carries `target` (repository-relative, posix)."""
     base = PurePosixPath(index).parent
     targets, broken = set(), []
     # Examples inside code blocks and inline code are not links (review of v1.4.0).
-    prose = INLINE_CODE.sub("", FENCE.sub("", text))
+    prose = INLINE_CODE.sub("", without_fences(text))
     for raw in LINK.findall(prose):
         target = raw.split("#", 1)[0]
-        # Editor-style SPEC.md:12 is a file and a line, not a URL scheme "SPEC.md:"; a file name cannot hold ":".
-        if LINE_SUFFIX.search(target) and "." in LINE_SUFFIX.sub("", target).rsplit("/", 1)[-1]:
+        # Editor-style SPEC.md:12 is a file and a line, not a URL scheme "SPEC.md:".
+        if LINE_SUFFIX.search(target) and LINE_FILE.search(LINE_SUFFIX.sub("", target)):
             target = LINE_SUFFIX.sub("", target)
         if not target or re.match(r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE) or target.startswith("/"):
             continue

@@ -88,7 +88,7 @@ class ChecksTests(GateCase):
         self.assertNotIn("já estava acima", result["violations"][0]["message"])
         fix = result["violations"][0]["fix"]
         self.assertIn("sobram 93 bytes até o teto e a mudança pede 143; faltam 50", fix)  # "estado\n" = 7 bytes
-        self.assertIn("git mv dele para docs/arquivo", fix)  # the archive folder of this policy
+        self.assertIn("git mv do estado inteiro para docs/arquivo", fix)  # the archive folder of this policy
 
     def test_entry_over_budget_suggests_the_trigger_line_for_an_area_rule(self):
         # HE-DOC-04: the refusal says how many bytes are left and how to make room without losing a rule.
@@ -283,8 +283,50 @@ class VerifyTests(GateCase):
         policy = self.with_policy()
         self.write("docs/ESTADO.md", "e" * 150)
         fix = d.run_check(self.repo, policy)["violations"][0]["fix"]
-        self.assertIn("faltam 50. Deixe no estado", fix)
-        self.assertIn("git mv dele para docs/arquivo e comece um estado novo", fix)
+        self.assertIn("faltam 50. Faça git mv do estado inteiro para docs/arquivo", fix)
+        self.assertIn("comece um estado novo e curto", fix)
+        self.assertNotIn("deixe no estado", fix)  # the cleanup rule: the state is archived whole, never trimmed
+
+    def test_code_fences_follow_commonmark_and_never_hide_the_rest_of_the_index(self):
+        # Second review of v1.4.1: a longer closing fence, or a line starting with ```x```, swallowed the tail.
+        self.with_policy()
+        cases = {
+            "longer closing fence": "```\n[ex](NAO.md)\n````\n[sumiu](SUMIU.md)\n",
+            "inline code at line start": "```bash``` é inline\n[sumiu](SUMIU.md)\n",
+            "tilde fence closed by more tildes": "~~~\n[ex](NAO.md)\n~~~~\n[sumiu](SUMIU.md)\n",
+            "crlf": "```\r\n[ex](NAO.md)\r\n```\r\n[sumiu](SUMIU.md)\r\n",
+        }
+        for name, text in cases.items():
+            _, broken = d.index_links(self.repo, "docs/INDICE.md", text)
+            self.assertEqual([b["target"] for b in broken], ["docs/SUMIU.md"], name)
+
+    def test_new_document_linked_after_a_code_block_is_still_indexed(self):
+        policy = self.with_policy()
+        self.write("docs/INDICE.md", "[spec](SPEC.md)\n```\nexemplo\n````\n[manual](MANUAL.md)\n")
+        self.write("docs/MANUAL.md", "manual\n")
+        self.assertEqual(d.run_check(self.repo, policy)["status"], "DOCS_CHECK_PASS")
+
+    def test_host_and_port_is_not_taken_for_a_file_with_a_line(self):
+        self.with_policy()
+        _, broken = d.index_links(self.repo, "docs/INDICE.md", "[s](example.com:8080)\n[a](SPEC.md:7)\n")
+        self.assertEqual(broken, [])
+
+    def test_specificity_counts_folders_not_the_double_star(self):
+        def kind(places, rel):
+            return d.kind_of({"places": places}, rel)
+        self.assertEqual(kind({"raiz": ["*.md"], "outros": ["**/*.md"]}, "README.md"), "raiz")
+        self.assertEqual(kind({"outros": ["**/*.md"], "raiz": ["*.md"]}, "README.md"), "outros")  # tie: first listed
+        self.assertEqual(kind({"arquivo": ["docs/old/**"], "vigente": ["**/CHANGELOG.md"]}, "docs/old/CHANGELOG.md"),
+                         "arquivo")
+        self.assertEqual(kind({"vigente": ["docs/**"], "arquivo": ["docs/historico/**"]}, "docs/historico/a.md"),
+                         "arquivo")
+
+    def test_policy_values_of_the_wrong_type_are_invalid(self):
+        base = {"schema_version": 1, "places": {"v": ["*.md"]}}
+        for bad in ({"limits": []}, {"limits": ""}, {"limits": 0}, {"limits": {"state": True}}, {"indexed": [["v"]]}):
+            self.write(".harness/docs-policy.json", json.dumps({**base, **bad}))
+            result = d.run_verify(self.repo)
+            self.assertEqual((result["status"], result["reason"]), ("FAIL", "PLANTA_INVALIDA"), bad)
 
     def test_plan_without_policy_also_groups_by_first_folder_for_big_repositories(self):
         for rel in ("packages/a/README.md", "packages/b/README.md", "docs/x.md"):

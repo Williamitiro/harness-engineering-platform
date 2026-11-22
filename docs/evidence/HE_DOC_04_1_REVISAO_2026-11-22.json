@@ -105,10 +105,22 @@
       "nexus-quant",
       "resiplac-core",
       "plataforma-metalurgica",
-      "harness-engineering-platform"
+      "harness-engineering-platform",
+      "videos-motions (PR 38, 8e3d589)"
     ],
-    "docs": "PASS nos 5",
-    "by_kind": "igual ao da v1.4.0 nos 5",
+    "docs": "PASS nos 6",
+    "by_kind": "igual ao da v1.4.0 nos 6",
     "writes_in_repos": 0
+  },
+  "second_review": {
+    "what": "subagente que só recebeu o diff da v1.4.1",
+    "status": "PASS",
+    "findings_fixed": [
+      "blocos de código pela regra CommonMark (fecho mais longo, ```x``` no começo da linha, CRLF): não escondem mais o resto do índice",
+      "especificidade por pastas escritas sem curinga e depois letras; **/ não conta; empate, o primeiro tipo",
+      "planta: limits que não é objeto, booleano como teto e indexed com item que não é texto dão PLANTA_INVALIDA",
+      "host:porta não é tomado por arquivo com linha",
+      "skill: bytes exatos dos 85%, arquivar no lugar só o superado, DOCS_NOT_RUN listado; mensagem do estado igual à regra de limpeza"
+    ]
   }
 }

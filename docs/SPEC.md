@@ -324,13 +324,14 @@ confere tudo; as regras de limpeza moram na própria skill (`skills/setup-harnes
 | `project-plan` | campo `docs_policy`: `WOULD_CREATE` (repositório novo), `PRESERVE` (já tem planta) ou `PROPOSE_WITH_DOCS_PLAN` (existente sem planta), mesmo quando já ligado |
 | `project-attach` | cria a planta do modelo só em repositório novo; preserva a que existe |
 | Modelos antigos | arquivo criado de um modelo aprovado anterior (`PAST_TEMPLATE_SHA`) e igual ao recibo continua `UNCHANGED`, e a remoção continua exata |
-| `project-verify` | campo `docs` (`docs-verify`): papéis dentro do teto, todo `.md` versionado num tipo ou no `ignore`, links do índice vivos e nenhuma mudança pendente que quebre uma regra. `PASS`, `FAIL` com `problems`, `null` com `SEM_PLANTA`, ou `NOT_RUN` com o motivo (por exemplo, o git falhou). Status `OK`, `DOCS_FAIL` (código 1) ou `NOT_ATTACHED` (sem manifesto, código 1). Só lê documentos com a planta, que é o opt-in do projeto; o `project-attach` nunca os lê |
+| `project-verify` | campo `docs` (`docs-verify`): papéis dentro do teto, todo `.md` versionado num tipo ou no `ignore`, links do índice vivos e nenhuma mudança pendente que quebre uma regra. `PASS`, `FAIL` com `problems`, `null` com `SEM_PLANTA`, ou `NOT_RUN` com o motivo (por exemplo, o git falhou). Status `OK`, `DOCS_FAIL` (código 1), `DOCS_NOT_RUN` (código 1) ou `NOT_ATTACHED` (sem manifesto, código 1). Só lê documentos com a planta, que é o opt-in do projeto; o `project-attach` nunca os lê |
 | Porteiro (orçamento) | diz quantos bytes sobram, quantos faltam e como abrir espaço: no `AGENTS.md`, a linha de gatilho "Vai mexer em X? Leia antes, obrigatório: <link>"; no estado, `git mv` para a pasta de arquivo da planta |
 | CI | `templates/ci/harness-docs-check.yml` chama a action fixada por tag; a skill oferece só onde já há `.github/workflows/`, com o "sim" |
 
-**v1.4.1** (revisão independente da v1.4.0): vale o padrão mais específico da planta (`docs/historico/**` ganha de
-`docs/**`, em qualquer ordem; empate, o primeiro tipo); link com `%20`, com sufixo de linha (`SPEC.md:12`) ou dentro
-de bloco ou trecho de código não é "quebrado"; planta que não é objeto dá `PLANTA_INVALIDA`; arquivo que não é `.md`
+**v1.4.1** (revisão independente da v1.4.0): vale o padrão mais específico da planta, o que tem mais pastas e
+nomes escritos sem curinga (`docs/historico/**` ganha de `docs/**`, em qualquer ordem; `**/` não conta; empate, o
+primeiro tipo); link com `%20`, com sufixo de linha num arquivo (`SPEC.md:12`) ou dentro de bloco (regra CommonMark)
+ou trecho de código não é "quebrado"; planta que não é objeto dá `PLANTA_INVALIDA`; arquivo que não é `.md`
 nem papel nunca é lido; `docs.status` `NOT_RUN` dá status `DOCS_NOT_RUN` (código 1), nunca `OK`.
 
 A diferença entre `docs-check` e `docs-verify`: o primeiro olha só arquivo novo e crescimento (o legado não

@@ -5,7 +5,8 @@
   "legend": {
     "PASS": "planta no main e project-verify com docs PASS",
     "NOT_RUN": "ainda na fila",
-    "null": "não observado"
+    "null": "não observado",
+    "PR_ABERTO": "PR com a planta conferido no GitHub, esperando o merge do dono"
   },
   "repos": [
     {
@@ -65,11 +66,16 @@
     },
     {
       "repo": "videos-motions",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "main",
-      "local_dirty_files": 0,
-      "aviso": "o catálogo projects/talento-itiro e o assets-manifest.json não mudam de lugar"
+      "status": "PR_ABERTO",
+      "pr": "Williamitiro/video-motion#38",
+      "head_sha": "8e3d58946086ef0f807d0d2ffb4c9f3714fc75e0",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "agents_md": "18576 -> 9758 B (teto 10240, 95%: regras gerais não cabem em 85%)",
+      "arquivo": "21 auditorias superadas arquivadas no lugar (configuração e fontes com hash as citam)",
+      "ci": null,
+      "aviso": "o catálogo projects/talento-itiro e o assets-manifest.json não mudaram de lugar",
+      "pendencia": "PR #31 do repositório vai precisar de rebase: a Regra nº 4 vira linha de gatilho para o guia §16"
     },
     {
       "repo": "modelo-de-negocio-resiplac",
