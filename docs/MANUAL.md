@@ -206,6 +206,23 @@ rodou testes (se algum falhou e depois passou, e se o último passou) e os token
 **O que ele não diz:** se o trabalho ficou melhor (seção 6). Use o relatório para achar problemas de
 funcionamento, como uma skill que nunca é usada ou uma sessão que termina com teste falhando.
 
+### 4.2. Orçamento do computador (disco e memória)
+
+Quando o disco estiver acabando, o PC estiver lento ou no fim do dia:
+
+```powershell
+python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py resource-check
+```
+
+Ele **só lê** e responde em uns segundos. Para cada regra (espaço livre, memória comprometida, pagefile, Chromes
+escondidos dos servidores MCP, processos órfãos, sessões abertas, worktrees, histórico, plugin pesado ligado), mostra
+`PASS` ou `FAIL`, o número medido, o limite, a causa e o que fazer. No fim, lista quem mantém os processos de
+navegador vivos: cada sessão (`claude.exe` e o número do processo) ou "órfão", quando a sessão dona já fechou. O que
+não deu para medir sai `NOT_RUN`, e o veredito fica `INCONCLUSIVE`. Os limites ficam em `config/resource_budget.json`.
+
+Ele não apaga nem fecha nada. A limpeza é com a skill `limpeza-de-disco`, que mostra a lista e espera o seu "sim".
+Use `--json` para a saída completa e `--output _local\artifacts\recursos.json` para guardar.
+
 ---
 
 ## 5. Conferir, atualizar e remover

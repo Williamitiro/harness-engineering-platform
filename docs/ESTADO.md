@@ -24,6 +24,7 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 | CI (Linux + Windows, actions por SHA) | ✅ | `.github/workflows/quality.yml` |
 | **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ na `v1.3.0`, hook instalado. **Claude Code: PASS** no ensaio real (lugar, orçamento e `Stop`). Codex: `NOT_RUN` | 38 testes offline; revisão do PR #17 (10 achados corrigidos); `evidence/HE_DOC_02_ENSAIO_CLAUDE_2026-11-21.json` |
 | **Caminho único de documentos (HE-DOC-04)**: `setup-harness` com etapa de documentos e regras de limpeza; `project-verify` com `docs` (`null` sem planta); planta no repositório novo; porteiro diz os bytes que sobram | ✅ `v1.4.0`, instalada; correções da revisão (links, padrão mais específico, `DOCS_NOT_RUN`) em PR para a `v1.4.1` | suíte offline PASS; `evidence/HE_DOC_04_VERIFICACAO_2026-11-22.json`, `evidence/HE_DOC_04_1_REVISAO_2026-11-22.json` |
+| **Orçamento do computador (HE-OPS-01)**: `resource-check`, só leitura, 12 regras com causa e dono dos processos | ✅ código, fora de tag; 1ª medição 22/11: `FAIL` em 9 de 12 | 15 testes; `evidence/HE_OPS_01_RESOURCE_CHECK_2026-11-22.json` |
 | JEV via HTTPS | ✅ código; smoke relatado | `scripts/jev_http.py` |
 | Isolamento G1 | ⚠️ só MXC do Codex observado | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — |
@@ -40,7 +41,8 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 4. Rodar `scripts/daily_report.py` no fim do dia e anotar aqui o que falhar.
 5. Primeira tarefa real na plataforma com o Harness, com revisão externa (aceite do HE-R1-05).
 6. Revisão independente em todo PR com código (hoje 24 de 238 na plataforma).
-7. Métricas: uma linha em `metricas/registro.csv` por entrega.
+7. HE-OPS-01: entrar na próxima tag; depois, a skill `limpeza-de-disco` chamar o `resource-check` (escrita na home).
+8. Métricas: uma linha em `metricas/registro.csv` por entrega.
 
 ## 3. Problemas abertos
 
