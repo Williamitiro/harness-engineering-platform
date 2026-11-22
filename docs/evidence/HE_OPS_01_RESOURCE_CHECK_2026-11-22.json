@@ -2,14 +2,14 @@
   "schema_version": 1,
   "kind": "resource-check",
   "status": "FAIL",
-  "checked_at": "2026-11-22T15:54:39.221421-03:00",
+  "checked_at": "2026-11-22T16:09:03.998944-03:00",
   "platform": "win32",
   "checks": [
     {
       "id": "disk_free",
       "rule": "espaço livre",
       "status": "FAIL",
-      "value": 8.3,
+      "value": 7.8,
       "limit": 20,
       "cause": "disco abaixo da margem de um dia de sessões",
       "fix": "rodar a skill limpeza-de-disco (diagnóstico e simulação antes de apagar)"
@@ -18,7 +18,7 @@
       "id": "commit",
       "rule": "memória comprometida <= RAM + folga",
       "status": "FAIL",
-      "value": 60.0,
+      "value": 55.5,
       "limit": 39.7,
       "cause": "memória comprometida acima da RAM: o Windows aumenta o pagefile no disco",
       "fix": "arquivar as sessões paradas; desligar o plugin pesado onde não é usado"
@@ -36,7 +36,7 @@
       "id": "threejs_servers",
       "rule": "servidores do plugin 3D",
       "status": "FAIL",
-      "value": 22,
+      "value": 25,
       "limit": 2,
       "cause": "plugin parallax-threejs ligado em todas as sessões (abre um Chrome ao iniciar)",
       "fix": "desligar parallax-threejs na conta e ligar só nos repositórios de 3D"
@@ -45,7 +45,7 @@
       "id": "plugin_ram",
       "rule": "RAM de servidores MCP de navegador e seus Chromes",
       "status": "FAIL",
-      "value": 16.4,
+      "value": 21.8,
       "limit": 2,
       "cause": "servidores MCP de navegador e Chromes escondidos ocupando RAM",
       "fix": "arquivar as sessões paradas; ver 'owners' para saber quem os mantém"
@@ -68,9 +68,9 @@
     },
     {
       "id": "claude_processes",
-      "rule": "processos claude abertos",
+      "rule": "sessões claude abertas (sem os processos do app)",
       "status": "FAIL",
-      "value": 35,
+      "value": 21,
       "limit": 15,
       "cause": "sessões demais abertas ao mesmo tempo, mesmo paradas",
       "fix": "arquivar as sessões paradas; ligar o arquivamento automático após o PR"
@@ -79,7 +79,7 @@
       "id": "claude_worktrees",
       "rule": "worktrees do Claude em todos os repositórios",
       "status": "FAIL",
-      "value": 48,
+      "value": 50,
       "limit": 30,
       "cause": "worktrees acumuladas (cada uma pode ter seu node_modules)",
       "fix": "arquivar sessões de PR mesclado; no app, limpar worktrees; avaliar worktree.symlinkDirectories"
@@ -114,59 +114,59 @@
     {
       "owner_pid": null,
       "owner": "órfão (pai morto)",
-      "processes": 52,
-      "ram_gb": 2.43
+      "processes": 73,
+      "ram_gb": 3.0
     },
     {
-      "owner_pid": 22196,
+      "owner_pid": 2032,
       "owner": "claude.exe",
-      "processes": 19,
-      "ram_gb": 1.15
-    },
-    {
-      "owner_pid": 5276,
-      "owner": "claude.exe",
-      "processes": 19,
-      "ram_gb": 1.15
-    },
-    {
-      "owner_pid": 45252,
-      "owner": "claude.exe",
-      "processes": 19,
-      "ram_gb": 1.14
-    },
-    {
-      "owner_pid": 46220,
-      "owner": "claude.exe",
-      "processes": 19,
-      "ram_gb": 1.14
-    },
-    {
-      "owner_pid": 27184,
-      "owner": "claude.exe",
-      "processes": 19,
-      "ram_gb": 1.13
+      "processes": 29,
+      "ram_gb": 1.42
     },
     {
       "owner_pid": 29492,
       "owner": "claude.exe",
-      "processes": 28,
-      "ram_gb": 0.96
+      "processes": 38,
+      "ram_gb": 1.34
     },
     {
-      "owner_pid": 44724,
+      "owner_pid": 45252,
       "owner": "claude.exe",
-      "processes": 19,
-      "ram_gb": 0.64
+      "processes": 21,
+      "ram_gb": 1.25
+    },
+    {
+      "owner_pid": 8788,
+      "owner": "claude.exe",
+      "processes": 21,
+      "ram_gb": 1.25
+    },
+    {
+      "owner_pid": 54060,
+      "owner": "claude.exe",
+      "processes": 21,
+      "ram_gb": 1.25
+    },
+    {
+      "owner_pid": 5276,
+      "owner": "claude.exe",
+      "processes": 21,
+      "ram_gb": 1.25
+    },
+    {
+      "owner_pid": 7016,
+      "owner": "claude.exe",
+      "processes": 21,
+      "ram_gb": 1.25
     }
   ],
   "worktrees_by_repo": {
     "williamitiro-web": 10,
     "videos-motions": 9,
+    "negocios-com-evidencia": 5,
     "nexus-quant": 5,
     "resiplac-core": 5,
-    "negocios-com-evidencia": 4,
-    "central-inteligencia": 3,
+    "central-inteligencia": 4,
     "frontend-resiplac": 3,
     "harness-engineering": 3,
     "modelo-de-negocio-resiplac": 2,
@@ -175,9 +175,16 @@
     "itiro-negocios-ideias": 1
   },
   "codex_worktrees": 1,
+  "codex_mcp_enabled": [
+    "blender-lab",
+    "node_repl"
+  ],
   "history_gb_by_tool": {
     "claude": 7.1,
     "codex": 0.7
   },
+  "reminders": [
+    "No app: conferir o arquivamento automático (auto_archive_on_pr_close, auto_archive_inactive_days)."
+  ],
   "note": "Somente leitura: nada foi apagado, fechado ou alterado."
 }

@@ -214,10 +214,14 @@ Quando o disco estiver acabando, o PC estiver lento ou no fim do dia:
 python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py resource-check
 ```
 
+Até sair a próxima versão marcada, esse comando só existe na pasta de desenvolvimento do Harness: rode
+`python scripts\harnessctl.py resource-check` de dentro dela.
+
 Ele **só lê** e responde em uns segundos. Para cada regra (espaço livre, memória comprometida, pagefile, Chromes
 escondidos dos servidores MCP, processos órfãos, sessões abertas, worktrees, histórico, plugin pesado ligado), mostra
 `PASS` ou `FAIL`, o número medido, o limite, a causa e o que fazer. No fim, lista quem mantém os processos de
-navegador vivos: cada sessão (`claude.exe` e o número do processo) ou "órfão", quando a sessão dona já fechou. O que
+navegador vivos: cada sessão (`claude.exe` e o número do processo), "órfão", quando a sessão dona já fechou, ou
+"sem sessão dona", quando quem abriu foi o próprio app. Os processos internos do app não contam como sessões. O que
 não deu para medir sai `NOT_RUN`, e o veredito fica `INCONCLUSIVE`. Os limites ficam em `config/resource_budget.json`.
 
 Ele não apaga nem fecha nada. A limpeza é com a skill `limpeza-de-disco`, que mostra a lista e espera o seu "sim".

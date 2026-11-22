@@ -13,10 +13,11 @@
     "claude_worktrees_max": 30,
     "history_gb_max": 20
   },
-  "plugin_pattern": "threejs-devtools-mcp|chrome-devtools-mcp|@playwright/mcp|puppeteer_dev_chrome_profile|playwright_chromiumdev",
+  "plugin_pattern": "threejs-devtools-mcp|chrome-devtools-mcp|@playwright[\\\\/]mcp|playwright-mcp|ms-playwright-mcp|puppeteer_dev_chrome_profile|playwright_chromiumdev",
   "threejs_pattern": "threejs-devtools-mcp",
   "profile_prefixes": ["puppeteer_dev_chrome_profile", "playwright_chromiumdev_profile"],
   "heavy_plugin": "parallax-threejs",
   "user_mcp_allowed": ["gemini-notebook"],
-  "owner_names": ["claude.exe", "codex.exe", "claude", "codex"]
+  "owner_names": ["claude.exe", "codex.exe", "claude", "codex"],
+  "app_pattern": "--type=|\\\\WindowsApps\\\\"
 }

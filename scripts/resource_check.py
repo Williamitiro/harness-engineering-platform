@@ -31,15 +31,17 @@ LIMIT_KEYS = {
     "orphan_profiles_max", "orphan_trees_max", "claude_processes_max", "claude_worktrees_max", "history_gb_max",
 }
 BUDGET_KEYS = {"schema_version", "note", "limits", "plugin_pattern", "threejs_pattern", "profile_prefixes",
-               "heavy_plugin", "user_mcp_allowed", "owner_names"}
+               "heavy_plugin", "user_mcp_allowed", "owner_names", "app_pattern"}
 
 PS_SNAPSHOT = r"""
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $os = Get-CimInstance Win32_OperatingSystem
 $pf = (Get-CimInstance Win32_PageFileUsage | Measure-Object AllocatedBaseSize -Sum).Sum
 $procs = @(Get-CimInstance Win32_Process | ForEach-Object {
   [pscustomobject]@{
     pid = [int]$_.ProcessId; ppid = [int]$_.ParentProcessId; name = [string]$_.Name; cmd = [string]$_.CommandLine
+    exe = [string]$_.ExecutablePath
     created = $(if ($_.CreationDate) { ([DateTimeOffset]$_.CreationDate).ToUnixTimeSeconds() } else { $null })
     ws = [int64]$_.WorkingSetSize
   }
@@ -73,7 +75,7 @@ def read_budget(path: Path) -> dict:
     for key, value in limits.items():
         if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
             raise BudgetError(f"limit {key} must be a non-negative number")
-    for key in ("plugin_pattern", "threejs_pattern"):
+    for key in ("plugin_pattern", "threejs_pattern", "app_pattern"):
         try:
             re.compile(str(budget.get(key, "")))
         except re.error as exc:
@@ -107,17 +109,17 @@ def collect_windows(timeout_s: float = 90.0) -> dict | None:
         if done.returncode != 0:
             return None
         data = json.loads(done.stdout)
-    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+        procs = data.get("processes") or []
+        if isinstance(procs, dict):
+            procs = [procs]
+        return {
+            "ram_gb": data["ram_kb"] / 1024 ** 2,
+            "commit_gb": (data["total_virtual_kb"] - data["free_virtual_kb"]) / 1024 ** 2,
+            "pagefile_gb": (data["pagefile_mb"] or 0) / 1024,
+            "processes": [p for p in procs if isinstance(p, dict) and isinstance(p.get("pid"), int)],
+        }
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, TypeError, AttributeError):
         return None
-    procs = data.get("processes") or []
-    if isinstance(procs, dict):
-        procs = [procs]
-    return {
-        "ram_gb": data["ram_kb"] / 1024 ** 2,
-        "commit_gb": (data["total_virtual_kb"] - data["free_virtual_kb"]) / 1024 ** 2,
-        "pagefile_gb": (data["pagefile_mb"] or 0) / 1024,
-        "processes": procs,
-    }
 
 
 def dir_bytes(path: Path) -> int | None:
@@ -151,6 +153,19 @@ def _read_json(path: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def codex_local_mcp(path: Path) -> list[str] | None:
+    """Local (command) MCP servers the Codex starts in every project, unless `enabled = false`. Info only."""
+    try:
+        import tomllib
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (ImportError, OSError, ValueError):
+        return None
+    servers = data.get("mcp_servers")
+    if not isinstance(servers, dict):
+        return []
+    return sorted(n for n, c in servers.items() if isinstance(c, dict) and c.get("command") and c.get("enabled", True))
+
+
 def collect(home: Path, dev_root: Path, temp: Path | None, budget: dict) -> dict:
     snap: dict[str, Any] = {"platform": sys.platform, "checked_at": dt.datetime.now().astimezone().isoformat()}
     anchor = dev_root if dev_root.exists() else home
@@ -167,23 +182,27 @@ def collect(home: Path, dev_root: Path, temp: Path | None, budget: dict) -> dict
             snap["temp_profiles"] = sorted(str(p) for p in temp.iterdir() if p.is_dir() and p.name.startswith(prefixes))
         except OSError:
             snap["temp_profiles"] = None
-    worktrees: dict[str, int] = {}
-    if dev_root.is_dir():
-        for repo in sorted(p for p in dev_root.iterdir() if p.is_dir()):
-            wt = repo / ".claude" / "worktrees"
-            if wt.is_dir():
-                worktrees[repo.name] = sum(1 for p in wt.iterdir() if p.is_dir())
-        snap["claude_worktrees"] = worktrees
-    else:
+    try:
+        snap["claude_worktrees"] = None if not dev_root.is_dir() else {
+            repo.name: sum(1 for p in (repo / ".claude" / "worktrees").iterdir() if p.is_dir())
+            for repo in sorted(p for p in dev_root.iterdir() if p.is_dir())
+            if (repo / ".claude" / "worktrees").is_dir()}
+    except OSError:
         snap["claude_worktrees"] = None
     codex_home = Path(os.environ.get("CODEX_HOME") or home / ".codex")
     codex_wt = codex_home / "worktrees"
-    snap["codex_worktrees"] = sum(1 for p in codex_wt.iterdir() if p.is_dir()) if codex_wt.is_dir() else None
+    try:
+        snap["codex_worktrees"] = sum(1 for p in codex_wt.iterdir() if p.is_dir()) if codex_wt.is_dir() else None
+    except OSError:
+        snap["codex_worktrees"] = None
     settings = _read_json(home / ".claude" / "settings.json")
-    snap["enabled_plugins"] = (settings or {}).get("enabledPlugins") if settings is not None else None
+    plugins = None if settings is None else settings.get("enabledPlugins", {})
+    snap["enabled_plugins"] = plugins if isinstance(plugins, dict) else None
     user_cfg = _read_json(home / ".claude.json")
-    snap["user_mcp"] = None if user_cfg is None else sorted(
-        name for name, cfg in (user_cfg.get("mcpServers") or {}).items() if isinstance(cfg, dict) and cfg.get("command"))
+    servers = None if user_cfg is None else user_cfg.get("mcpServers", {})
+    snap["user_mcp"] = None if not isinstance(servers, dict) else sorted(
+        name for name, cfg in servers.items() if isinstance(cfg, dict) and cfg.get("command"))
+    snap["codex_mcp_enabled"] = codex_local_mcp(codex_home / "config.toml")
     claude_h = dir_bytes(home / ".claude" / "projects")
     codex_h = dir_bytes(codex_home / "sessions")
     snap["history_gb"] = None if claude_h is None and codex_h is None else {
@@ -223,25 +242,40 @@ def orphan_roots(procs: list[dict], members: list[dict]) -> list[dict]:
     return roots
 
 
-def owners(procs: list[dict], members: list[dict], owner_names: list[str]) -> list[dict]:
-    """Group plugin processes by the nearest ancestor that is an agent (claude/codex): who keeps them alive."""
-    live = {p["pid"]: p for p in procs}
+def is_app_process(p: dict, app_pattern: str) -> bool:
+    """A process of the desktop app itself (Electron helpers, WindowsApps install), not an agent session."""
+    return bool(re.search(app_pattern, f"{p.get('cmd') or ''}\n{p.get('exe') or ''}", re.IGNORECASE))
+
+
+def agent_sessions(procs: list[dict], owner_names: list[str], app_pattern: str) -> list[dict]:
     names = {n.lower() for n in owner_names}
+    return [p for p in procs if (p.get("name") or "").lower() in names and not is_app_process(p, app_pattern)]
+
+
+def owners(procs: list[dict], members: list[dict], owner_names: list[str], app_pattern: str) -> list[dict]:
+    """Group plugin processes by the nearest ancestor that is an agent session (claude/codex, not the app):
+    who keeps them alive. Chains that end at a dead parent are orphans; chains that reach a live root with no
+    agent on the way are 'no session' (e.g. started by the app itself)."""
+    live = {p["pid"]: p for p in procs}
+    agents = {p["pid"] for p in agent_sessions(procs, owner_names, app_pattern)}
     groups: dict[Any, dict] = {}
     for p in members:
-        cur, seen, owner = p, set(), None
+        cur, seen, owner, dead = p, set(), None, False
         while cur is not None and cur["pid"] not in seen:
             seen.add(cur["pid"])
-            if (cur.get("name") or "").lower() in names and cur is not p:
+            if cur["pid"] in agents and cur is not p:
                 owner = cur
                 break
             parent = live.get(cur.get("ppid"))
             if parent is not None and cur.get("created") is not None and parent.get("created") is not None \
                     and parent["created"] > cur["created"]:
                 parent = None
+            if parent is None and cur.get("ppid") not in (0, None):
+                dead = True
             cur = parent
-        key = owner["pid"] if owner else None
-        g = groups.setdefault(key, {"owner_pid": key, "owner": owner["name"] if owner else "órfão (pai morto)",
+        key = owner["pid"] if owner else ("dead" if dead else "none")
+        label = owner["name"] if owner else ("órfão (pai morto)" if dead else "sem sessão dona")
+        g = groups.setdefault(key, {"owner_pid": owner["pid"] if owner else None, "owner": label,
                                     "processes": 0, "ram_gb": 0.0})
         g["processes"] += 1
         g["ram_gb"] += (p.get("ws") or 0) / GB
@@ -288,8 +322,10 @@ def evaluate(snap: dict, budget: dict) -> dict:
     if profiles is None or procs is None:
         orphan_prof = None
     else:
-        cmds = "\n".join((p.get("cmd") or "") for p in procs).lower()
-        orphan_prof = [x for x in profiles if x.lower() not in cmds]
+        cmds = "\n".join((p.get("cmd") or "") for p in procs)
+        # whole path only: a profile whose name is a prefix of another in use must not count as in use
+        orphan_prof = [x for x in profiles
+                       if not re.search(re.escape(x) + r"(?![\w.-])", cmds, re.IGNORECASE)]
     checks.append(_check("orphan_profiles", "perfis de Chrome órfãos no Temp",
                          None if orphan_prof is None else len(orphan_prof), L["orphan_profiles_max"],
                          None if orphan_prof is None else len(orphan_prof) <= L["orphan_profiles_max"],
@@ -301,8 +337,8 @@ def evaluate(snap: dict, budget: dict) -> dict:
                          None if roots is None else len(roots) <= L["orphan_trees_max"],
                          "a sessão dona fechou e os processos ficaram vivos",
                          "fechar essas árvores de processo (com o sim do dono) e relatar o defeito à ferramenta"))
-    claude = None if procs is None else [p for p in procs if (p.get("name") or "").lower() in ("claude.exe", "claude")]
-    checks.append(_check("claude_processes", "processos claude abertos", None if claude is None else len(claude),
+    claude = None if procs is None else agent_sessions(procs, ["claude.exe", "claude"], budget["app_pattern"])
+    checks.append(_check("claude_processes", "sessões claude abertas (sem os processos do app)", None if claude is None else len(claude),
                          L["claude_processes_max"], None if claude is None else len(claude) <= L["claude_processes_max"],
                          "sessões demais abertas ao mesmo tempo, mesmo paradas",
                          "arquivar as sessões paradas; ligar o arquivamento automático após o PR"))
@@ -338,10 +374,14 @@ def evaluate(snap: dict, budget: dict) -> dict:
     overall = "FAIL" if "FAIL" in statuses else ("INCONCLUSIVE" if "NOT_RUN" in statuses else "PASS")
     report = {"schema_version": 1, "kind": "resource-check", "status": overall,
               "checked_at": snap.get("checked_at"), "platform": snap.get("platform"), "checks": checks,
-              "owners": None if members is None else owners(procs, members, budget["owner_names"])[:8],
+              "owners": None if members is None else owners(procs, members, budget["owner_names"],
+                                                            budget["app_pattern"])[:8],
               "worktrees_by_repo": None if wts is None else dict(sorted(wts.items(), key=lambda kv: -kv[1])),
               "codex_worktrees": snap.get("codex_worktrees"),
+              "codex_mcp_enabled": snap.get("codex_mcp_enabled"),
               "history_gb_by_tool": None if hist is None else {k: _r(v) for k, v in hist.items()},
+              "reminders": ["No app: conferir o arquivamento automático (auto_archive_on_pr_close, "
+                            "auto_archive_inactive_days)."],
               "note": "Somente leitura: nada foi apagado, fechado ou alterado."}
     return report
 
@@ -356,6 +396,10 @@ def render_text(rep: dict) -> str:
         lines.append("  quem mantém os processos de navegador/MCP (por RAM):")
         for g in rep["owners"][:5]:
             lines.append(f"    {g['owner']} pid={g['owner_pid']}: {g['processes']} processos, {g['ram_gb']} GB")
+    if rep.get("codex_mcp_enabled"):
+        lines.append("  INFO Codex: MCP locais ligados em todo projeto: " + ", ".join(rep["codex_mcp_enabled"]))
+    for r in rep.get("reminders") or []:
+        lines.append("  INFO " + r)
     lines.append("  " + rep["note"])
     return "\n".join(lines)
 
@@ -370,16 +414,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="saída JSON (padrão: texto curto)")
     parser.add_argument("--output", type=Path, help="gravar também o JSON neste arquivo (ex.: _local/artifacts/)")
     args = parser.parse_args(argv)
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")  # a pipe in cp1252 must not turn a report into a crash
+        except (AttributeError, ValueError):
+            pass
     try:
         budget = read_budget(args.budget)
-    except BudgetError as exc:
-        print(json.dumps({"status": "BLOCKED", "reason": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        rep = evaluate(collect(args.home, args.dev_root, args.temp, budget), budget)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(rep, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(json.dumps(rep, indent=2, ensure_ascii=False) if args.json else render_text(rep))
+    except Exception as exc:  # anything unexpected is BLOCKED (2), never confused with FAIL (1)
+        print(json.dumps({"status": "BLOCKED", "reason": f"{type(exc).__name__}: {exc}"}, ensure_ascii=False),
+              file=sys.stderr)
         return 2
-    rep = evaluate(collect(args.home, args.dev_root, args.temp, budget), budget)
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(rep, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(json.dumps(rep, indent=2, ensure_ascii=False) if args.json else render_text(rep))
     return {"PASS": 0, "FAIL": 1, "INCONCLUSIVE": 3}[rep["status"]]
 
 
