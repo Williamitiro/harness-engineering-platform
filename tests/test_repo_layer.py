@@ -156,7 +156,10 @@ class RepoLayerTests(unittest.TestCase):
         self.assertEqual(h.repo_verify(self.repo)["docs"]["status"], "PASS")  # verify does read: the policy opted in
 
     def test_file_from_an_earlier_approved_template_is_still_removed_exactly(self):
-        old = subprocess.check_output(["git", "-C", str(ROOT), "show", "721abab:templates/repo/AGENTS.md"])
+        # The v1.3.0 template (721abab) is today's minus the "Onde gravar" section; CI checkouts are shallow, so
+        # it is rebuilt here instead of read from history.
+        start, end = AGENTS_TEMPLATE.index(b"## Onde gravar\n"), AGENTS_TEMPLATE.index(b"## Comandos do projeto")
+        old = AGENTS_TEMPLATE[:start] + AGENTS_TEMPLATE[end:]
         self.assertIn(h.digest(old), h.PAST_TEMPLATE_SHA["AGENTS.md"])
         self.assertNotEqual(old, AGENTS_TEMPLATE)
         h.repo_attach(self.repo)
