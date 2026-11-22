@@ -24,7 +24,7 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 | CI (Linux + Windows, actions por SHA) | ✅ | `.github/workflows/quality.yml` |
 | **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ na `v1.3.0`, hook instalado. **Claude Code: PASS** no ensaio real (lugar, orçamento e `Stop`). Codex: `NOT_RUN` | 38 testes offline; revisão do PR #17 (10 achados corrigidos); `evidence/HE_DOC_02_ENSAIO_CLAUDE_2026-11-21.json` |
 | **Caminho único de documentos (HE-DOC-04)**: `setup-harness` com etapa de documentos e limpeza; `project-verify` com `docs` (`null` sem planta) | ✅ desde a `v1.4.1` (duas revisões independentes) | suíte offline PASS; `evidence/HE_DOC_04_VERIFICACAO_2026-11-22.json`, `evidence/HE_DOC_04_1_REVISAO_2026-11-22.json` |
-| **Recursos do computador (HE-OPS-01/02)**: `resource-check` (só leitura) e `resource-clean plan/apply`; skill `limpeza-de-disco` ligada a eles | ✅ `v1.5.0`, instalada; 1ª limpeza real 22/11: livre 18,2 → 35,9 GB (39 itens, 7 sessões); sessão filha arquivada junto sem perda → corrigido para a `v1.5.1` | 47 testes; mutações das travas pegas; `evidence/HE_OPS_01_RESOURCE_CHECK_2026-11-22.json` |
+| **Recursos do computador (HE-OPS-01/02)**: `resource-check`, `resource-clean plan/apply`, skill `limpeza-de-disco` | ✅ `v1.5.0` instalada; limpeza 22/11: 18,2 → 35,9 GB livres; `v1.5.1`: sessões filhas, backup sem leitor ao OneDrive (só por id), catálogos protegidos | 51 testes; mutações pegas; `evidence/HE_OPS_01_RESOURCE_CHECK_2026-11-22.json` |
 | JEV via HTTPS | ✅ código; smoke relatado | `scripts/jev_http.py` |
 | Isolamento G1 | ⚠️ só MXC do Codex observado | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — |
@@ -40,8 +40,8 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 4. Rodar `scripts/daily_report.py` no fim do dia e anotar aqui o que falhar.
 5. Primeira tarefa real na plataforma com o Harness, com revisão externa (aceite do HE-R1-05).
 6. Revisão independente em todo PR com código (hoje 24 de 238 na plataforma).
-7. HE-OPS-02: o dono desliga o parallax-threejs na conta (6 servidores voltaram em minutos) e decide o arquivamento
-   automático do app; sem isso o disco volta a encher.
+7. HE-OPS-02: o dono desliga o parallax-threejs na conta (6 servidores voltaram em minutos); "arquivar ao fechar
+   o PR" ficou desligado de propósito (a sessão segue depois do merge).
 8. Métricas: uma linha em `metricas/registro.csv` por entrega.
 
 ## 3. Problemas abertos

@@ -191,6 +191,122 @@ class FilesPlanCase(Base):
         self.assertEqual(quiet, [])  # switched off in the account: nothing running, nothing to propose
 
 
+class OffloadCase(Base):
+    """_local/backups -> OneDrive/10-dev/<repo>/backups, only what no tracked file reads, only by explicit id."""
+
+    def setUp(self):
+        super().setUp()
+        self.od = self.home / "OneDrive"
+        (self.od / "10-dev").mkdir(parents=True)
+        self.env = unittest.mock.patch.dict("os.environ", {"OneDrive": str(self.od)})
+        self.env.start()
+        self.addCleanup(self.env.stop)
+        self.repo = self.dev / "repo"
+        subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
+        git(self.repo, "config", "user.email", "t@t")
+        git(self.repo, "config", "user.name", "t")
+        (self.repo / "cfg.env").write_text("DATA=_local/backups/lido/dados.csv\n", encoding="utf-8")
+        git(self.repo, "add", "cfg.env")
+        git(self.repo, "commit", "-q", "-m", "c")
+        b = self.repo / "_local" / "backups"
+        for name in ("lido", "livre", "pequeno"):
+            (b / name).mkdir(parents=True)
+        (b / "lido" / "dados.csv").write_bytes(b"1" * 10)
+        (b / "livre" / "sub").mkdir()
+        (b / "livre" / "sub" / "a.bin").write_bytes(b"2" * 20)
+        (b / "livre.tar").write_bytes(b"3" * 30)
+        (b / "pequeno" / "x").write_bytes(b"4")
+        self.min = unittest.mock.patch.object(cl, "OFFLOAD_MIN_BYTES", 5)
+        self.min.start()
+        self.addCleanup(self.min.stop)
+
+    def by_name(self, items):
+        return {Path(x["target"]).name: x for x in items}
+
+    def test_plan_classes(self):
+        items = self.by_name(cl.plan_offload(self.dev, self.home))
+        self.assertEqual(items["lido"]["safety"], "manter")
+        self.assertIn("cfg.env", items["lido"]["reason"])
+        self.assertEqual(items["livre"]["safety"], "decisao")
+        self.assertEqual(Path(items["livre"]["dest"]), self.od / "10-dev" / "repo" / "backups" / "livre")
+        self.assertEqual(items["livre.tar"]["safety"], "decisao")
+        self.assertNotIn("pequeno", items)  # below the size floor
+        self.assertTrue(all(x["kind"] == "offload_backup" and x["safety"] != "seguro" for x in items.values()))
+        (self.od / "10-dev" / "repo" / "backups" / "livre").mkdir(parents=True)
+        self.assertEqual(self.by_name(cl.plan_offload(self.dev, self.home))["livre"]["safety"], "manter")
+        kept = self.by_name(cl.plan_offload(self.dev, self.home, {"repo/livre.tar": "catálogo protegido"}))
+        self.assertEqual((kept["livre.tar"]["safety"], kept["livre.tar"]["reason"]), ("manter", "catálogo protegido"))
+        no_onedrive = self.root / "other-home"
+        no_onedrive.mkdir()
+        with unittest.mock.patch.dict("os.environ", {"OneDrive": str(no_onedrive / "OneDrive")}):
+            self.assertEqual(cl.plan_offload(self.dev, no_onedrive), [])
+
+    def plan(self):
+        snap = {"processes": [], "platform": sys.platform, "enabled_plugins": None}
+        return cl.build_plan(snap, BUDGET, self.dev, self.temp, self.home, None, None), snap
+
+    def test_safe_never_moves_backups_and_id_moves_with_proof(self):
+        plan, snap = self.plan()
+        res = cl.apply_plan(plan, None, True, True, BUDGET, self.home, snap=snap)
+        self.assertEqual(res["results"], [])  # --safe: offload is the owner's decision, never automatic
+        ids = {x["id"] for x in plan["items"] if x["kind"] == "offload_backup" and x["safety"] == "decisao"}
+        with unittest.mock.patch.object(cl, "mark_online_only", return_value=True) as mark:
+            res = cl.apply_plan(plan, ids, False, True, BUDGET, self.home, snap=snap)
+        self.assertEqual({r["status"] for r in res["results"]}, {"DONE"})
+        self.assertEqual(mark.call_count, 2)
+        dest = self.od / "10-dev" / "repo" / "backups"
+        self.assertEqual((dest / "livre" / "sub" / "a.bin").read_bytes(), b"2" * 20)
+        self.assertEqual((dest / "livre.tar").read_bytes(), b"3" * 30)
+        self.assertFalse((self.repo / "_local" / "backups" / "livre").exists())
+        self.assertTrue((self.repo / "_local" / "backups" / "lido" / "dados.csv").exists())
+
+    def test_bad_copy_keeps_original(self):
+        plan, snap = self.plan()
+        item = [x for x in plan["items"] if Path(x["target"]).name == "livre"][0]
+        real = cl.shutil.copytree
+
+        def corrupt(src, dst, *a, **k):  # copytree recurses through itself: corrupt only the top call
+            out = real(src, dst, *a, **k)
+            if str(dst).endswith(".partial"):
+                (Path(dst) / "sub" / "a.bin").write_bytes(b"x")
+            return out
+
+        def broken(src, dst, *a, **k):  # copy dies halfway
+            Path(dst).mkdir()
+            (Path(dst) / "half").write_bytes(b"h")
+            raise OSError("disk full")
+        backups = self.od / "10-dev" / "repo" / "backups"
+        for fake, why in ((corrupt, "não confere"), (broken, "disk full")):
+            with self.subTest(why), unittest.mock.patch.object(cl.shutil, "copytree", fake):
+                res = cl.apply_plan(plan, {item["id"]}, False, True, BUDGET, self.home, snap=snap)
+                self.assertEqual(res["results"][0]["status"], "FAILED")
+                self.assertIn(why, res["results"][0]["reason"])
+                self.assertTrue((self.repo / "_local" / "backups" / "livre" / "sub" / "a.bin").exists())
+                self.assertFalse((backups / "livre").exists())
+                self.assertFalse((backups / "livre.partial").exists())
+
+    def test_recheck_refuses_tampered_or_newly_read(self):
+        plan, snap = self.plan()
+        item = [x for x in plan["items"] if Path(x["target"]).name == "livre"][0]
+        tampered = json.loads(json.dumps(plan))
+        [x for x in tampered["items"] if x["id"] == item["id"]][0]["dest"] = str(self.root / "elsewhere" / "livre")
+        res = cl.apply_plan(tampered, {item["id"]}, False, True, BUDGET, self.home, snap=snap)
+        self.assertIn("destino fora", res["results"][0]["reason"])
+        (self.repo / "uses.py").write_text('open("_local/backups/livre/sub/a.bin")\n', encoding="utf-8")
+        git(self.repo, "add", "uses.py")
+        res = cl.apply_plan(plan, {item["id"]}, False, True, BUDGET, self.home, snap=snap)
+        self.assertEqual(res["results"][0]["status"], "SKIPPED")
+        self.assertTrue((self.repo / "_local" / "backups" / "livre").exists())
+        busy = {"processes": [proc(1, 0, "python.exe", f"python x {self.repo / '_local' / 'backups' / 'livre.tar'}")]}
+        tar = [x for x in plan["items"] if Path(x["target"]).name == "livre.tar"][0]
+        res = cl.apply_plan(plan, {tar["id"]}, False, True, BUDGET, self.home, snap=busy)
+        self.assertEqual(res["results"][0]["reason"], "em uso agora")
+        protected = dict(BUDGET, offload_keep={"repo/livre.tar": "catálogo"})
+        res = cl.apply_plan(plan, {tar["id"]}, False, True, protected, self.home, snap=snap)
+        self.assertIn("protegido", res["results"][0]["reason"])
+        self.assertTrue((self.repo / "_local" / "backups" / "livre.tar").exists())
+
+
 class RemoveTreeCase(Base):
     def test_readonly_files_are_removed(self):
         d = self.temp / "x" / "y"
