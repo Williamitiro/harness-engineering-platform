@@ -88,7 +88,7 @@ class ChecksTests(GateCase):
         self.assertNotIn("já estava acima", result["violations"][0]["message"])
         fix = result["violations"][0]["fix"]
         self.assertIn("sobram 93 bytes até o teto e a mudança pede 143; faltam 50", fix)  # "estado\n" = 7 bytes
-        self.assertIn("docs/arquivo (git mv)", fix)  # the archive folder of this policy
+        self.assertIn("git mv dele para docs/arquivo", fix)  # the archive folder of this policy
 
     def test_entry_over_budget_suggests_the_trigger_line_for_an_area_rule(self):
         # HE-DOC-04: the refusal says how many bytes are left and how to make room without losing a rule.
@@ -220,6 +220,77 @@ class ChecksTests(GateCase):
 
 class VerifyTests(GateCase):
     """HE-DOC-04: the whole repository against its policy (inside project-verify)."""
+
+    # ---- v1.4.1: findings of the independent review of v1.4.0
+
+    def test_links_that_open_are_not_reported_as_broken(self):
+        self.with_policy()
+        self.write("docs/Meu Guia.md", "guia\n")
+        self.write("docs/INDICE.md", "[spec](SPEC.md)\n[g](Meu%20Guia.md)\n[linha](SPEC.md:12)\n[col](SPEC.md:3:4)\n"
+                                     "```\n[exemplo](NAO_EXISTE.md)\n```\nUse `[x](TAMBEM_NAO.md)` assim.\n")
+        self.commit()
+        result = d.run_verify(self.repo)
+        self.assertEqual(result["status"], "PASS", result["problems"])
+
+    def test_a_really_broken_link_is_still_caught(self):
+        self.with_policy()
+        self.write("docs/INDICE.md", "[spec](SPEC.md)\n[some](SUMIU.md:12)\n[esp](Sem%20Arquivo.md)\n")
+        self.commit()
+        text = "\n".join(d.run_verify(self.repo)["problems"])
+        self.assertIn("SUMIU.md:12", text)
+        self.assertIn("Sem%20Arquivo.md", text)
+
+    def test_most_specific_pattern_wins_whatever_the_order(self):
+        policy = {**POLICY, "places": {"vigente": ["docs/**"], "arquivo": ["docs/arquivo/**"]}}
+        loaded = self.with_policy(policy)
+        self.assertEqual(d.kind_of(loaded, "docs/arquivo/velho.md"), "arquivo")
+        self.assertEqual(d.kind_of(loaded, "docs/novo.md"), "vigente")
+        (self.repo / "docs/arquivo").mkdir()
+        git(self.repo, "mv", "docs/SPEC.md", "docs/arquivo/SPEC.md")  # archiving is not "a new current document"
+        self.write("docs/INDICE.md", "indice\n")
+        result = d.run_check(self.repo, loaded)
+        self.assertEqual(result["status"], "DOCS_CHECK_PASS", result)
+
+    def test_policy_that_is_not_an_object_is_invalid_not_a_crash(self):
+        for bad in ("[]", "null", '"x"', '{"schema_version": 1, "places": {"v": ["*.md"]}, "limits": 5}'):
+            self.write(".harness/docs-policy.json", bad)
+            result = d.run_verify(self.repo)
+            self.assertEqual((result["status"], result["reason"]), ("FAIL", "PLANTA_INVALIDA"), bad)
+
+    def test_large_non_markdown_file_is_never_read(self):
+        policy = self.with_policy()
+        self.write("video.bin", "v")
+        original = Path.read_bytes
+
+        def guard(path, *a, **k):
+            if path.name == "video.bin":
+                raise AssertionError("read a file the checks never use")
+            return original(path, *a, **k)
+
+        with unittest.mock.patch.object(Path, "read_bytes", guard):
+            self.assertEqual(d.run_check(self.repo, policy)["status"], "DOCS_CHECK_PASS")
+            d.run_verify(self.repo)
+
+    def test_state_over_the_limit_and_growing_is_listed_once(self):
+        self.with_policy()
+        self.write("docs/ESTADO.md", "e" * 150)
+        self.commit()
+        self.write("docs/ESTADO.md", "e" * 160)
+        problems = d.run_verify(self.repo)["problems"]
+        self.assertEqual(sum("docs/ESTADO.md" in p for p in problems), 1, problems)
+
+    def test_budget_correction_starts_with_a_capital_and_says_how_to_archive_the_state(self):
+        policy = self.with_policy()
+        self.write("docs/ESTADO.md", "e" * 150)
+        fix = d.run_check(self.repo, policy)["violations"][0]["fix"]
+        self.assertIn("faltam 50. Deixe no estado", fix)
+        self.assertIn("git mv dele para docs/arquivo e comece um estado novo", fix)
+
+    def test_plan_without_policy_also_groups_by_first_folder_for_big_repositories(self):
+        for rel in ("packages/a/README.md", "packages/b/README.md", "docs/x.md"):
+            self.write(rel)
+        self.commit()
+        self.assertEqual(d.run_plan(self.repo)["md_by_top"], {"docs": 1, "packages": 2})
 
     def test_without_policy_the_result_is_null_not_zero_nor_error(self):
         self.write("x.md")

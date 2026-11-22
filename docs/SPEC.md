@@ -328,5 +328,10 @@ confere tudo; as regras de limpeza moram na própria skill (`skills/setup-harnes
 | Porteiro (orçamento) | diz quantos bytes sobram, quantos faltam e como abrir espaço: no `AGENTS.md`, a linha de gatilho "Vai mexer em X? Leia antes, obrigatório: <link>"; no estado, `git mv` para a pasta de arquivo da planta |
 | CI | `templates/ci/harness-docs-check.yml` chama a action fixada por tag; a skill oferece só onde já há `.github/workflows/`, com o "sim" |
 
+**v1.4.1** (revisão independente da v1.4.0): vale o padrão mais específico da planta (`docs/historico/**` ganha de
+`docs/**`, em qualquer ordem; empate, o primeiro tipo); link com `%20`, com sufixo de linha (`SPEC.md:12`) ou dentro
+de bloco ou trecho de código não é "quebrado"; planta que não é objeto dá `PLANTA_INVALIDA`; arquivo que não é `.md`
+nem papel nunca é lido; `docs.status` `NOT_RUN` dá status `DOCS_NOT_RUN` (código 1), nunca `OK`.
+
 A diferença entre `docs-check` e `docs-verify`: o primeiro olha só arquivo novo e crescimento (o legado não
 bloqueia o trabalho); o segundo olha o repositório inteiro, e é dele que a limpeza parte.

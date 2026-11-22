@@ -708,8 +708,9 @@ def docs_verify(repo: Path) -> dict:
 
 
 def with_docs(result: dict, docs: dict) -> dict:
-    if docs["status"] == "FAIL" and result["status"] == "OK":
-        result = {**result, "status": "DOCS_FAIL"}
+    """OK only when the documents passed or there is no policy; NOT_RUN is never reported as success."""
+    if result["status"] == "OK" and docs["status"] in ("FAIL", "NOT_RUN"):
+        result = {**result, "status": "DOCS_FAIL" if docs["status"] == "FAIL" else "DOCS_NOT_RUN"}
     return {**result, "docs": docs}
 
 
@@ -853,8 +854,8 @@ def lifecycle_main(argv: list[str]) -> int:
         else:
             result = repo_remove(args.repo, apply=args.apply)
         print(json.dumps(result, indent=2))
-        # project-verify: 0 = OK, 1 = look at it (DOCS_FAIL or NOT_ATTACHED), 2 = BLOCKED.
-        return 1 if result["status"] in ("DOCS_FAIL", "NOT_ATTACHED") else 0
+        # project-verify: 0 = OK, 1 = look at it (DOCS_FAIL, DOCS_NOT_RUN or NOT_ATTACHED), 2 = BLOCKED.
+        return 1 if result["status"] in ("DOCS_FAIL", "DOCS_NOT_RUN", "NOT_ATTACHED") else 0
     except (GateError, OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
         reason = str(exc) if isinstance(exc, GateError) else "project lifecycle blocked; no raw contents emitted"
         print(json.dumps({"status": "BLOCKED", "reason": reason}), file=sys.stderr)
@@ -1360,7 +1361,9 @@ def project_main(argv: list[str]) -> int:
     try:
         result = repo_inspect(args.repo)
         if args.action == "project-plan":
-            result["templates"] = {name: str(path.relative_to(ROOT).as_posix()) for name, path in REPO_RULES.items()}
+            # Only the templates that would be copied: an existing repository gets its policy proposed, not copied.
+            result["templates"] = {name: str(path.relative_to(ROOT).as_posix()) for name, path in REPO_RULES.items()
+                                   if name != DOCS_POLICY or result.get("docs_policy") == "WOULD_CREATE"}
             if result["status"] == "COMPATIBLE_NOT_RUNTIME_VERIFIED":
                 result["status"] = "PLANNED_NOT_INSTALLED"
         print(json.dumps(result, indent=2))
