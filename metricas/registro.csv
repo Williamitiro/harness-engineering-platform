@@ -23,3 +23,5 @@ data;sistema;versao;metrica;valor;unidade;contexto;alternativa_valor;fonte_evide
 2026-11-15;plataforma-metalurgica;referencia;M10_defeitos_por_pr_revisado;1,05;defeitos/PR;20 defeitos em 19 PRs revisados com codigo (238 PRs);;docs/evidence/HE_R2_BASELINE_QUALIDADE.json;agregado;[medido] outro repositorio
 2026-11-21;harness-engineering;HE-DOC-02;M1_testes_suite;306;testes;suite offline OK, 2 skipped (27 novos de docs_gate);;JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests;sim;[medido]
 2026-11-21;harness-engineering;HE-DOC-02;M1_tempo_suite;109,4;s;mesma execucao, Windows local;;idem;sim;[medido]
+2026-11-22;harness-engineering;HE-DOC-04;M1_testes_suite;343;testes;suite offline OK, 2 skipped (26 novos do HE-DOC-04);;JEV_REAL_INTEGRATION=0 python -W error -m unittest discover -s tests;sim;[medido]
+2026-11-22;harness-engineering;HE-DOC-04;M1_tempo_suite;85,1;s;mesma execucao, Windows local;;idem;sim;[medido]

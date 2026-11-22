@@ -115,7 +115,8 @@ O comando é o mesmo para projeto novo e projeto antigo. A skill descobre sozinh
 3. Digite `/setup-harness` (ou `$setup-harness` no Codex).
 4. O agente vai:
    - perguntar se pode iniciar o Git na pasta, caso ela ainda não seja um repositório;
-   - mostrar a lista de arquivos que vai criar (`AGENTS.md`, `CLAUDE.md`, `.harness/manifest.json`);
+   - mostrar a lista de arquivos que vai criar (`AGENTS.md`, `CLAUDE.md`, `.harness/manifest.json` e a planta de
+     documentos `.harness/docs-policy.json`, que diz onde cada tipo de documento mora);
    - pedir o seu "sim";
    - criar os arquivos e conferir.
 5. Pronto. Comece a programar normalmente.
@@ -130,7 +131,11 @@ O comando é o mesmo para projeto novo e projeto antigo. A skill descobre sozinh
    - comparar o seu `AGENTS.md` com as 5 regras de trabalho do Harness, mostrar quais faltam e quais já estão
      cobertas, e propor acrescentar só as que faltam, no estilo do seu arquivo;
    - propor os arquivos novos e, se o projeto exigir, criar uma **branch** e um **PR** em vez de mexer na `main`;
-   - pedir o seu "sim", aplicar e conferir.
+   - pedir o seu "sim", aplicar e conferir;
+   - **organizar a documentação**: sem planta de documentos, propor uma com as pastas que o projeto já usa (o "sim"
+     é por pasta); com `AGENTS.md`, estado ou índice acima do teto, ou documento claramente superado, propor a
+     limpeza (nada é apagado: o superado vai com `git mv` para a pasta de arquivo); com tudo em ordem, só conferir;
+   - se o projeto já tem CI no GitHub, oferecer o job que confere os documentos em cada PR.
 4. Revise o PR, como faria com qualquer outra mudança, e faça o merge.
 
 > **Regra de ouro:** o setup nunca apaga nem reescreve um arquivo que não foi ele que criou. Se encontrar um
@@ -207,7 +212,7 @@ funcionamento, como uma skill que nunca é usada ou uma sessão que termina com 
 
 | Quero… | O que digito no repositório | O que acontece |
 |---|---|---|
-| **Conferir** se está tudo certo | `/setup-harness verificar` | compara os arquivos com o recibo e diz OK ou o que mudou |
+| **Conferir** se está tudo certo | `/setup-harness verificar` | compara os arquivos com o recibo e confere os documentos contra a planta; diz OK ou o que corrigir. Sem planta, os documentos ficam "sem planta" (não é erro) e ele oferece fazer uma |
 | **Atualizar** depois de uma versão nova do Harness | §2, "Atualizar para uma versão nova"; depois, em cada repositório: `/setup-harness verificar` | o computador recebe a versão nova; o repositório só muda se a versão nova pedir, e sempre com o seu "sim" |
 | **Remover** do projeto | `/setup-harness remover` | mostra o que vai apagar (só o que ele criou) e pede confirmação |
 | **Ligar a conferência de documentos** (hook, opcional; altera a configuração global) | `python C:\Users\itiro\.harness-engineering\current\scripts\harnessctl.py docs-hook-plan` (prévia), depois o mesmo com `docs-hook-install --apply`; no Codex, aprove o hook em `/hooks`. Rode com o Python do sistema, fora de `.venv` (o hook guarda o caminho dele; `--python` escolhe outro) | o Claude Code e o Codex recusam `.md` no lugar errado e estado acima do teto, só em repositórios com `.harness/docs-policy.json`; `docs-hook-remove --apply` tira só a entrada do Harness |

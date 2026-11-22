@@ -8,6 +8,7 @@ Three checks, all on new files and growth only (legacy never blocks):
 
 Commands (also reachable as `harnessctl docs-<command>`):
   plan --repo R                 read-only report; without a policy, a skeleton to discuss
+  verify --repo R               read-only, the whole repository against its policy (part of project-verify)
   check --repo R [--base REF]   working tree vs HEAD, or vs merge-base(REF, HEAD) in CI
   hook                          Claude Code / Codex hook (PreToolUse and Stop) reading JSON on stdin
   hook-plan|hook-install|hook-verify|hook-remove --home H   machine hook entries (opt-in, SPEC §9)
@@ -124,6 +125,26 @@ def violation(path: str, rule: str, message: str, fix: str) -> dict:
 
 # ---------------------------------------------------------------- the three checks
 
+TRIGGER = "Vai mexer em X? Leia antes, obrigatório: <link>"  # same words as the setup-harness skill
+
+
+def archive_place(policy: dict) -> str:
+    """The archive folder the policy names, for the correction text (generic words when it has none)."""
+    pats = policy["places"].get("arquivo") or []
+    return pats[0].removesuffix("/**").removesuffix("/*") if pats else "a pasta de arquivo"
+
+
+def budget_fix(policy: dict, role: str, rel: str) -> str:
+    """How to make room, per role (HE-DOC-04): the AGENTS.md keeps general rules and points to area rules."""
+    if role == "entry":
+        return (f"corte o texto, ou leve a regra de uma área para um documento próprio e deixe no {rel} só a linha "
+                f"de gatilho \"{TRIGGER}\"; regra geral fica por inteiro")
+    if role == "state":
+        return f"deixe no estado só o que vale hoje e mova o detalhe superado para {archive_place(policy)} (git mv)"
+    return ("agrupe os links, ou dê a uma pasta o próprio índice (um tipo próprio em places, fora de "
+            "\"indexed\") e deixe aqui um link só para ele")
+
+
 def check_change(policy: dict, rel: str, old: int | None, new: int) -> list[dict]:
     """lugar + orcamento for one file: old is None when the file is new."""
     found = []
@@ -137,12 +158,13 @@ def check_change(policy: dict, rel: str, old: int | None, new: int) -> list[dict
         if new > limit and new > (old or 0):
             if old is not None and old > limit:
                 why = f" (já estava acima do teto, com {old}; não pode crescer)"
-                fix = f"não acrescente nada; corte o arquivo até {limit} bytes ou mova o detalhe para a pasta de arquivo"
+                room = f"não sobra nenhum byte: o arquivo já passa {old - limit} bytes do teto e precisa encolher"
             else:
                 why = f" (antes {old})" if old is not None else ""
-                fix = (f"cabem no máximo {limit - (old or 0)} bytes a mais; corte o texto ou mova o detalhe "
-                       "para a pasta de arquivo")
-            found.append(violation(rel, "orcamento", f"{role} ficaria com {new} bytes, teto {limit}{why}", fix))
+                room = (f"sobram {limit - (old or 0)} bytes até o teto e a mudança pede {new - (old or 0)}; "
+                        f"faltam {new - limit}")
+            found.append(violation(rel, "orcamento", f"{role} ficaria com {new} bytes, teto {limit}{why}",
+                                   f"{room}. {budget_fix(policy, role, rel)}"))
     return found
 
 
@@ -260,7 +282,8 @@ def run_plan(root: Path) -> dict:
     if policy is None:
         dirs: dict[str, int] = {}
         for rel in tracked:
-            parent = "/".join(rel.split("/")[:2][:-1]) if "/" in rel else "."
+            # Two folder levels: docs/adr and docs/historico are different kinds, not one "docs".
+            parent = "/".join(rel.split("/")[:-1][:2]) or "."
             dirs[parent] = dirs.get(parent, 0) + 1
         guess = lambda words: next((p for p in tracked if any(w in p.upper() for w in words)), None)
         return {"status": "NO_POLICY", "writes": 0, "md_files": len(tracked), "md_by_dir": dict(sorted(dirs.items())),
@@ -278,11 +301,56 @@ def run_plan(root: Path) -> dict:
             sizes[role] = {"file": rel, "bytes": size, "limit": policy["limits"][role],
                            "over": size is not None and size > policy["limits"][role]}
     by_kind: dict[str, int] = {}
+    outside = []
     for rel in tracked:
         kind = "ignorado" if matches(rel, policy["ignore"]) else (
             "papel" if roles_of(policy, rel) else kind_of(policy, rel) or "fora_da_politica")
         by_kind[kind] = by_kind.get(kind, 0) + 1
-    return {"status": "POLICY_FOUND", "writes": 0, "md_files": len(tracked), "by_kind": by_kind, "budget": sizes}
+        if kind == "fora_da_politica":
+            outside.append(rel)
+    return {"status": "POLICY_FOUND", "writes": 0, "md_files": len(tracked), "by_kind": by_kind, "budget": sizes,
+            "outside": outside}
+
+
+def run_verify(root: Path) -> dict:
+    """The whole repository against its policy (HE-DOC-04, part of `project-verify`). Read-only.
+
+    Unlike `check` (new files and growth only), this looks at what is already there: roles within their limit,
+    every tracked .md in a kind or in `ignore`, every index link alive, and nothing pending in the working tree.
+    Without a policy the result is `null` with reason SEM_PLANTA: not a failure and never 0.
+    """
+    try:
+        policy = load_policy(root)
+    except PolicyError as exc:
+        return {"status": "FAIL", "reason": "PLANTA_INVALIDA", "problems": [str(exc)]}
+    if policy is None:
+        return {"status": None, "reason": "SEM_PLANTA", "policy": POLICY,
+                "next": f"setup-harness: rode docs-plan e proponha {POLICY} com as pastas que já existem"}
+    plan, problems, notes = run_plan(root), [], []
+    for role, info in plan["budget"].items():
+        if info["bytes"] is None:  # a new repository has no state file yet: not a failure
+            notes.append(f"{role}: {info['file']} ainda não existe")
+        elif info["over"]:
+            problems.append(f"{role}: {info['file']} tem {info['bytes']} bytes, teto {info['limit']}")
+    for rel in plan["outside"][:20]:
+        problems.append(f"fora da planta: {rel} (dê um tipo em places ou ponha em ignore)")
+    if len(plan["outside"]) > 20:
+        problems.append(f"fora da planta: mais {len(plan['outside']) - 20} arquivos")
+    index = policy.get("index")
+    if index and (root / index).is_file():
+        _, broken = index_links(root, index, (root / index).read_text(encoding="utf-8", errors="replace"))
+        problems += [f"índice {index}: {b['message']}" for b in broken]
+    # Broken index links are already listed above, from the whole index.
+    # Files already listed as outside the policy (staged, not committed) are not listed twice.
+    listed = {key(r) for r in plan["outside"]}
+    pending = [v for v in run_check(root, policy)["violations"]
+               if not (v["rule"] == "indice" and v["message"].startswith("link quebrado"))
+               and not (v["rule"] == "lugar" and key(v["file"]) in listed)]
+    problems += [f"{v['file']}: regra {v['rule']}: {v['message']}" for v in pending]
+    budget = {role: {**info, "pct": round(100 * info["bytes"] / info["limit"]) if info["bytes"] is not None else None}
+              for role, info in plan["budget"].items()}
+    return {"status": "FAIL" if problems else "PASS", "policy": POLICY, "md_files": plan["md_files"],
+            "by_kind": plan["by_kind"], "budget": budget, "problems": problems, "notes": notes}
 
 
 # ---------------------------------------------------------------- hook (stdin JSON)
@@ -622,7 +690,7 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] == ["hook"]:
         return hook_main()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("action", choices=("plan", "check", "hook-plan", "hook-install", "hook-verify", "hook-remove"))
+    parser.add_argument("action", choices=("plan", "check", "verify", "hook-plan", "hook-install", "hook-verify", "hook-remove"))
     parser.add_argument("--repo", type=Path, default=Path("."))
     parser.add_argument("--base", help="check: compare with merge-base(BASE, HEAD) (CI)")
     parser.add_argument("--home", type=Path, default=Path.home())
@@ -639,12 +707,16 @@ def main(argv: list[str] | None = None) -> int:
                 raise PolicyError("não é um repositório Git")
             if args.action == "plan":
                 result = run_plan(root)
+            elif args.action == "verify":
+                result = run_verify(root)
             else:
                 policy = load_policy(root)
                 result = {"status": "NO_POLICY", "violations": []} if policy is None else run_check(root, policy, args.base)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         if args.action == "check" and result["violations"]:
             print(format_violations(result["violations"]), file=sys.stderr)
+            return 1
+        if args.action == "verify" and result["status"] == "FAIL":
             return 1
         return 0
     except (PolicyError, OSError, json.JSONDecodeError) as exc:

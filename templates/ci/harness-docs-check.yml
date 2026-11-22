@@ -1,0 +1,21 @@
+# Conferência de documentos do Harness Engineering (SPEC §11): lugar, orçamento e índice contra
+# .harness/docs-policy.json. Sem a planta, não faz nada. Copiado pela skill setup-harness com o "sim" do operador;
+# o arquivo passa a ser do projeto. Troque TAG pela versão do Harness instalada (ex.: v1.4.0).
+name: Harness docs-check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  docs-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # a conferência compara com a base do PR (merge-base)
+          persist-credentials: false
+      - uses: Williamitiro/harness-engineering-platform@TAG

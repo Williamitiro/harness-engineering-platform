@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "note": "Onde cada tipo de documento mora neste repositório (SPEC §11 do Harness Engineering). Conferido por harnessctl docs-check e project-verify. Este arquivo é do projeto: ajuste os caminhos e os tetos.",
+  "entry": "AGENTS.md",
+  "state": "docs/ESTADO.md",
+  "index": "AGENTS.md",
+  "limits": {"entry": 8192, "state": 5120, "index": 10240},
+  "places": {
+    "raiz": ["README.md", "CLAUDE.md", "CONTRIBUTING.md", "CHANGELOG.md", "SECURITY.md", "LICENSE.md", "CODE_OF_CONDUCT.md"],
+    "vigente": ["docs/*.md"],
+    "decisao": ["docs/adr/**"],
+    "pesquisa": ["docs/pesquisa/**"],
+    "evidencia": ["docs/evidencia/**"],
+    "arquivo": ["docs/historico/**"]
+  },
+  "indexed": ["vigente"],
+  "ignore": [".claude/**", ".agents/**", ".github/**", "tests/**", "vendor/**", "node_modules/**", "_local/**"]
+}

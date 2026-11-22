@@ -1,6 +1,6 @@
 # Estado do Harness Engineering
 
-**Atualizado em 21/11/2026.** Único lugar com status; teto de 5 KB (`.harness/docs-policy.json`). Detalhe e prova
+**Atualizado em 22/11/2026.** Único lugar com status; teto de 5 KB (`.harness/docs-policy.json`). Detalhe e prova
 de cada linha até 21/11: [historico/ESTADO_ATE_2026-11-21.md](historico/ESTADO_ATE_2026-11-21.md). Ao concluir uma
 entrega, troque a linha dela; o que não couber vai para `docs/evidence/`.
 
@@ -23,6 +23,7 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 | Relatório diário | ✅ | 9 testes; MANUAL §4 |
 | CI (Linux + Windows, actions por SHA) | ✅ | `.github/workflows/quality.yml` |
 | **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ na `v1.3.0`, hook instalado. **Claude Code: PASS** no ensaio real (lugar, orçamento e `Stop`). Codex: `NOT_RUN` | 38 testes offline; revisão do PR #17 (10 achados corrigidos); `evidence/HE_DOC_02_ENSAIO_CLAUDE_2026-11-21.json` |
+| **Caminho único de documentos (HE-DOC-04)**: `setup-harness` com etapa de documentos e regras de limpeza; `project-verify` com `docs` (`null` sem planta); planta no repositório novo; porteiro diz os bytes que sobram | ⏳ PR, tag `v1.4.0` pendente | suíte offline PASS; `evidence/HE_DOC_04_VERIFICACAO_2026-11-22.json` (5 repositórios `PASS`) |
 | JEV via HTTPS | ✅ código; smoke relatado | `scripts/jev_http.py` |
 | Isolamento G1 | ⚠️ só MXC do Codex observado | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — |
@@ -32,7 +33,7 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 1. **HE-DOC-02, o que falta: o Codex.** Aprovar o hook em `/hooks` e repetir os 3 ensaios (ou `BLOCKED_*` factual no
    Windows). A mensagem do orçamento corrigida no ensaio só chega ao hook instalado na próxima tag. Pendente do
    operador: o plano do GitHub (proteção de branch em privado).
-2. **HE-DOC-03** depois do Codex: limpeza por repositório, piloto `williamitiro-web` (SPEC §11.4).
+2. **HE-DOC-03:** 5 repositórios `PASS`, 11 na fila depois da `v1.4.0` (`evidence/HE_DOC_03_REPOS.json`).
 3. Ligação pendente: PR #1 do cad e do itiro-negocios-ideias (decisão do dono); `frontend-resiplac` e
    `modelo-de-negocio-resiplac` depois de resolver as alterações locais.
 4. Rodar `scripts/daily_report.py` no fim do dia e anotar aqui o que falhar.

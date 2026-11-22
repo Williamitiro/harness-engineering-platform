@@ -587,7 +587,19 @@ def remove_project(repo: Path, manifest: dict, apply: bool = True) -> dict:
 # absent, never reads or rewrites existing ones, and on removal deletes only files
 # it created that are still byte-identical to the approved template.
 
-REPO_RULES = {"AGENTS.md": ROOT / "templates/repo/AGENTS.md", "CLAUDE.md": ROOT / "templates/repo/CLAUDE.md"}
+DOCS_POLICY = ".harness/docs-policy.json"
+# HE-DOC-04: a new repository is born with the document policy; an existing one gets it proposed from docs-plan
+# (the folders it already uses), never from this generic template.
+REPO_RULES = {"AGENTS.md": ROOT / "templates/repo/AGENTS.md", "CLAUDE.md": ROOT / "templates/repo/CLAUDE.md",
+              DOCS_POLICY: ROOT / "templates/repo/docs-policy.json"}
+HARNESS_DIR_FILES = {"manifest.json", "docs-policy.json"}  # what a .harness folder of ours may hold
+# Bytes of earlier approved templates (sha256, LF; templates/repo is -text). A file created from one of them and
+# still byte-identical to what the manifest recorded stays UNCHANGED after the template moves on, so remove is
+# still exact. A forged record cannot use this: the recorded hash must be one of these.
+PAST_TEMPLATE_SHA = {
+    "AGENTS.md": {"de6dfe820e060555b5de1481105df357b5777b6b86daa01e7eb74c47cf92be98",   # c079e37 (HE-R1-03)
+                  "3292861ba8e843ca4b0f4a203711ae076ebf8627c1b76e0a1ee1889e7eb36034"},  # 721abab (HE-R1-06)
+}
 
 
 def check_repo_path(repo: Path) -> Path:
@@ -629,8 +641,9 @@ def repo_inspect(repo: Path) -> dict:
                 installed = read_repo_record(repo).get("package", 1)
             except (GateError, ValueError):
                 blockers.append({"path": PROJECT_STATE, "status": "BLOCKED_COLLISION"})
-        elif (repo / ".harness").exists():
+        elif (repo / ".harness").exists() and not harness_dir_is_ours(repo / ".harness"):
             blockers.append({"path": ".harness", "status": "BLOCKED_COLLISION"})
+    case = "NEW_REPO" if all(p.name == ".git" for p in repo.iterdir()) else "EXISTING_REPO"
     for name in REPO_RULES:
         path = repo / name
         try:
@@ -639,16 +652,19 @@ def repo_inspect(repo: Path) -> dict:
             blockers.append({"path": name, "status": "BLOCKED_PATH"})
             changes.append({"path": name, "action": "BLOCKED_PATH"})
             continue
-        if not path.exists():
+        if not path.exists() and name == DOCS_POLICY and case != "NEW_REPO":
+            # Existing repository: the setup-harness skill proposes it from docs-plan, with the operator's "yes".
+            changes.append({"path": name, "action": "PROPOSE_WITH_DOCS_PLAN"})
+        elif not path.exists():
             changes.append({"path": name, "action": "WOULD_CREATE"})
         elif path.is_file():
             changes.append({"path": name, "action": "PRESERVE_CHECK_IMPORT" if name == "CLAUDE.md" else "PRESERVE"})
         else:
             blockers.append({"path": name, "status": "BLOCKED_COLLISION"})
             changes.append({"path": name, "action": "BLOCKED_COLLISION"})
+    docs_policy = next(c["action"] for c in changes if c["path"] == DOCS_POLICY)
     if installed is None:
         changes.append({"path": PROJECT_STATE, "action": "WOULD_CREATE"})
-    case = "NEW_REPO" if all(p.name == ".git" for p in repo.iterdir()) else "EXISTING_REPO"
     if any(b["status"] == "BLOCKED_PATH" for b in blockers):
         status = "BLOCKED_PATH"
     elif blockers:
@@ -663,9 +679,38 @@ def repo_inspect(repo: Path) -> dict:
             "compatibility": {"repository": "GIT_MARKER_ONLY", "client_runtime": "NOT_PROBED",
                               "ownership": "NOT_CLAIMED"},
             "changes": changes if installed is None else [], "blockers": blockers,
+            # Shown even when attached: whether the document policy exists, comes from the template or is proposed.
+            "docs_policy": docs_policy,
             "note": "CLAUDE.md existente: confira se contém a linha @AGENTS.md (o Harness não lê nem altera)."
                     if any(c["action"] == "PRESERVE_CHECK_IMPORT" for c in changes) else None,
             "runtime_discovery": "NOT_RUN"}
+
+
+def harness_dir_is_ours(path: Path) -> bool:
+    """A .harness folder holding only Harness file names (e.g. the document policy written before attach).
+    An empty folder is not proof of anything and keeps blocking, as before HE-DOC-04."""
+    entries = list(path.iterdir()) if path.is_dir() else []
+    return bool(entries) and all(p.is_file() and p.name in HARNESS_DIR_FILES for p in entries)
+
+
+def docs_verify(repo: Path) -> dict:
+    """HE-DOC-04: the document check inside project-verify. Reads documents only when the project opted in with
+    .harness/docs-policy.json; without it the result is null (SEM_PLANTA), never 0 and never an error."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import docs_gate
+    finally:
+        sys.path.pop(0)
+    try:
+        return docs_gate.run_verify(repo)
+    except (docs_gate.PolicyError, OSError, subprocess.SubprocessError, ValueError) as exc:
+        return {"status": "NOT_RUN", "reason": str(exc) if isinstance(exc, docs_gate.PolicyError) else type(exc).__name__}
+
+
+def with_docs(result: dict, docs: dict) -> dict:
+    if docs["status"] == "FAIL" and result["status"] == "OK":
+        result = {**result, "status": "DOCS_FAIL"}
+    return {**result, "docs": docs}
 
 
 def validate_repo_record(record: dict) -> None:
@@ -693,15 +738,15 @@ def created_file_state(repo: Path, item: dict) -> str:
         current = digest(owned_bytes(path))
     except GateError:
         return "EDITED_BY_PROJECT"  # e.g. grew past the size bound; never owned again
-    template = digest(owned_bytes(REPO_RULES[item["path"]]))
-    return "UNCHANGED" if current == item["sha256"] == template else "EDITED_BY_PROJECT"
+    approved = {digest(owned_bytes(REPO_RULES[item["path"]])), *PAST_TEMPLATE_SHA.get(item["path"], ())}
+    return "UNCHANGED" if current == item["sha256"] and current in approved else "EDITED_BY_PROJECT"
 
 
 def repo_attach(repo: Path) -> dict:
     repo = project_root(repo)
     inspection = repo_inspect(repo)
     if inspection["status"] == "ATTACHED":
-        repo_verify(repo)
+        verify_files(repo)  # Harness files only: attach never reads the project's documents (HE-DOC-04)
         return {"status": "ALREADY_ATTACHED", "package": 2, "runtime_execution": "NOT_RUN"}
     if inspection["status"] == "LEGACY_ATTACHED":
         return {"status": "LEGACY_ATTACHED", "package": 1,
@@ -721,8 +766,13 @@ def repo_attach(repo: Path) -> dict:
             "runtime_execution": "NOT_RUN"}
 
 
-def repo_verify(repo: Path) -> dict:
-    repo = project_root(repo)
+def verify_files(repo: Path) -> dict:
+    """The Harness files only (manifest and the files it created); never opens the project's documents."""
+    state = repo / PROJECT_STATE
+    assert_no_symlink(state)
+    if not state.exists():
+        return {"status": "NOT_ATTACHED", "package": None, "files": None,
+                "next": "setup-harness (project-plan e project-attach)"}
     record = read_repo_record(repo)
     if record.get("package", 1) == 1:
         verify_project(repo, read_manifest(ROOT / "config/approved_skills.json"))
@@ -730,6 +780,12 @@ def repo_verify(repo: Path) -> dict:
     validate_repo_record(record)
     return {"status": "OK", "package": 2, "preserved": record["preserved"],
             "files": {item["path"]: created_file_state(repo, item) for item in record["files"]}}
+
+
+def repo_verify(repo: Path) -> dict:
+    """One check for the repository (HE-DOC-04): the Harness files and, with a policy, the documents."""
+    repo = project_root(repo)
+    return with_docs(verify_files(repo), docs_verify(repo))
 
 
 def repo_remove(repo: Path, apply: bool = False) -> dict:
@@ -797,7 +853,8 @@ def lifecycle_main(argv: list[str]) -> int:
         else:
             result = repo_remove(args.repo, apply=args.apply)
         print(json.dumps(result, indent=2))
-        return 0
+        # project-verify: 0 = OK, 1 = look at it (DOCS_FAIL or NOT_ATTACHED), 2 = BLOCKED.
+        return 1 if result["status"] in ("DOCS_FAIL", "NOT_ATTACHED") else 0
     except (GateError, OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
         reason = str(exc) if isinstance(exc, GateError) else "project lifecycle blocked; no raw contents emitted"
         print(json.dumps({"status": "BLOCKED", "reason": reason}), file=sys.stderr)
@@ -1334,7 +1391,7 @@ def main(argv: list[str] | None = None) -> int:
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
         "Lifecycle: project-attach / project-verify / project-remove. "
         "Personal bootstrap: setup-skill-plan / setup-skill-install / setup-skill-verify / setup-skill-remove. "
-        "Documents (SPEC §11): docs-plan / docs-check / docs-hook-plan / docs-hook-install / docs-hook-verify / "
+        "Documents (SPEC §11): docs-plan / docs-check / docs-verify / docs-hook-plan / docs-hook-install / docs-hook-verify / "
         "docs-hook-remove. "
         "Use COMMAND --help for their separate options."))
     parser.add_argument("action", choices=("plan", "install", "verify", "remove"))

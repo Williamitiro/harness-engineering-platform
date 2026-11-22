@@ -86,7 +86,29 @@ class ChecksTests(GateCase):
         self.assertEqual(self.rules(result), [("docs/ESTADO.md", "orcamento")])
         # Real Claude Code trial (21/11): the file was below the limit, so the message must not say "already above".
         self.assertNotIn("já estava acima", result["violations"][0]["message"])
-        self.assertIn("no máximo 93 bytes a mais", result["violations"][0]["fix"])  # "estado\n" = 7 bytes
+        fix = result["violations"][0]["fix"]
+        self.assertIn("sobram 93 bytes até o teto e a mudança pede 143; faltam 50", fix)  # "estado\n" = 7 bytes
+        self.assertIn("docs/arquivo (git mv)", fix)  # the archive folder of this policy
+
+    def test_entry_over_budget_suggests_the_trigger_line_for_an_area_rule(self):
+        # HE-DOC-04: the refusal says how many bytes are left and how to make room without losing a rule.
+        policy = self.with_policy()
+        hook = HookTests.pre(self, "Write", {"file_path": str(self.repo / "AGENTS.md"), "content": "r" * 250})
+        self.assertIn("Vai mexer em", hook["hookSpecificOutput"]["permissionDecisionReason"])  # what the agent sees
+        self.write("AGENTS.md", "r" * 250)
+        violation = d.run_check(self.repo, policy)["violations"][0]
+        self.assertEqual((violation["file"], violation["rule"]), ("AGENTS.md", "orcamento"))
+        self.assertIn("sobram 193 bytes", violation["fix"])  # "regras\n" = 7 bytes, teto 200
+        self.assertIn("Vai mexer em X? Leia antes, obrigatório: <link>", violation["fix"])  # the skill's words
+        self.assertIn("regra geral fica por inteiro", violation["fix"])
+
+    def test_file_already_above_says_no_byte_is_left(self):
+        policy = self.with_policy()
+        self.write("docs/ESTADO.md", "e" * 300)
+        self.commit()
+        self.write("docs/ESTADO.md", "e" * 310)
+        fix = d.run_check(self.repo, policy)["violations"][0]["fix"]
+        self.assertIn("não sobra nenhum byte: o arquivo já passa 200 bytes do teto", fix)
 
     def test_file_already_above_limit_cannot_grow_but_may_shrink(self):
         policy = self.with_policy()
@@ -172,6 +194,14 @@ class ChecksTests(GateCase):
         self.assertTrue(d.matches("docs/a.md", ["docs/**/*.md"]))
         self.assertFalse(d.matches("docs/sub/a.md", ["docs/*.md"]))
 
+    def test_plan_without_policy_groups_two_folder_levels(self):
+        # The skill asks a "yes" per folder: docs/adr and docs/historico must not collapse into "docs".
+        for rel in ("docs/a.md", "docs/adr/1.md", "docs/historico/velho/x.md", "README.md"):
+            self.write(rel)
+        self.commit()
+        self.assertEqual(d.run_plan(self.repo)["md_by_dir"],
+                         {".": 1, "docs": 1, "docs/adr": 1, "docs/historico": 1})
+
     def test_cli_check_exit_codes_and_no_policy(self):
         def run(*args):
             with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
@@ -186,6 +216,81 @@ class ChecksTests(GateCase):
         self.write("solto.md")
         self.assertEqual(run("check", "--repo", str(self.repo))[0], 1)
         self.assertEqual(run("plan", "--repo", str(self.repo))[1]["status"], "POLICY_FOUND")
+
+
+class VerifyTests(GateCase):
+    """HE-DOC-04: the whole repository against its policy (inside project-verify)."""
+
+    def test_without_policy_the_result_is_null_not_zero_nor_error(self):
+        self.write("x.md")
+        self.commit()
+        result = d.run_verify(self.repo)
+        self.assertIsNone(result["status"])
+        self.assertEqual(result["reason"], "SEM_PLANTA")
+        self.assertIn("docs-plan", result["next"])
+
+    def test_policy_and_everything_within_limits_passes(self):
+        self.with_policy()
+        result = d.run_verify(self.repo)
+        self.assertEqual(result["status"], "PASS", result["problems"])
+        self.assertEqual(result["budget"]["state"]["pct"], 7)  # 7 of 100 bytes
+        self.assertEqual(result["problems"], [])
+
+    def test_legacy_problems_fail_even_without_a_new_change(self):
+        # check() lets legacy pass on purpose; verify() is the full inspection the cleanup starts from.
+        self.with_policy()
+        self.write("docs/ESTADO.md", "e" * 150)
+        self.write("RELATORIO_ANTIGO.md")
+        self.write("docs/INDICE.md", "[spec](SPEC.md)\n[some](SUMIU.md)\n")
+        self.commit()
+        self.assertEqual(d.run_check(self.repo, d.load_policy(self.repo))["status"], "DOCS_CHECK_PASS")
+        result = d.run_verify(self.repo)
+        self.assertEqual(result["status"], "FAIL")
+        text = "\n".join(result["problems"])
+        self.assertIn("state: docs/ESTADO.md tem 150 bytes, teto 100", text)
+        self.assertIn("fora da planta: RELATORIO_ANTIGO.md", text)
+        self.assertIn("link quebrado: SUMIU.md", text)
+        self.assertEqual(text.count("SUMIU.md"), 1)  # listed once, not again by the change check
+
+    def test_pending_change_in_the_working_tree_fails(self):
+        self.with_policy()
+        self.write("SOLTO.md")
+        self.assertIn("SOLTO.md: regra lugar", "\n".join(d.run_verify(self.repo)["problems"]))
+
+    def test_missing_state_file_is_a_note_not_a_failure(self):
+        self.with_policy()
+        (self.repo / "docs/ESTADO.md").unlink()
+        self.commit()
+        result = d.run_verify(self.repo)
+        self.assertEqual(result["status"], "PASS", result["problems"])
+        self.assertIn("state: docs/ESTADO.md ainda não existe", result["notes"])
+
+    def test_staged_md_outside_the_policy_is_listed_once(self):
+        self.with_policy()
+        self.write("SOLTO.md")
+        git(self.repo, "add", "SOLTO.md")
+        problems = d.run_verify(self.repo)["problems"]
+        self.assertEqual(sum("SOLTO.md" in p for p in problems), 1, problems)
+
+    def test_invalid_policy_fails_with_reason(self):
+        self.write(".harness/docs-policy.json", "{nao e json")
+        self.commit()
+        result = d.run_verify(self.repo)
+        self.assertEqual((result["status"], result["reason"]), ("FAIL", "PLANTA_INVALIDA"))
+
+    def test_cli_verify_exit_codes(self):
+        def run():
+            with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
+                code = d.main(["verify", "--repo", str(self.repo)])
+            return code, json.loads(out.getvalue())
+        self.write("a.txt")
+        self.commit()
+        code, result = run()
+        self.assertEqual((code, result["status"], result["reason"]), (0, None, "SEM_PLANTA"))
+        self.with_policy()
+        self.assertEqual(run()[0], 0)
+        self.write("SOLTO.md")
+        self.assertEqual(run()[0], 1)
 
 
 class HookTests(GateCase):
