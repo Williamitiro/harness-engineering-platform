@@ -38,7 +38,7 @@ class ProjectInspectionTests(unittest.TestCase):
         self.assertEqual(plan["status"], "PLANNED_NOT_INSTALLED")
         # SPEC V2 (HE-R1-03): repository package holds project rules only; skills live on the machine.
         self.assertEqual({c["path"] for c in plan["changes"]}, {
-            "AGENTS.md", "CLAUDE.md", ".harness/manifest.json"})
+            "AGENTS.md", "CLAUDE.md", ".harness/docs-policy.json", ".harness/manifest.json"})
         self.assertEqual(plan["runtime_discovery"], "NOT_RUN")
         self.assertEqual(self.cli()[1], plan)
         self.assertEqual(before, sorted(p.relative_to(self.repo).as_posix() for p in self.repo.rglob("*")))

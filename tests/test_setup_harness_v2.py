@@ -53,6 +53,43 @@ class SkillFileTests(unittest.TestCase):
         template = (ROOT / "templates/repo/AGENTS.md").read_text(encoding="utf-8")
         self.assertIn("\n## Como trabalhar\n", template)  # the section the skill reads
 
+    def test_skill_runs_the_documents_stage_after_attach_and_verify(self):
+        # HE-DOC-04: one path; the skill knows the document policy and its three cases.
+        text = SKILL.decode("utf-8")
+        stage = text[text.index("7. **Documentos**"):text.index("8. **CI:**")]
+        self.assertLess(text.index("4. Rode `project-attach --apply` e depois `project-verify`"), text.index(stage))
+        for needle in (".harness/docs-policy.json", "docs-plan", "SEM_PLANTA", "pastas **que o repositório já usa**",
+                       '"sim" por pasta', "só confira", "--base origin/main", "`docs.status` `PASS`"):
+            self.assertIn(needle, stage)
+        self.assertIn("PROPOSE_WITH_DOCS_PLAN", text)  # project-plan shows whether the policy will be proposed
+        verify = text[text.index('- **"verificar"**'):text.index('- **"remover"**')]
+        self.assertIn("confere as duas coisas", verify)
+        self.assertIn("nunca\n  diga 0", verify)
+
+    def test_skill_carries_every_cleanup_rule(self):
+        text = SKILL.decode("utf-8")
+        rules = text[text.index("## Regras de limpeza"):text.index("## Limites")]
+        for needle in ("Nada é apagado", "git mv", "claramente superado", "Na dúvida, fica",
+                       "em código, scripts, testes e configuração", "não mexa no programa", "Validador próprio",
+                       "fora da lista `indexed`", "Vai mexer em X? Leia antes, obrigatório: <link>",
+                       "Regra em vigor nunca vai para a pasta de arquivo", "85% do teto", "até 10 KB",
+                       "Planta e corte do estado no mesmo PR", "não regere", "já falhava", "Não guarde cópia",
+                       "teste negativo desfeito", "subagente que não fez o trabalho", "regra sumida é erro",
+                       "nenhum arquivo que não é documentação mudou", "Paradas"):
+            self.assertIn(needle, rules)
+
+    def test_skill_offers_the_ci_job_only_where_ci_exists(self):
+        text = SKILL.decode("utf-8")
+        ci = text[text.index("8. **CI:**"):text.index("9. ")]
+        self.assertIn("templates/ci/harness-docs-check.yml", ci)
+        self.assertIn('Só com\n   o "sim"', ci)
+        self.assertIn("Sem CI no repositório, não crie um", ci)
+        job = (ROOT / "templates/ci/harness-docs-check.yml").read_text(encoding="utf-8")
+        self.assertIn("uses: Williamitiro/harness-engineering-platform@TAG", job)
+        self.assertIn("fetch-depth: 0", job)
+        self.assertIn("pull_request", job)
+        self.assertRegex(job, r"actions/checkout@[0-9a-f]{40} ")  # third-party action pinned by commit SHA
+
     def test_skills_folder_has_fixed_bytes_on_every_machine(self):
         out = git("check-attr", "text", "--", "skills/setup-harness/SKILL.md")
         self.assertTrue(out.endswith("text: unset"), out)

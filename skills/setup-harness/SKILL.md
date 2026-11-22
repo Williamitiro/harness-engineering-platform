@@ -1,6 +1,6 @@
 ---
 name: setup-harness
-description: Preparar, verificar ou remover o Harness Engineering num repositório Git, novo ou existente, sempre preservando as regras que o projeto já tem. Use quando o usuário pedir /setup-harness, $setup-harness, "setup do Harness", "verificar o Harness" ou "remover o Harness".
+description: Preparar, verificar ou remover o Harness Engineering num repositório Git, novo ou existente, e organizar a documentação dele (planta de documentos, tetos, limpeza), sempre preservando as regras que o projeto já tem. Use quando o usuário pedir /setup-harness, $setup-harness, "setup do Harness", "verificar o Harness" ou "remover o Harness".
 disable-model-invocation: true
 ---
 
@@ -38,14 +38,19 @@ central `harnessctl`.
 
 **Respostas que contam como sucesso:** `project-plan` → `PLANNED_NOT_INSTALLED`, `ATTACHED` ou
 `LEGACY_ATTACHED`; `project-attach` → `FILES_INSTALLED_RUNTIME_NOT_VERIFIED` ou `ALREADY_ATTACHED`;
-`project-verify` → `OK`; `project-remove` → `PLANNED_NOT_REMOVED`, `REMOVED_EXACT_OWNED_FILES` ou
-`ALREADY_REMOVED`. Saída com código diferente de 0 e `"status": "BLOCKED"` é um bloqueio: mostre o motivo.
+`project-verify` → `OK` (com `docs.status` `PASS` ou `null`); `project-remove` → `PLANNED_NOT_REMOVED`, `REMOVED_EXACT_OWNED_FILES` ou
+`ALREADY_REMOVED`. Saída com código diferente de 0 e `"status": "BLOCKED"` é um bloqueio: mostre o motivo. `project-verify` com
+`DOCS_FAIL` (código 1) não é bloqueio: a lista `docs.problems` diz o que corrigir na etapa de documentos.
+`NOT_ATTACHED` (código 1): o Harness não está ligado; ofereça o setup.
 
 ## O que o usuário pediu
 
-- **"verificar"** → `project-verify`. Explique: `UNCHANGED` (igual ao modelo), `EDITED_BY_PROJECT` (editado
-  pelo projeto, o que é normal) e `MISSING` (apagado). Se o `AGENTS.md` é do projeto, pergunte se o usuário quer
-  conferir as regras de trabalho (passo 6 do setup). Pare aqui.
+- **"verificar"** → `project-verify`, que confere as duas coisas. Arquivos: `UNCHANGED` (igual ao modelo),
+  `EDITED_BY_PROJECT` (editado pelo projeto, o que é normal) e `MISSING` (apagado). Documentos (`docs`): `PASS`;
+  `FAIL` com a lista `problems`; `null` com `SEM_PLANTA` (o repositório ainda não tem planta: não é falha, nunca
+  diga 0). Se o `AGENTS.md` é do projeto, pergunte se o usuário quer conferir as regras de trabalho (passo 6). Se
+  os documentos deram `FAIL` ou `SEM_PLANTA`, ofereça a etapa de documentos (passo 7). Não mude nada sem o "sim".
+  Pare aqui.
 - **"remover"** → `project-remove` sem `--apply` (prévia). Mostre o que será apagado e o que fica. Com o "sim",
   rode de novo com `--apply`. Pare aqui.
 - **qualquer outro pedido** → setup, abaixo.
@@ -53,12 +58,15 @@ central `harnessctl`.
 ## Setup
 
 1. Leia as regras do projeto (`AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`) para saber se ele exige branch, PR
-   ou cópia isolada. Não as edite agora: só os passos 5 e 6 propõem mudanças, e só com o "sim".
+   ou cópia isolada. Não as edite agora: só os passos 5 a 8 propõem mudanças, e só com o "sim".
 2. Rode `project-plan`. Explique em linguagem simples:
    - `WOULD_CREATE`: arquivo novo, criado a partir do modelo do Harness;
    - `PRESERVE`: arquivo do projeto, mantido como está;
    - `BLOCKED_*`: pare, explique o motivo e não contorne;
-   - status `ATTACHED`: já instalado, então faça a verificação e siga para o passo 6;
+   - `docs_policy` diz o que acontece com a planta de documentos (`.harness/docs-policy.json`): `WOULD_CREATE`
+     (repositório novo: nasce do modelo), `PRESERVE` (já existe: só conferir no passo 7) ou
+     `PROPOSE_WITH_DOCS_PLAN` (repositório existente sem planta: o passo 7 propõe uma com as pastas que ele já usa);
+   - status `ATTACHED`: já instalado, então faça a verificação e siga para os passos 6 a 8;
    - status `LEGACY_ATTACHED`: instalação antiga. Explique a migração (`project-remove --apply` e depois
      `project-attach --apply`) e peça aprovação.
 3. Peça o "sim" para esse plano. Se o usuário já aprovou exatamente esse plano, não pergunte de novo. Se o projeto
@@ -86,12 +94,61 @@ central `harnessctl`.
      até a `v1.0.0`), proponha trocar a menção pela regra equivalente. Outras skills não são assunto deste passo;
    - só edite com o "sim", seguindo as regras de branch, cópia isolada e PR do projeto (passo 3), mesmo quando o
      setup não criou nenhum arquivo. Se tudo já estiver coberto, diga isso e não mude nada.
-7. Em repositório novo, sugira preencher a seção "Comandos do projeto" do `AGENTS.md`.
-8. Relate o que foi criado, o que foi mantido, as regras acrescentadas ou já cobertas e o próximo passo: commit e
-   PR, feitos pelo usuário ou com pedido explícito.
+7. **Documentos** (depois do attach e do verify; também ao "verificar", com o "sim"). A planta é
+   `.harness/docs-policy.json`; tetos padrão: `AGENTS.md` 8 KB, estado 5 KB, índice 10 KB. Três casos:
+   - **Sem planta** (`docs.status` `null`, `SEM_PLANTA`): rode `docs-plan --repo "<CAMINHO>"` (só leitura) e
+     proponha o arquivo com as pastas **que o repositório já usa**: cada pasta de `md_by_dir` num tipo (`vigente`,
+     `pesquisa`, `evidencia`, `arquivo` ou um tipo próprio) ou no `ignore`, e os papéis `entry`, `state` e `index`
+     nos arquivos que já fazem esse papel. Nada é renomeado para caber no padrão. Peça o "sim" por pasta, não por
+     arquivo. Se os tetos estourarem, siga para o caso seguinte no mesmo PR.
+   - **Acima do teto ou com documento superado** (`docs.problems`, ou o que o texto dos próprios documentos
+     disser): faça a limpeza pelas regras abaixo.
+   - **Planta e tudo dentro do teto** (`docs.status` `PASS`): só confira e diga isso.
+   Depois de qualquer mudança, rode `docs-check --repo "<CAMINHO>"`, depois o mesmo com `--base origin/main`, e de
+   novo `project-verify`, que precisa dar `OK` com `docs.status` `PASS`.
+8. **CI:** se o repositório já tem `.github/workflows/`, ofereça o job de documentos: copiar
+   `<pasta do Harness>/templates/ci/harness-docs-check.yml` para `.github/workflows/`. Ele chama a action do Harness
+   fixada por tag; troque `TAG` pela versão instalada (o nome da pasta para onde aponta o atalho `current`). Só com
+   o "sim". Sem CI no repositório, não crie um.
+9. Em repositório novo, sugira preencher a seção "Comandos do projeto" do `AGENTS.md`.
+10. Relate o que foi criado, o que foi mantido, as regras acrescentadas ou já cobertas, a planta, o que foi movido
+    e o próximo passo: commit e PR, feitos pelo usuário ou com pedido explícito.
+
+## Regras de limpeza (passo 7)
+
+- **Nada é apagado.** O que está superado sai com `git mv` para a pasta `arquivo` da planta. Só documentação:
+  não mexa em código, testes, configuração, hooks nem validadores do repositório.
+- **Só vai para o arquivo o que está claramente superado**: o próprio texto diz, ou outro documento o substituiu.
+  "Antigo" ou "fora do índice" não basta. Na dúvida, fica.
+- **Antes de mover, procure o caminho** em documentos **e** em código, scripts, testes e configuração. Se algo lê
+  o arquivo, ele não muda de lugar.
+- **Índice ou estado gerado ou lido por programa:** não mexa no programa. Dê o papel a outro arquivo ou deixe o
+  papel fora da planta (`null`).
+- **Validador próprio que já limita um arquivo:** use o mesmo teto na planta, ou deixe o papel fora dela.
+- **Pasta com índice próprio:** tipo próprio na planta, fora da lista `indexed`. A planta v1 tem um índice só por
+  repositório: use esse contorno e registre como pendência se não bastar.
+- **AGENTS.md:** regra geral fica por inteiro. Regra de uma área vai para um documento da área e, no `AGENTS.md`,
+  vira a linha "Vai mexer em X? Leia antes, obrigatório: <link>". Regra em vigor nunca vai para a pasta de arquivo.
+- **Tetos:** corte até 85% do teto. Se as regras gerais do `AGENTS.md` não couberem, suba o teto dele até 10 KB e
+  avise o usuário.
+- **Planta e corte do estado no mesmo PR.** Se houver outro PR aberto que mexe no estado, o papel `state` fica
+  `null` até o corte.
+- **Arquivo gerado:** não regere se a mudança for além do que este trabalho causou. Conferência que já falhava na
+  `main`: registre e siga.
+- **Não guarde cópia do texto antigo:** o `git mv` já preserva o histórico.
+- **Conferência:** `docs-check` verde (também com `--base origin/main`), os validadores e testes do próprio
+  repositório, e um teste negativo desfeito depois (por exemplo, um `.md` solto na raiz recusado e depois apagado).
+- **Revisão independente antes do relato**, por um subagente que não fez o trabalho e recebe só o diff. Ele
+  confere: nenhum `.md` apagado; conteúdo movido igual ao original; tabela regra por regra do `AGENTS.md` antigo
+  contra o novo (regra sumida é erro); links abrem; nenhum código aponta para caminho antigo; todo `.md` cai num
+  tipo ou no `ignore`; nenhum arquivo que não é documentação mudou; o estado novo bate com a realidade. Corrija o
+  que ele achar antes de relatar.
+- **Paradas:** Git sujo ou branch divergente, a proposta (a planta e o que vai para o arquivo) e o merge. Nada
+  mais: o resto, as regras acima decidem.
 
 ## Limites
 
-Não configure MCP, hooks, Node, credenciais nem preferências globais. Não rode modelos pagos, benchmark, commit,
+Não configure MCP, hooks, Node, credenciais nem preferências globais (o hook de documentos é do computador,
+MANUAL §5). Não rode modelos pagos, benchmark, commit,
 push, merge ou deploy como efeito do setup. Não mexa em skills de terceiros. Instalar arquivos não prova que as
 skills serão usadas.

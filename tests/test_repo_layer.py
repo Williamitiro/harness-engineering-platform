@@ -16,6 +16,7 @@ h = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(h)
 AGENTS_TEMPLATE = (ROOT / "templates/repo/AGENTS.md").read_bytes()
 CLAUDE_TEMPLATE = (ROOT / "templates/repo/CLAUDE.md").read_bytes()
+POLICY_TEMPLATE = (ROOT / "templates/repo/docs-policy.json").read_bytes()
 
 
 def git(root, *args):
@@ -44,9 +45,10 @@ class RepoLayerTests(unittest.TestCase):
         return {c["path"]: c["action"] for c in result["changes"]}
 
     def test_templates_have_fixed_bytes_on_every_machine(self):
-        out = git(ROOT, "check-attr", "text", "--", "templates/repo/AGENTS.md", "templates/repo/CLAUDE.md")
-        self.assertEqual(out.count("text: unset"), 2, out)
-        self.assertNotIn(b"\r\n", AGENTS_TEMPLATE + CLAUDE_TEMPLATE)
+        out = git(ROOT, "check-attr", "text", "--", "templates/repo/AGENTS.md", "templates/repo/CLAUDE.md",
+                  "templates/repo/docs-policy.json")
+        self.assertEqual(out.count("text: unset"), 3, out)
+        self.assertNotIn(b"\r\n", AGENTS_TEMPLATE + CLAUDE_TEMPLATE + POLICY_TEMPLATE)
 
     def test_claude_template_imports_agents_md(self):
         self.assertTrue(CLAUDE_TEMPLATE.startswith(b"@AGENTS.md\n"))
@@ -65,15 +67,19 @@ class RepoLayerTests(unittest.TestCase):
         result = h.repo_inspect(self.repo)
         self.assertEqual(result["case"], "NEW_REPO")
         self.assertEqual(self.actions(result), {"AGENTS.md": "WOULD_CREATE", "CLAUDE.md": "WOULD_CREATE",
+                                                ".harness/docs-policy.json": "WOULD_CREATE",
                                                 ".harness/manifest.json": "WOULD_CREATE"})
+        self.assertEqual(result["docs_policy"], "WOULD_CREATE")  # HE-DOC-04: a new repository is born with it
         self.assertEqual(before, self.snapshot())
 
     def test_new_repo_attach_creates_rules_only_and_removes_exactly(self):
         result = h.repo_attach(self.repo)
         self.assertEqual(result["status"], "FILES_INSTALLED_RUNTIME_NOT_VERIFIED")
-        self.assertEqual(result["created"], ["AGENTS.md", "CLAUDE.md", ".harness/manifest.json"])  # matches the plan
+        self.assertEqual(result["created"], [".harness/docs-policy.json", "AGENTS.md", "CLAUDE.md",
+                                             ".harness/manifest.json"])  # matches the plan
         self.assertEqual((self.repo / "AGENTS.md").read_bytes(), AGENTS_TEMPLATE)
         self.assertEqual((self.repo / "CLAUDE.md").read_bytes(), CLAUDE_TEMPLATE)
+        self.assertEqual((self.repo / ".harness/docs-policy.json").read_bytes(), POLICY_TEMPLATE)
         self.assertFalse((self.repo / ".agents").exists())
         self.assertFalse((self.repo / ".claude").exists())
         installed = self.snapshot()
@@ -181,6 +187,76 @@ class RepoLayerTests(unittest.TestCase):
             h.repo_attach(self.repo)
         self.assertFalse((self.repo / "AGENTS.md").exists())
 
+    # ---- HE-DOC-04: the document policy in plan, attach and verify
+
+    def test_existing_repo_gets_the_policy_proposed_not_copied_from_the_template(self):
+        self.write("AGENTS.md")
+        self.write("docs/notas.md")
+        plan = h.repo_inspect(self.repo)
+        self.assertEqual(plan["docs_policy"], "PROPOSE_WITH_DOCS_PLAN")
+        self.assertEqual(self.actions(plan)[".harness/docs-policy.json"], "PROPOSE_WITH_DOCS_PLAN")
+        result = h.repo_attach(self.repo)
+        self.assertNotIn(".harness/docs-policy.json", result["created"])
+        self.assertFalse((self.repo / ".harness/docs-policy.json").exists())
+        self.assertEqual(h.repo_inspect(self.repo)["docs_policy"], "PROPOSE_WITH_DOCS_PLAN")  # also once attached
+
+    def test_policy_written_before_attach_is_ours_and_preserved(self):
+        # The four repositories organised first got .harness/docs-policy.json before (or without) the manifest.
+        self.write("AGENTS.md")
+        policy = self.write(".harness/docs-policy.json", POLICY_TEMPLATE)
+        plan = h.repo_inspect(self.repo)
+        self.assertEqual((plan["blockers"], plan["docs_policy"]), ([], "PRESERVE"))
+        result = h.repo_attach(self.repo)
+        self.assertIn(".harness/docs-policy.json", result["preserved"])
+        h.repo_remove(self.repo, apply=True)
+        self.assertEqual(policy.read_bytes(), POLICY_TEMPLATE)  # the project's file stays, and its folder
+
+    def test_harness_dir_with_a_foreign_file_next_to_the_policy_blocks(self):
+        self.write(".harness/docs-policy.json", POLICY_TEMPLATE)
+        self.write(".harness/notes.txt")
+        self.assertEqual(h.repo_inspect(self.repo)["status"], "BLOCKED_COLLISION")
+        with self.assertRaises(h.GateError):
+            h.repo_attach(self.repo)
+
+    def test_verify_includes_documents_null_without_policy(self):
+        self.write("AGENTS.md")
+        h.repo_attach(self.repo)
+        result = h.repo_verify(self.repo)
+        self.assertEqual(result["status"], "OK")
+        self.assertIsNone(result["docs"]["status"])  # never 0, never an error
+        self.assertEqual(result["docs"]["reason"], "SEM_PLANTA")
+
+    def test_verify_new_repo_passes_with_the_template_policy(self):
+        h.repo_attach(self.repo)
+        result = h.repo_verify(self.repo)
+        self.assertEqual((result["status"], result["docs"]["status"]), ("OK", "PASS"), result["docs"])
+
+    def test_verify_reports_document_failure(self):
+        h.repo_attach(self.repo)
+        self.write("RELATORIO_SOLTO.md")
+        result = h.repo_verify(self.repo)
+        self.assertEqual((result["status"], result["docs"]["status"]), ("DOCS_FAIL", "FAIL"))
+        self.assertTrue(any("RELATORIO_SOLTO.md" in p for p in result["docs"]["problems"]))
+        self.assertEqual(result["files"]["AGENTS.md"], "UNCHANGED")  # the file part is still reported
+
+    def test_verify_without_manifest_is_not_attached_but_still_checks_documents(self):
+        self.write("AGENTS.md")
+        self.write(".harness/docs-policy.json", POLICY_TEMPLATE)
+        before = self.snapshot()
+        result = h.repo_verify(self.repo)
+        self.assertEqual((result["status"], result["files"], result["docs"]["status"]), ("NOT_ATTACHED", None, "PASS"))
+        self.assertEqual(before, self.snapshot())
+
+    def test_agents_template_says_where_to_write_and_matches_the_policy_template(self):
+        text = AGENTS_TEMPLATE.decode("utf-8")
+        self.assertIn("\n## Onde gravar\n", text)
+        self.assertIn("Vai mexer em X? Leia antes, obrigatório", text)
+        self.assertLess(len(AGENTS_TEMPLATE), 8192 * 0.85)
+        policy = json.loads(POLICY_TEMPLATE)
+        for path in (policy["state"], "docs/adr/", "docs/pesquisa/", "docs/evidencia/", "docs/historico/"):
+            self.assertIn(path, text)
+        self.assertEqual(policy["entry"], "AGENTS.md")
+
     def test_git_ownership_refusal_is_explained(self):
         refused = subprocess.CompletedProcess([], 128, "", "fatal: detected dubious ownership in repository")
         with patch.object(h, "git_probe", return_value=refused):
@@ -231,10 +307,17 @@ class RepoCliTests(unittest.TestCase):
 
             self.assertEqual(json.loads(run("project-plan", "--client", "claude").stdout)["status"],
                              "PLANNED_NOT_INSTALLED")
+            before = run("project-verify")
+            self.assertEqual((before.returncode, json.loads(before.stdout)["status"]), (1, "NOT_ATTACHED"))
             self.assertEqual(run("project-attach").returncode, 2)  # --apply required
             attach = run("project-attach", "--apply")
             self.assertEqual(attach.returncode, 0, attach.stderr)
-            self.assertEqual(json.loads(run("project-verify").stdout)["status"], "OK")
+            verify = run("project-verify")
+            self.assertEqual((verify.returncode, json.loads(verify.stdout)["status"]), (0, "OK"), verify.stdout)
+            (repo / "SOLTO.md").write_text("x")
+            failed = run("project-verify")
+            self.assertEqual((failed.returncode, json.loads(failed.stdout)["status"]), (1, "DOCS_FAIL"))
+            (repo / "SOLTO.md").unlink()
             self.assertEqual(run("project-remove", "--apply").returncode, 0)
             self.assertEqual([p.name for p in repo.iterdir()], [".git"])
 

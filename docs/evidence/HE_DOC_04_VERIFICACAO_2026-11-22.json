@@ -1,0 +1,198 @@
+{
+  "id": "HE-DOC-04",
+  "date": "2026-11-22",
+  "kind": "verificacao_so_leitura",
+  "what": "project-verify novo (arquivos do Harness + documentos) rodado no main de cada repositório já organizado, em clone raso temporário; nada foi alterado nos repositórios",
+  "engine": "branch claude/he-doc-04 deste repositório, antes da tag v1.4.0",
+  "command": "python scripts/harnessctl.py project-verify --repo <clone>",
+  "status": "PASS",
+  "status_rule": "PASS quando docs.status é PASS em todos; NOT_ATTACHED não é falha de documentos (o repositório não tem .harness/manifest.json)",
+  "repos": {
+    "williamitiro-web": {
+      "main_sha": "86d62177343f1220df6849bdd64515c1c9fda46d",
+      "project_verify": "NOT_ATTACHED",
+      "files": null,
+      "docs": "PASS",
+      "budget": {
+        "entry": {
+          "file": "AGENTS.md",
+          "bytes": 7073,
+          "limit": 8192,
+          "pct": 86
+        },
+        "state": {
+          "file": "docs/ORQUESTRADOR.md",
+          "bytes": 3135,
+          "limit": 5120,
+          "pct": 61
+        },
+        "index": {
+          "file": "AGENTS.md",
+          "bytes": 7073,
+          "limit": 10240,
+          "pct": 69
+        }
+      },
+      "md_files": 33,
+      "by_kind": {
+        "ignorado": 1,
+        "papel": 2,
+        "vigente": 8,
+        "arquivo": 20,
+        "pesquisa": 2
+      },
+      "problems": [],
+      "notes": []
+    },
+    "nexus-quant": {
+      "main_sha": "559c87de6c59e39d7f5cdf7f2e1c5a6ad6df3301",
+      "project_verify": "OK",
+      "files": {
+        "CLAUDE.md": "UNCHANGED"
+      },
+      "docs": "PASS",
+      "budget": {
+        "entry": {
+          "file": "AGENTS.md",
+          "bytes": 5969,
+          "limit": 6000,
+          "pct": 99
+        },
+        "index": {
+          "file": "docs/CANONICAL_DOCUMENT_INDEX.md",
+          "bytes": 9731,
+          "limit": 10240,
+          "pct": 95
+        }
+      },
+      "md_files": 1931,
+      "by_kind": {
+        "ignorado": 74,
+        "papel": 2,
+        "vigente": 50,
+        "arquivo": 1291,
+        "evidencia": 88,
+        "execucao_pesquisa": 231,
+        "planejamento": 195
+      },
+      "problems": [],
+      "notes": []
+    },
+    "resiplac-core": {
+      "main_sha": "15d39d7e513ef7b184c19a4fb5d3a6d3ad08f355",
+      "project_verify": "OK",
+      "files": {},
+      "docs": "PASS",
+      "budget": {
+        "entry": {
+          "file": "AGENTS.md",
+          "bytes": 8156,
+          "limit": 8192,
+          "pct": 100
+        },
+        "index": {
+          "file": "README.md",
+          "bytes": 6155,
+          "limit": 10240,
+          "pct": 60
+        }
+      },
+      "md_files": 94,
+      "by_kind": {
+        "papel": 2,
+        "vigente": 24,
+        "arquivo": 2,
+        "catalogo": 1,
+        "pesquisa": 13,
+        "empresa": 5,
+        "ignorado": 47
+      },
+      "problems": [],
+      "notes": []
+    },
+    "plataforma-metalurgica": {
+      "main_sha": "a266bc70049948eaa3d7130728abd47e58ecc0fa",
+      "project_verify": "OK",
+      "files": {
+        "CLAUDE.md": "UNCHANGED"
+      },
+      "docs": "PASS",
+      "budget": {
+        "entry": {
+          "file": "AGENTS.md",
+          "bytes": 8927,
+          "limit": 10240,
+          "pct": 87
+        },
+        "state": {
+          "file": "docs/canon/ESTADO_DO_PROJETO.md",
+          "bytes": 3730,
+          "limit": 5120,
+          "pct": 73
+        },
+        "index": {
+          "file": "docs/canon/README.md",
+          "bytes": 4969,
+          "limit": 10240,
+          "pct": 49
+        }
+      },
+      "md_files": 311,
+      "by_kind": {
+        "ignorado": 6,
+        "papel": 3,
+        "vigente": 42,
+        "codigo": 16,
+        "gerado": 1,
+        "adr": 7,
+        "arquivo": 15,
+        "pesquisa": 41,
+        "evidencia": 180
+      },
+      "problems": [],
+      "notes": []
+    },
+    "harness-engineering-platform": {
+      "main_sha": "97815933cb0bd2031ce28772ade486eb91c6ff3a",
+      "project_verify": "NOT_ATTACHED",
+      "files": null,
+      "docs": "PASS",
+      "budget": {
+        "entry": {
+          "file": "AGENTS.md",
+          "bytes": 2984,
+          "limit": 8192,
+          "pct": 36
+        },
+        "state": {
+          "file": "docs/ESTADO.md",
+          "bytes": 3822,
+          "limit": 5120,
+          "pct": 75
+        },
+        "index": {
+          "file": "AGENTS.md",
+          "bytes": 2984,
+          "limit": 10240,
+          "pct": 29
+        }
+      },
+      "md_files": 79,
+      "by_kind": {
+        "papel": 2,
+        "vigente": 5,
+        "pesquisa": 2,
+        "evidencia": 2,
+        "arquivo": 41,
+        "ignorado": 27
+      },
+      "problems": [],
+      "notes": []
+    }
+  },
+  "observations": [
+    "williamitiro-web e harness-engineering: planta de documentos sem .harness/manifest.json (NOT_ATTACHED). No harness-engineering é esperado (é o próprio Harness).",
+    "Acima de 85% do teto, sem estourar: resiplac-core AGENTS.md 100% (8156/8192); nexus-quant AGENTS.md 99% (5969/6000) e índice 95%; plataforma-metalurgica AGENTS.md 87% de 10 KB; williamitiro-web AGENTS.md 86%.",
+    "Primeiro clone da plataforma-metalurgica saiu incompleto (caminho longo no Windows, 2551 arquivos faltando) e foi descartado; o resultado acima é do clone refeito com core.longpaths, limpo."
+  ]
+}

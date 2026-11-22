@@ -19,5 +19,17 @@ Este arquivo pertence ao projeto: edite à vontade.
 - Nunca apague, enfraqueça ou altere testes e critérios de aceite para forçar aprovação.
 - Sem push, merge, deploy, publicação ou comando destrutivo sem autorização explícita.
 
+## Onde gravar
+Cada tipo de documento tem o seu lugar (`.harness/docs-policy.json`). Nada de `.md` solto na raiz.
+- Estado (o que funciona hoje e o próximo passo): só `docs/ESTADO.md`, até 5 KB. Troque a linha, não acumule.
+- Documento vigente (regra, manual, especificação): `docs/`, com link na lista abaixo.
+- Decisão: `docs/adr/`. Pesquisa: `docs/pesquisa/`. Relatório de execução e evidência: `docs/evidencia/`.
+- Superado: `git mv` para `docs/historico/`. Nada é apagado.
+- Este arquivo fica abaixo de 8 KB. Regra de uma área só vai para um documento próprio, e aqui fica a linha
+  "Vai mexer em X? Leia antes, obrigatório: <link>".
+
+Documentos vigentes:
+<!-- Um link Markdown por documento de docs/ (título e caminho), um por linha. -->
+
 ## Comandos do projeto
 <!-- Preencha: como instalar dependências, rodar os testes e executar. Exemplo: python -m pytest -->

@@ -106,7 +106,7 @@ Toda operação do `harnessctl` e da skill `setup-harness` segue estes passos e 
 | 2 | **Planejar** (`plan`) | não | lista exata de arquivos a criar e a preservar |
 | 3 | **Aprovar** | — | "sim" do operador para **esse** plano e **esse** destino |
 | 4 | **Aplicar** (`attach`/`install --apply`) | sim | criação exclusiva; falha parcial desfaz só o que criou |
-| 5 | **Verificar arquivos** (`verify`) | não | hashes conferem com o manifesto |
+| 5 | **Verificar arquivos e documentos** (`verify`) | não | hashes conferem com o manifesto; com `.harness/docs-policy.json`, documentos `PASS`/`FAIL`; sem ela, `null` (`SEM_PLANTA`), nunca 0 nem erro (HE-DOC-04) |
 | 6 | **Verificar descoberta** | não | cada ferramenta-alvo lista as skills (comando nativo, sem turno de modelo quando possível) |
 | 7 | **Registrar** | sim | manifesto + recibo com versão, hashes e resultado da descoberta |
 | ↩ | **Remover** (`remove`) | sim | prévia sem `--apply`; remove só o que o manifesto prova e que está inalterado |
@@ -125,7 +125,7 @@ informa `UNCHANGED` ou `EDITED_BY_PROJECT` (editar não é erro). `remove` apaga
 continua byte a byte igual ao template aprovado; o restante fica. O Harness controla de fato apenas
 `.harness/manifest.json`.
 
-**Repositório novo:** `git init` só com a confirmação do operador; depois, mesma sequência.
+**Repositório novo:** `git init` só com a confirmação do operador; depois, mesma sequência. Ele já nasce com a planta de documentos (`templates/repo/docs-policy.json`) e a seção "Onde gravar" do `AGENTS.md`. Em repositório existente, a planta nunca vem do modelo: o `project-plan` mostra `PROPOSE_WITH_DOCS_PLAN` e a skill propõe uma com as pastas que o repositório já usa (§11.6). Uma pasta `.harness` que só tem arquivos do Harness (`docs-policy.json`, `manifest.json`) não é alheia.
 
 ## 5. Releases e gates
 
@@ -237,13 +237,15 @@ downloads). Não instalar catálogos inteiros. Dossiê original: `historico/refe
 | HE-R2-02 | R2 ❄️ | braço A isolado + k=3 + métricas das skills | 2 tarefas, relatório |
 | HE-R2-H | R2 ❄️ | spike Harbor (com autorização para Docker) | `HARBOR_USE` ou `DEFER_HARBOR` |
 | HE-R2-03 | R2 ❄️ | lote 8–12 tarefas | veredito auditável |
-| HE-DOC-02 | R1 | **em curso** (código e testes prontos; faltam tag, hook instalado e ensaio real). Motor de organização de documentos (§11): política por repositório, três conferências (lugar, orçamento, índice), hook `PreToolUse` e `Stop` no computador para Claude Code e Codex, action de CI; aplicado primeiro neste repositório; nova tag | testes offline positivos e negativos de cada conferência e do hook (entrada simulada das duas ferramentas); repositório sem política: hook inerte; instalar e remover o hook em home sintética sem tocar hook alheio; ensaio real: `.md` no lugar errado recusado com o caminho certo, no Claude Code e no Codex (ou `BLOCKED_*` factual no Codex) |
+| HE-DOC-02 | R1 | na `v1.3.0`, hook instalado; falta o ensaio do Codex (ESTADO). Motor de organização de documentos (§11): política por repositório, três conferências (lugar, orçamento, índice), hook `PreToolUse` e `Stop` no computador para Claude Code e Codex, action de CI; aplicado primeiro neste repositório; nova tag | testes offline positivos e negativos de cada conferência e do hook (entrada simulada das duas ferramentas); repositório sem política: hook inerte; instalar e remover o hook em home sintética sem tocar hook alheio; ensaio real: `.md` no lugar errado recusado com o caminho certo, no Claude Code e no Codex (ou `BLOCKED_*` factual no Codex) |
 | HE-DOC-03 | R1 | limpeza dos repositórios (§11.4), um PR por repositório, depois do HE-DOC-02 instalado; piloto `williamitiro-web`, depois `plataforma-metalurgica` | por repositório: `docs-check` verde; `AGENTS.md`, estado e índice dentro do teto; nenhum arquivo apagado (só movido); links do índice válidos; suíte do repositório verde |
+| HE-DOC-04 | R1 | **caminho único** (§11.6), tag `v1.4.0`: a `setup-harness` faz a etapa de documentos depois do attach e do verify (sem planta: `docs-plan` e proposta; acima do teto ou superado: limpeza pelas regras da skill; dentro do teto: só confere); `project-verify` inclui os documentos; `project-plan` mostra a planta; repositório novo nasce com planta; recusa do porteiro por orçamento diz os bytes que sobram e a linha de gatilho; job de CI oferecido onde já há CI. Fora: mais de um índice, frontmatter, busca, perfis | testes offline positivos e negativos (verify `null` sem planta, `FAIL` com legado, `NOT_ATTACHED`; `.harness` só com a planta; modelo; mensagem; texto da skill com todas as regras); CI verde com `windows-latest`; `project-verify` só leitura nos repositórios já organizados, `PASS` sem mudar nada neles |
 
 ## 11. Organização de documentos nos repositórios (HE-DOC-02 e HE-DOC-03)
 
 **Decidido em 21/11/2026. Construído no HE-DOC-02:** `scripts/docs_gate.py` (também `harnessctl docs-*`),
-`action.yml` e a política deste repositório; hook instalado e ensaio real `NOT_RUN` (ESTADO §2). Medição que motivou:
+`action.yml` e a política deste repositório; hook instalado na `v1.3.0` (ensaio: ESTADO). **HE-DOC-04** liga tudo
+à skill `setup-harness` (§11.6). Medição que motivou:
 [`evidence/HE_DOC_02_MEDICAO_2026-11-21.json`](evidence/HE_DOC_02_MEDICAO_2026-11-21.json).
 
 **Objetivo:** o agente guarda cada documento no lugar certo sem o operador dizer onde, e começa cada sessão lendo
@@ -311,3 +313,19 @@ próprios; recebe só a política mapeada sobre o que existe).
 
 Frontmatter obrigatório, perfis por porte, busca indexada (SQLite FTS5), referências entre repositórios, aviso de
 documento desatualizado e sessão periódica de jardinagem. Cada um só entra por uma lacuna observada (§2.7).
+
+### 11.6. Caminho único (HE-DOC-04)
+
+O operador só pede `/setup-harness` (ou "verificar"). A skill prepara o repositório, organiza a documentação e
+confere tudo; as regras de limpeza moram na própria skill (`skills/setup-harness/SKILL.md`, "Regras de limpeza").
+
+| Peça | Comportamento |
+|---|---|
+| `project-plan` | campo `docs_policy`: `WOULD_CREATE` (repositório novo), `PRESERVE` (já tem planta) ou `PROPOSE_WITH_DOCS_PLAN` (existente sem planta), mesmo quando já ligado |
+| `project-attach` | cria a planta do modelo só em repositório novo; preserva a que existe |
+| `project-verify` | campo `docs` (`docs-verify`): papéis dentro do teto, todo `.md` versionado num tipo ou no `ignore`, links do índice vivos e nada pendente na cópia de trabalho. `PASS`, `FAIL` com `problems`, ou `null` com `SEM_PLANTA`. Status `OK`, `DOCS_FAIL` (código 1) ou `NOT_ATTACHED` (sem manifesto, código 1). Só lê documentos com a planta, que é o opt-in do projeto |
+| Porteiro (orçamento) | diz quantos bytes sobram, quantos faltam e como abrir espaço: no `AGENTS.md`, a linha de gatilho "Vai mexer em X? Leia antes, obrigatório: <link>"; no estado, `git mv` para a pasta de arquivo da planta |
+| CI | `templates/ci/harness-docs-check.yml` chama a action fixada por tag; a skill oferece só onde já há `.github/workflows/`, com o "sim" |
+
+A diferença entre `docs-check` e `docs-verify`: o primeiro olha só arquivo novo e crescimento (o legado não
+bloqueia o trabalho); o segundo olha o repositório inteiro, e é dele que a limpeza parte.

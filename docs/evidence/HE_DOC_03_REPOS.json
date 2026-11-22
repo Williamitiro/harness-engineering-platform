@@ -1,0 +1,155 @@
+{
+  "id": "HE-DOC-03",
+  "updated": "2026-11-22",
+  "what": "situação da organização de documentos por repositório; a Fase 2 atualiza uma linha por repositório",
+  "legend": {
+    "PASS": "planta no main e project-verify com docs PASS",
+    "NOT_RUN": "ainda na fila",
+    "null": "não observado"
+  },
+  "repos": [
+    {
+      "repo": "williamitiro-web",
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "PR 39",
+      "main_sha": "86d62177343f1220df6849bdd64515c1c9fda46d",
+      "project_verify": "NOT_ATTACHED",
+      "docs": "PASS",
+      "verified": "2026-11-22 (HE-DOC-04, só leitura)",
+      "pendencia": null
+    },
+    {
+      "repo": "nexus-quant",
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "PR 565",
+      "main_sha": "559c87de6c59e39d7f5cdf7f2e1c5a6ad6df3301",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "verified": "2026-11-22 (HE-DOC-04, só leitura)",
+      "pendencia": "validate_documentation_canonicalization.py falha no main (matriz desatualizada; fora deste trabalho)"
+    },
+    {
+      "repo": "resiplac-core",
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "PR 144",
+      "main_sha": "15d39d7e513ef7b184c19a4fb5d3a6d3ad08f355",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "verified": "2026-11-22 (HE-DOC-04, só leitura)",
+      "pendencia": "docs/STATE.md de 31 KB fora da planta até o PR 143 entrar"
+    },
+    {
+      "repo": "plataforma-metalurgica",
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "PR 411 (mergeado em 22/11 sem CI; conferido depois do merge: docs-check e tools/docs.py check PASS)",
+      "main_sha": "a266bc70049948eaa3d7130728abd47e58ecc0fa",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "verified": "2026-11-22 (HE-DOC-04, só leitura)",
+      "pendencia": "250 lições apontam para o estado antigo"
+    },
+    {
+      "repo": "harness-engineering-platform",
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "HE-DOC-02",
+      "main_sha": "97815933cb0bd2031ce28772ade486eb91c6ff3a",
+      "project_verify": "NOT_ATTACHED",
+      "docs": "PASS",
+      "verified": "2026-11-22 (HE-DOC-04, só leitura)",
+      "pendencia": null
+    },
+    {
+      "repo": "videos-motions",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "main",
+      "local_dirty_files": 0,
+      "aviso": "o catálogo projects/talento-itiro e o assets-manifest.json não mudam de lugar"
+    },
+    {
+      "repo": "modelo-de-negocio-resiplac",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "main",
+      "local_dirty_files": 0,
+      "aviso": "quatro índices; contorno: tipo próprio por pasta, fora de indexed"
+    },
+    {
+      "repo": "nexus-engineering-control",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "main",
+      "local_dirty_files": 0,
+      "aviso": null
+    },
+    {
+      "repo": "agent-environment",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "codex/initial-recovery",
+      "local_dirty_files": 0,
+      "aviso": "a pasta payload é cópia de skills e fica toda no ignore"
+    },
+    {
+      "repo": "frontend-resiplac",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "codex/criterios-video-preview",
+      "local_dirty_files": 5,
+      "aviso": null
+    },
+    {
+      "repo": "engenharia-reversa",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "codex/fasttrade-data-study",
+      "local_dirty_files": 0,
+      "aviso": null
+    },
+    {
+      "repo": "negocios-com-evidencia",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "docs/canonical-foundation",
+      "local_dirty_files": 0,
+      "aviso": null
+    },
+    {
+      "repo": "itiro-negocios-ideias",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "docs/initial-research-2026-10-11",
+      "local_dirty_files": 0,
+      "aviso": null
+    },
+    {
+      "repo": "central-inteligencia",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "main",
+      "local_dirty_files": 0,
+      "aviso": null
+    },
+    {
+      "repo": "mcp",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "main",
+      "local_dirty_files": 0,
+      "aviso": "sem remoto: só commits locais"
+    },
+    {
+      "repo": "jev",
+      "status": "NOT_RUN",
+      "planta_no_main": null,
+      "local_branch_2026_11_22": "main",
+      "local_dirty_files": 0,
+      "aviso": "sem remoto: só commits locais"
+    }
+  ]
+}
