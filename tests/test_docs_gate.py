@@ -183,6 +183,28 @@ class HookTests(GateCase):
         self.assertIsNone(self.pre("Write", {"file_path": str(self.repo / "docs/runs/r.md"), "content": "x"}))
         self.assertIsNone(self.pre("Write", {"file_path": str(self.repo / "app.py"), "content": "x"}))
 
+    @unittest.skipUnless(sys.platform == "win32", "8.3 short names exist only on Windows")
+    def test_short_8dot3_path_is_still_inside_the_repository(self):
+        # PR #17 regression: the windows-latest runner's temp is C:\Users\RUNNER~1\...; git reports the long
+        # path, so a text-only comparison put every file "outside" and the hook stayed silent.
+        import ctypes
+        long_dir = self.repo.parent / "repositorio-com-nome-bem-longo"
+        long_dir.mkdir()
+        buf = ctypes.create_unicode_buffer(1024)
+        ctypes.windll.kernel32.GetShortPathNameW(str(long_dir), buf, 1024)
+        if buf.value.lower() == str(long_dir).lower():
+            self.skipTest("8.3 names disabled on this volume")
+        self.repo = long_dir
+        git(self.repo, "init", "--quiet")
+        git(self.repo, "config", "user.email", "t@example.invalid")
+        git(self.repo, "config", "user.name", "t")
+        self.with_policy()
+        short = Path(buf.value)
+        answer = self.pre("Write", {"file_path": str(short / "RELATORIO.md"), "content": "x"}, short)
+        self.assertEqual(answer["hookSpecificOutput"]["permissionDecision"], "deny")
+        self.assertIn("RELATORIO.md: regra lugar", answer["hookSpecificOutput"]["permissionDecisionReason"])
+        self.assertIsNone(self.pre("Write", {"file_path": str(short / "docs/runs/r.md"), "content": "x"}, short))
+
     def test_claude_edit_growth_over_limit_denied(self):
         self.with_policy()
         path = str(self.repo / "docs/ESTADO.md")

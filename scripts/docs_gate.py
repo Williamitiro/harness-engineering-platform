@@ -310,7 +310,10 @@ def proposed_writes(event: dict) -> list[tuple[Path, int]]:
 
 
 def rel_in(root: Path, path: Path) -> str | None:
-    full, base = os.path.abspath(path), os.path.abspath(root)
+    # realpath on both sides: on Windows the tool may send an 8.3 short name (C:\Users\RUNNER~1\...) or a
+    # junction while git reports the long, final path; a text-only comparison then calls the file "outside"
+    # and the hook goes silently inert (CI windows-latest, PR #17).
+    full, base = os.path.realpath(path), os.path.realpath(root)
     try:
         check = os.path.relpath(os.path.normcase(full), os.path.normcase(base)).replace("\\", "/")
     except ValueError:

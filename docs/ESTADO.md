@@ -22,7 +22,7 @@ desenvolvimento.
 | Plano de métricas | ✅ documento | `metricas/`; `evidence/METRICAS_BASELINE_2026-11-15.json` |
 | Relatório diário | ✅ | 9 testes; MANUAL §4 |
 | CI (Linux + Windows, actions por SHA) | ✅ | `.github/workflows/quality.yml` |
-| **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ código e testes; hook **não instalado** nesta máquina; tag nova e ensaio real `NOT_RUN` | 27 testes offline (entrada simulada das duas ferramentas; home sintética); `docs-check` verde aqui; `scripts/docs_gate.py`, SPEC §11 |
+| **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ código e testes; hook **não instalado** nesta máquina; tag nova e ensaio real `NOT_RUN` | 28 testes offline (entrada simulada das duas ferramentas; home sintética); `docs-check` verde aqui; `scripts/docs_gate.py`, SPEC §11 |
 | JEV via HTTPS | ✅ código; smoke relatado | `scripts/jev_http.py` |
 | Isolamento G1 | ⚠️ só MXC do Codex observado | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — |
