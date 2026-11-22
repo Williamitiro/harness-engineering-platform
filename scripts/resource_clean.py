@@ -235,12 +235,21 @@ def plan_sessions(sessions: list[dict] | None, now: float) -> list[dict]:
                        ("manter",))[0] == "manter"]
             if sharing and is_worktree(s.get("cwd")):
                 safety, reason = "manter", "worktree compartilhada com sessão que fica"
+        # the app archives a session's side sessions too (those started by it that are idle without an open PR):
+        # if one of them should stay, archiving the parent is the owner's call, never 'seguro'
+        taken = [o for o in live if o.get("startedBy") == sid and not o.get("isRunning")
+                 and (o.get("prState") or "").upper() != "OPEN"]
+        kept_kids = [o.get("title") or o.get("sessionId") for o in taken
+                     if first.get(o.get("sessionId"), ("manter",))[0] == "manter"]
+        if safety == "seguro" and kept_kids:
+            safety, reason = "decisao", f"{reason}; arquivar leva junto: {', '.join(kept_kids)}"
         cwd = Path(s.get("cwd") or "")
         # what archiving frees: the worktree, if no other session keeps it (measured only for candidates)
         freed = size_of(cwd) if safety != "manter" and is_worktree(s.get("cwd")) and not any(
             o is not s and o.get("cwd") == s.get("cwd") for o in live) else 0
         out.append(_item("archive_session", safety, "app", s.get("title") or sid, reason, session_id=sid,
-                         cwd=s.get("cwd"), pr=s.get("prNumber"), bytes=freed))
+                         cwd=s.get("cwd"), pr=s.get("prNumber"), bytes=freed,
+                         also_archives=[o.get("title") or o.get("sessionId") for o in taken]))
     return out
 
 
@@ -423,6 +432,8 @@ def render_plan(plan: dict) -> str:
             for x in same:
                 extra = (f", {x['processes']} processos, {gb(x['ram_bytes'])} de RAM"
                          if x["kind"] == "orphan_tree" else "")
+                if x.get("also_archives") and x["safety"] != "manter":
+                    extra += f"; leva junto: {', '.join(x['also_archives'])}"
                 lines.append(f"  [{x['id']}] {x['target']}  {gb(x['bytes'])}{extra}  "
                              f"({x['reason']}; por: {x['executor']})")
     if plan["not_run"]:
