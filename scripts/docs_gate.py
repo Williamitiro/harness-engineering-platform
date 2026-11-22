@@ -125,7 +125,7 @@ def violation(path: str, rule: str, message: str, fix: str) -> dict:
 
 # ---------------------------------------------------------------- the three checks
 
-TRIGGER = "Vai mexer em <área>? Leia antes, obrigatório: [<documento>](<caminho>)"
+TRIGGER = "Vai mexer em X? Leia antes, obrigatório: <link>"  # same words as the setup-harness skill
 
 
 def archive_place(policy: dict) -> str:
@@ -282,7 +282,8 @@ def run_plan(root: Path) -> dict:
     if policy is None:
         dirs: dict[str, int] = {}
         for rel in tracked:
-            parent = "/".join(rel.split("/")[:2][:-1]) if "/" in rel else "."
+            # Two folder levels: docs/adr and docs/historico are different kinds, not one "docs".
+            parent = "/".join(rel.split("/")[:-1][:2]) or "."
             dirs[parent] = dirs.get(parent, 0) + 1
         guess = lambda words: next((p for p in tracked if any(w in p.upper() for w in words)), None)
         return {"status": "NO_POLICY", "writes": 0, "md_files": len(tracked), "md_by_dir": dict(sorted(dirs.items())),
@@ -340,8 +341,11 @@ def run_verify(root: Path) -> dict:
         _, broken = index_links(root, index, (root / index).read_text(encoding="utf-8", errors="replace"))
         problems += [f"índice {index}: {b['message']}" for b in broken]
     # Broken index links are already listed above, from the whole index.
+    # Files already listed as outside the policy (staged, not committed) are not listed twice.
+    listed = {key(r) for r in plan["outside"]}
     pending = [v for v in run_check(root, policy)["violations"]
-               if not (v["rule"] == "indice" and v["message"].startswith("link quebrado"))]
+               if not (v["rule"] == "indice" and v["message"].startswith("link quebrado"))
+               and not (v["rule"] == "lugar" and key(v["file"]) in listed)]
     problems += [f"{v['file']}: regra {v['rule']}: {v['message']}" for v in pending]
     budget = {role: {**info, "pct": round(100 * info["bytes"] / info["limit"]) if info["bytes"] is not None else None}
               for role, info in plan["budget"].items()}

@@ -6,7 +6,7 @@
   "index": "AGENTS.md",
   "limits": {"entry": 8192, "state": 5120, "index": 10240},
   "places": {
-    "raiz": ["README.md", "CLAUDE.md", "CONTRIBUTING.md", "CHANGELOG.md"],
+    "raiz": ["README.md", "CLAUDE.md", "CONTRIBUTING.md", "CHANGELOG.md", "SECURITY.md", "LICENSE.md", "CODE_OF_CONDUCT.md"],
     "vigente": ["docs/*.md"],
     "decisao": ["docs/adr/**"],
     "pesquisa": ["docs/pesquisa/**"],

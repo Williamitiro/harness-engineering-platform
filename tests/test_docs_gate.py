@@ -99,7 +99,7 @@ class ChecksTests(GateCase):
         violation = d.run_check(self.repo, policy)["violations"][0]
         self.assertEqual((violation["file"], violation["rule"]), ("AGENTS.md", "orcamento"))
         self.assertIn("sobram 193 bytes", violation["fix"])  # "regras\n" = 7 bytes, teto 200
-        self.assertIn("Vai mexer em <área>? Leia antes, obrigatório:", violation["fix"])
+        self.assertIn("Vai mexer em X? Leia antes, obrigatório: <link>", violation["fix"])  # the skill's words
         self.assertIn("regra geral fica por inteiro", violation["fix"])
 
     def test_file_already_above_says_no_byte_is_left(self):
@@ -194,6 +194,14 @@ class ChecksTests(GateCase):
         self.assertTrue(d.matches("docs/a.md", ["docs/**/*.md"]))
         self.assertFalse(d.matches("docs/sub/a.md", ["docs/*.md"]))
 
+    def test_plan_without_policy_groups_two_folder_levels(self):
+        # The skill asks a "yes" per folder: docs/adr and docs/historico must not collapse into "docs".
+        for rel in ("docs/a.md", "docs/adr/1.md", "docs/historico/velho/x.md", "README.md"):
+            self.write(rel)
+        self.commit()
+        self.assertEqual(d.run_plan(self.repo)["md_by_dir"],
+                         {".": 1, "docs": 1, "docs/adr": 1, "docs/historico": 1})
+
     def test_cli_check_exit_codes_and_no_policy(self):
         def run(*args):
             with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):
@@ -257,6 +265,13 @@ class VerifyTests(GateCase):
         self.assertEqual(result["status"], "PASS", result["problems"])
         self.assertIn("state: docs/ESTADO.md ainda não existe", result["notes"])
 
+    def test_staged_md_outside_the_policy_is_listed_once(self):
+        self.with_policy()
+        self.write("SOLTO.md")
+        git(self.repo, "add", "SOLTO.md")
+        problems = d.run_verify(self.repo)["problems"]
+        self.assertEqual(sum("SOLTO.md" in p for p in problems), 1, problems)
+
     def test_invalid_policy_fails_with_reason(self):
         self.write(".harness/docs-policy.json", "{nao e json")
         self.commit()
@@ -270,8 +285,8 @@ class VerifyTests(GateCase):
             return code, json.loads(out.getvalue())
         self.write("a.txt")
         self.commit()
-        self.assertEqual(run(), (0, run()[1]))
-        self.assertIsNone(run()[1]["status"])
+        code, result = run()
+        self.assertEqual((code, result["status"], result["reason"]), (0, None, "SEM_PLANTA"))
         self.with_policy()
         self.assertEqual(run()[0], 0)
         self.write("SOLTO.md")

@@ -136,6 +136,55 @@ class RepoLayerTests(unittest.TestCase):
             h.repo_verify(self.repo)
             h.repo_remove(self.repo, apply=True)
 
+    def test_attach_never_reads_rules_even_with_a_document_policy(self):
+        # Review of HE-DOC-04: ALREADY_ATTACHED used to run the document check, which reads AGENTS.md.
+        rules = self.write("AGENTS.md", b"SEGREDO_DO_PROJETO\n")
+        self.write(".harness/docs-policy.json", POLICY_TEMPLATE)
+        h.repo_attach(self.repo)
+        original_open, original_read = Path.open, Path.read_bytes
+
+        def guard(original):
+            def wrapper(path, *a, **k):
+                if path.absolute() == rules.absolute():
+                    raise AssertionError("project rules were read")
+                return original(path, *a, **k)
+            return wrapper
+
+        with patch.object(Path, "open", guard(original_open)), patch.object(Path, "read_bytes", guard(original_read)):
+            h.repo_inspect(self.repo)
+            self.assertEqual(h.repo_attach(self.repo)["status"], "ALREADY_ATTACHED")
+        self.assertEqual(h.repo_verify(self.repo)["docs"]["status"], "PASS")  # verify does read: the policy opted in
+
+    def test_file_from_an_earlier_approved_template_is_still_removed_exactly(self):
+        old = subprocess.check_output(["git", "-C", str(ROOT), "show", "721abab:templates/repo/AGENTS.md"])
+        self.assertIn(h.digest(old), h.PAST_TEMPLATE_SHA["AGENTS.md"])
+        self.assertNotEqual(old, AGENTS_TEMPLATE)
+        h.repo_attach(self.repo)
+        (self.repo / "AGENTS.md").write_bytes(old)  # as if attached with the older template
+        record_path = self.repo / h.PROJECT_STATE
+        record = json.loads(record_path.read_text())
+        record["files"] = [{**f, "sha256": h.digest(old)} if f["path"] == "AGENTS.md" else f for f in record["files"]]
+        record_path.write_text(json.dumps(record))
+        self.assertEqual(h.repo_verify(self.repo)["files"]["AGENTS.md"], "UNCHANGED")
+        h.repo_remove(self.repo, apply=True)
+        self.assertEqual(self.snapshot(), {})
+
+    def test_record_with_an_unapproved_hash_still_cannot_claim_a_file(self):
+        h.repo_attach(self.repo)
+        own = b"regras do projeto\n"
+        (self.repo / "AGENTS.md").write_bytes(own)
+        record_path = self.repo / h.PROJECT_STATE
+        record = json.loads(record_path.read_text())
+        record["files"] = [{**f, "sha256": h.digest(own)} if f["path"] == "AGENTS.md" else f for f in record["files"]]
+        record_path.write_text(json.dumps(record))
+        self.assertEqual(h.repo_verify(self.repo)["files"]["AGENTS.md"], "EDITED_BY_PROJECT")
+        h.repo_remove(self.repo, apply=True)
+        self.assertEqual((self.repo / "AGENTS.md").read_bytes(), own)
+
+    def test_empty_harness_dir_still_blocks(self):
+        (self.repo / ".harness").mkdir()
+        self.assertEqual(h.repo_inspect(self.repo)["status"], "BLOCKED_COLLISION")
+
     def test_edited_created_rules_are_reported_and_kept_on_remove(self):
         h.repo_attach(self.repo)
         (self.repo / "AGENTS.md").write_bytes(b"agora o projeto tem regras proprias\n")

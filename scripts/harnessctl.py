@@ -593,6 +593,13 @@ DOCS_POLICY = ".harness/docs-policy.json"
 REPO_RULES = {"AGENTS.md": ROOT / "templates/repo/AGENTS.md", "CLAUDE.md": ROOT / "templates/repo/CLAUDE.md",
               DOCS_POLICY: ROOT / "templates/repo/docs-policy.json"}
 HARNESS_DIR_FILES = {"manifest.json", "docs-policy.json"}  # what a .harness folder of ours may hold
+# Bytes of earlier approved templates (sha256, LF; templates/repo is -text). A file created from one of them and
+# still byte-identical to what the manifest recorded stays UNCHANGED after the template moves on, so remove is
+# still exact. A forged record cannot use this: the recorded hash must be one of these.
+PAST_TEMPLATE_SHA = {
+    "AGENTS.md": {"de6dfe820e060555b5de1481105df357b5777b6b86daa01e7eb74c47cf92be98",   # c079e37 (HE-R1-03)
+                  "3292861ba8e843ca4b0f4a203711ae076ebf8627c1b76e0a1ee1889e7eb36034"},  # 721abab (HE-R1-06)
+}
 
 
 def check_repo_path(repo: Path) -> Path:
@@ -680,8 +687,10 @@ def repo_inspect(repo: Path) -> dict:
 
 
 def harness_dir_is_ours(path: Path) -> bool:
-    """A .harness folder holding only Harness file names (e.g. the document policy written before attach)."""
-    return path.is_dir() and all(p.is_file() and p.name in HARNESS_DIR_FILES for p in path.iterdir())
+    """A .harness folder holding only Harness file names (e.g. the document policy written before attach).
+    An empty folder is not proof of anything and keeps blocking, as before HE-DOC-04."""
+    entries = list(path.iterdir()) if path.is_dir() else []
+    return bool(entries) and all(p.is_file() and p.name in HARNESS_DIR_FILES for p in entries)
 
 
 def docs_verify(repo: Path) -> dict:
@@ -729,15 +738,15 @@ def created_file_state(repo: Path, item: dict) -> str:
         current = digest(owned_bytes(path))
     except GateError:
         return "EDITED_BY_PROJECT"  # e.g. grew past the size bound; never owned again
-    template = digest(owned_bytes(REPO_RULES[item["path"]]))
-    return "UNCHANGED" if current == item["sha256"] == template else "EDITED_BY_PROJECT"
+    approved = {digest(owned_bytes(REPO_RULES[item["path"]])), *PAST_TEMPLATE_SHA.get(item["path"], ())}
+    return "UNCHANGED" if current == item["sha256"] and current in approved else "EDITED_BY_PROJECT"
 
 
 def repo_attach(repo: Path) -> dict:
     repo = project_root(repo)
     inspection = repo_inspect(repo)
     if inspection["status"] == "ATTACHED":
-        repo_verify(repo)
+        verify_files(repo)  # Harness files only: attach never reads the project's documents (HE-DOC-04)
         return {"status": "ALREADY_ATTACHED", "package": 2, "runtime_execution": "NOT_RUN"}
     if inspection["status"] == "LEGACY_ATTACHED":
         return {"status": "LEGACY_ATTACHED", "package": 1,
@@ -757,23 +766,26 @@ def repo_attach(repo: Path) -> dict:
             "runtime_execution": "NOT_RUN"}
 
 
-def repo_verify(repo: Path) -> dict:
-    """One check for the repository (HE-DOC-04): the Harness files and, with a policy, the documents."""
-    repo = project_root(repo)
+def verify_files(repo: Path) -> dict:
+    """The Harness files only (manifest and the files it created); never opens the project's documents."""
     state = repo / PROJECT_STATE
     assert_no_symlink(state)
     if not state.exists():
-        return with_docs({"status": "NOT_ATTACHED", "package": None, "files": None,
-                          "next": "setup-harness (project-plan e project-attach)"}, docs_verify(repo))
+        return {"status": "NOT_ATTACHED", "package": None, "files": None,
+                "next": "setup-harness (project-plan e project-attach)"}
     record = read_repo_record(repo)
     if record.get("package", 1) == 1:
         verify_project(repo, read_manifest(ROOT / "config/approved_skills.json"))
-        return with_docs({"status": "OK", "package": 1,
-                          "migration": "project-remove --apply e depois project-attach --apply"}, docs_verify(repo))
+        return {"status": "OK", "package": 1, "migration": "project-remove --apply e depois project-attach --apply"}
     validate_repo_record(record)
-    return with_docs({"status": "OK", "package": 2, "preserved": record["preserved"],
-                      "files": {item["path"]: created_file_state(repo, item) for item in record["files"]}},
-                     docs_verify(repo))
+    return {"status": "OK", "package": 2, "preserved": record["preserved"],
+            "files": {item["path"]: created_file_state(repo, item) for item in record["files"]}}
+
+
+def repo_verify(repo: Path) -> dict:
+    """One check for the repository (HE-DOC-04): the Harness files and, with a policy, the documents."""
+    repo = project_root(repo)
+    return with_docs(verify_files(repo), docs_verify(repo))
 
 
 def repo_remove(repo: Path, apply: bool = False) -> dict:
@@ -1379,7 +1391,7 @@ def main(argv: list[str] | None = None) -> int:
         "Read-only project commands: project-doctor / project-plan --repo PATH --client codex. "
         "Lifecycle: project-attach / project-verify / project-remove. "
         "Personal bootstrap: setup-skill-plan / setup-skill-install / setup-skill-verify / setup-skill-remove. "
-        "Documents (SPEC §11): docs-plan / docs-check / docs-hook-plan / docs-hook-install / docs-hook-verify / "
+        "Documents (SPEC §11): docs-plan / docs-check / docs-verify / docs-hook-plan / docs-hook-install / docs-hook-verify / "
         "docs-hook-remove. "
         "Use COMMAND --help for their separate options."))
     parser.add_argument("action", choices=("plan", "install", "verify", "remove"))

@@ -38,7 +38,8 @@ central `harnessctl`.
 
 **Respostas que contam como sucesso:** `project-plan` → `PLANNED_NOT_INSTALLED`, `ATTACHED` ou
 `LEGACY_ATTACHED`; `project-attach` → `FILES_INSTALLED_RUNTIME_NOT_VERIFIED` ou `ALREADY_ATTACHED`;
-`project-verify` → `OK` (com `docs.status` `PASS` ou `null`); `project-remove` → `PLANNED_NOT_REMOVED`, `REMOVED_EXACT_OWNED_FILES` ou
+`project-verify` → `OK` (com `docs.status` `PASS` ou `null`; `NOT_RUN` não é OK: relate o motivo);
+`project-remove` → `PLANNED_NOT_REMOVED`, `REMOVED_EXACT_OWNED_FILES` ou
 `ALREADY_REMOVED`. Saída com código diferente de 0 e `"status": "BLOCKED"` é um bloqueio: mostre o motivo. `project-verify` com
 `DOCS_FAIL` (código 1) não é bloqueio: a lista `docs.problems` diz o que corrigir na etapa de documentos.
 `NOT_ATTACHED` (código 1): o Harness não está ligado; ofereça o setup.
@@ -104,6 +105,8 @@ central `harnessctl`.
    - **Acima do teto ou com documento superado** (`docs.problems`, ou o que o texto dos próprios documentos
      disser): faça a limpeza pelas regras abaixo.
    - **Planta e tudo dentro do teto** (`docs.status` `PASS`): só confira e diga isso.
+   Se o setup criou o `AGENTS.md` do modelo num repositório que já existia, a seção "Onde gravar" dele cita caminhos
+   padrão: ajuste-a à planta aprovada, ou tire a seção se o usuário não quiser planta.
    Depois de qualquer mudança, rode `docs-check --repo "<CAMINHO>"`, depois o mesmo com `--base origin/main`, e de
    novo `project-verify`, que precisa dar `OK` com `docs.status` `PASS`.
 8. **CI:** se o repositório já tem `.github/workflows/`, ofereça o job de documentos: copiar
@@ -129,12 +132,12 @@ central `harnessctl`.
   repositório: use esse contorno e registre como pendência se não bastar.
 - **AGENTS.md:** regra geral fica por inteiro. Regra de uma área vai para um documento da área e, no `AGENTS.md`,
   vira a linha "Vai mexer em X? Leia antes, obrigatório: <link>". Regra em vigor nunca vai para a pasta de arquivo.
-- **Tetos:** corte até 85% do teto. Se as regras gerais do `AGENTS.md` não couberem, suba o teto dele até 10 KB e
-  avise o usuário.
+- **Tetos:** quando um papel passa do teto, corte até 85% dele; dentro do teto, não corte. Se as regras gerais do
+  `AGENTS.md` não couberem, suba o teto dele até 10 KB e avise o usuário.
 - **Planta e corte do estado no mesmo PR.** Se houver outro PR aberto que mexe no estado, o papel `state` fica
   `null` até o corte.
-- **Arquivo gerado:** não regere se a mudança for além do que este trabalho causou. Conferência que já falhava na
-  `main`: registre e siga.
+- **Arquivo gerado:** regere só se o resultado mudar apenas o que este trabalho causou; se mudar mais, não regere
+  e registre. Conferência que já falhava na `main`: registre e siga.
 - **Não guarde cópia do texto antigo:** o `git mv` já preserva o histórico.
 - **Conferência:** `docs-check` verde (também com `--base origin/main`), os validadores e testes do próprio
   repositório, e um teste negativo desfeito depois (por exemplo, um `.md` solto na raiz recusado e depois apagado).
@@ -142,9 +145,9 @@ central `harnessctl`.
   confere: nenhum `.md` apagado; conteúdo movido igual ao original; tabela regra por regra do `AGENTS.md` antigo
   contra o novo (regra sumida é erro); links abrem; nenhum código aponta para caminho antigo; todo `.md` cai num
   tipo ou no `ignore`; nenhum arquivo que não é documentação mudou; o estado novo bate com a realidade. Corrija o
-  que ele achar antes de relatar.
-- **Paradas:** Git sujo ou branch divergente, a proposta (a planta e o que vai para o arquivo) e o merge. Nada
-  mais: o resto, as regras acima decidem.
+  que ele achar antes de relatar. Sem ferramenta de subagente, diga isso e marque a revisão como `NOT_RUN`.
+- **Paradas da limpeza:** Git sujo ou branch divergente, a proposta (a planta e o que vai para o arquivo) e o
+  merge. Na limpeza, nada mais: o resto, as regras acima decidem. Os outros passos mantêm o seu "sim".
 
 ## Limites
 

@@ -23,7 +23,7 @@ hook de documentos instalado no Claude Code e no Codex. Esta pasta é só de des
 | Relatório diário | ✅ | 9 testes; MANUAL §4 |
 | CI (Linux + Windows, actions por SHA) | ✅ | `.github/workflows/quality.yml` |
 | **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ na `v1.3.0`, hook instalado. **Claude Code: PASS** no ensaio real (lugar, orçamento e `Stop`). Codex: `NOT_RUN` | 38 testes offline; revisão do PR #17 (10 achados corrigidos); `evidence/HE_DOC_02_ENSAIO_CLAUDE_2026-11-21.json` |
-| **Caminho único de documentos (HE-DOC-04)**: `setup-harness` com etapa de documentos e regras de limpeza; `project-verify` com `docs` (`null` sem planta); planta no repositório novo; porteiro diz os bytes que sobram | ⏳ PR, tag `v1.4.0` pendente | testes offline; `evidence/HE_DOC_04_VERIFICACAO_2026-11-22.json` (5 repositórios `PASS`) |
+| **Caminho único de documentos (HE-DOC-04)**: `setup-harness` com etapa de documentos e regras de limpeza; `project-verify` com `docs` (`null` sem planta); planta no repositório novo; porteiro diz os bytes que sobram | ⏳ PR, tag `v1.4.0` pendente | suíte offline PASS; `evidence/HE_DOC_04_VERIFICACAO_2026-11-22.json` (5 repositórios `PASS`) |
 | JEV via HTTPS | ✅ código; smoke relatado | `scripts/jev_http.py` |
 | Isolamento G1 | ⚠️ só MXC do Codex observado | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — |

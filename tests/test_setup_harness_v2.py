@@ -72,15 +72,16 @@ class SkillFileTests(unittest.TestCase):
         for needle in ("Nada é apagado", "git mv", "claramente superado", "Na dúvida, fica",
                        "em código, scripts, testes e configuração", "não mexa no programa", "Validador próprio",
                        "fora da lista `indexed`", "Vai mexer em X? Leia antes, obrigatório: <link>",
-                       "Regra em vigor nunca vai para a pasta de arquivo", "85% do teto", "até 10 KB",
+                       "Regra em vigor nunca vai para a pasta de arquivo", "corte até 85% dele", "até 10 KB",
                        "Planta e corte do estado no mesmo PR", "não regere", "já falhava", "Não guarde cópia",
                        "teste negativo desfeito", "subagente que não fez o trabalho", "regra sumida é erro",
-                       "nenhum arquivo que não é documentação mudou", "Paradas"):
+                       "nenhum arquivo que não é documentação mudou", "Paradas da limpeza",
+                       "Os outros passos mantêm o seu \"sim\"", "dentro do teto, não corte", "NOT_RUN"):
             self.assertIn(needle, rules)
 
     def test_skill_offers_the_ci_job_only_where_ci_exists(self):
         text = SKILL.decode("utf-8")
-        ci = text[text.index("8. **CI:**"):text.index("9. ")]
+        ci = text[text.index("8. **CI:**"):text.index("9. Em repositório novo")]
         self.assertIn("templates/ci/harness-docs-check.yml", ci)
         self.assertIn('Só com\n   o "sim"', ci)
         self.assertIn("Sem CI no repositório, não crie um", ci)

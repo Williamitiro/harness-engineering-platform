@@ -323,7 +323,8 @@ confere tudo; as regras de limpeza moram na própria skill (`skills/setup-harnes
 |---|---|
 | `project-plan` | campo `docs_policy`: `WOULD_CREATE` (repositório novo), `PRESERVE` (já tem planta) ou `PROPOSE_WITH_DOCS_PLAN` (existente sem planta), mesmo quando já ligado |
 | `project-attach` | cria a planta do modelo só em repositório novo; preserva a que existe |
-| `project-verify` | campo `docs` (`docs-verify`): papéis dentro do teto, todo `.md` versionado num tipo ou no `ignore`, links do índice vivos e nada pendente na cópia de trabalho. `PASS`, `FAIL` com `problems`, ou `null` com `SEM_PLANTA`. Status `OK`, `DOCS_FAIL` (código 1) ou `NOT_ATTACHED` (sem manifesto, código 1). Só lê documentos com a planta, que é o opt-in do projeto |
+| Modelos antigos | arquivo criado de um modelo aprovado anterior (`PAST_TEMPLATE_SHA`) e igual ao recibo continua `UNCHANGED`, e a remoção continua exata |
+| `project-verify` | campo `docs` (`docs-verify`): papéis dentro do teto, todo `.md` versionado num tipo ou no `ignore`, links do índice vivos e nenhuma mudança pendente que quebre uma regra. `PASS`, `FAIL` com `problems`, `null` com `SEM_PLANTA`, ou `NOT_RUN` com o motivo (por exemplo, o git falhou). Status `OK`, `DOCS_FAIL` (código 1) ou `NOT_ATTACHED` (sem manifesto, código 1). Só lê documentos com a planta, que é o opt-in do projeto; o `project-attach` nunca os lê |
 | Porteiro (orçamento) | diz quantos bytes sobram, quantos faltam e como abrir espaço: no `AGENTS.md`, a linha de gatilho "Vai mexer em X? Leia antes, obrigatório: <link>"; no estado, `git mv` para a pasta de arquivo da planta |
 | CI | `templates/ci/harness-docs-check.yml` chama a action fixada por tag; a skill oferece só onde já há `.github/workflows/`, com o "sim" |
 
