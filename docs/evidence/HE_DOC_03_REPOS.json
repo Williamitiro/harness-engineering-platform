@@ -3,10 +3,10 @@
   "updated": "2026-11-22",
   "what": "situação da organização de documentos por repositório; a Fase 2 atualiza uma linha por repositório",
   "legend": {
-    "PASS": "planta no main e project-verify com docs PASS",
-    "NOT_RUN": "ainda na fila",
-    "null": "não observado",
-    "PR_ABERTO": "PR com a planta conferido no GitHub, esperando o merge do dono"
+    "PASS": "planta no main e documentos PASS no project-verify (que inclui o docs-verify); sem .harness/manifest.json o project-verify dá NOT_ATTACHED e o PASS é o do docs-verify (williamitiro-web, harness-engineering-platform)",
+    "SKIPPED_BY_OWNER": "pulado por decisão do dono",
+    "BLOCKED_OPEN_PR": "espera PR aberto do próprio repositório; nada foi gravado",
+    "null": "não observado"
   },
   "repos": [
     {
@@ -66,96 +66,110 @@
     },
     {
       "repo": "videos-motions",
-      "status": "PR_ABERTO",
+      "status": "PASS",
+      "planta_no_main": true,
       "pr": "Williamitiro/video-motion#38",
-      "head_sha": "8e3d58946086ef0f807d0d2ffb4c9f3714fc75e0",
+      "merge_sha": "11625cdf8189d4d115797353b884768eb734c035",
       "project_verify": "OK",
       "docs": "PASS",
-      "agents_md": "18576 -> 9758 B (teto 10240, 95%: regras gerais não cabem em 85%)",
-      "arquivo": "21 auditorias superadas arquivadas no lugar (configuração e fontes com hash as citam)",
-      "ci": null,
-      "aviso": "o catálogo projects/talento-itiro e o assets-manifest.json não mudaram de lugar",
-      "pendencia": "PR #31 do repositório vai precisar de rebase: a Regra nº 4 vira linha de gatilho para o guia §16"
+      "o_que": "AGENTS.md 18576 -> 9758 B (teto 10240); 21 auditorias superadas arquivadas no lugar",
+      "pendencia": "PR #31 do repositório precisa de rebase: a Regra nº 4 vira linha de gatilho para o guia §16",
+      "verified": "2026-11-22 (PR lido no GitHub e conferido em clone, antes do merge)"
     },
     {
       "repo": "modelo-de-negocio-resiplac",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "main",
-      "local_dirty_files": 0,
-      "aviso": "quatro índices; contorno: tipo próprio por pasta, fora de indexed"
-    },
-    {
-      "repo": "nexus-engineering-control",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "main",
-      "local_dirty_files": 0,
-      "aviso": null
-    },
-    {
-      "repo": "agent-environment",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "codex/initial-recovery",
-      "local_dirty_files": 0,
-      "aviso": "a pasta payload é cópia de skills e fica toda no ignore"
-    },
-    {
-      "repo": "frontend-resiplac",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "codex/criterios-video-preview",
-      "local_dirty_files": 5,
-      "aviso": null
-    },
-    {
-      "repo": "engenharia-reversa",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "codex/fasttrade-data-study",
-      "local_dirty_files": 0,
-      "aviso": null
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "Williamitiro/modelo-de-negocio-resiplac#3",
+      "merge_sha": "2e39d711fd2002753d60289a0417bfae7172102a",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "o_que": "Harness ligado; AGENTS.md 10291 -> 9475 B (teto 10240); seção histórica do índice copiada para 90_ARCHIVE; estado null (lido por programa)",
+      "pendencia": "planta v1 não confere os 7 índices de assunto (tipos próprios fora de indexed)",
+      "verified": "2026-11-22 (PR lido no GitHub e conferido em clone, antes do merge)"
     },
     {
       "repo": "negocios-com-evidencia",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "docs/canonical-foundation",
-      "local_dirty_files": 0,
-      "aviso": null
-    },
-    {
-      "repo": "itiro-negocios-ideias",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "docs/initial-research-2026-10-11",
-      "local_dirty_files": 0,
-      "aviso": null
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "Williamitiro/negocios-com-evidencia#7",
+      "merge_sha": "2b7579e",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "o_que": "planta; architecture_review.md para docs/historico (git mv); Comandos do projeto preenchidos",
+      "pendencia": "src/README.md e tests/README.md com texto desatualizado (fora da limpeza)",
+      "verified": "2026-11-22 (PR lido no GitHub e conferido em clone, antes do merge)"
     },
     {
       "repo": "central-inteligencia",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "main",
-      "local_dirty_files": 0,
-      "aviso": null
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "Williamitiro/central-inteligencia#9",
+      "merge_sha": "fec7b1c",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "o_que": "Harness ligado; planta com decisoes/ e referencias/; 2 regras do modelo no AGENTS.md",
+      "pendencia": "ESTADO.md: corrigir a frase antiga depois do PR #8",
+      "verified": "2026-11-22 (PR lido no GitHub e conferido em clone, antes do merge)"
+    },
+    {
+      "repo": "nexus-engineering-control",
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "Williamitiro/nexus-engineering-control#76",
+      "merge_sha": "439abdb",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "o_que": "só a planta; sem job de CI (Actions desligado de propósito; check_canonical não cobre .harness/)",
+      "pendencia": "validação local NOT_RUN: check_necp_map.py já falhava no main no Windows",
+      "verified": "2026-11-22 (PR lido no GitHub e conferido em clone, antes do merge)"
     },
     {
       "repo": "mcp",
-      "status": "NOT_RUN",
-      "planta_no_main": null,
-      "local_branch_2026_11_22": "main",
-      "local_dirty_files": 0,
-      "aviso": "sem remoto: só commits locais"
+      "status": "PASS",
+      "planta_no_main": true,
+      "pr": "commit local (sem remoto)",
+      "merge_sha": "7a9e616",
+      "project_verify": "OK",
+      "docs": "PASS",
+      "o_que": "Harness ligado; CLAUDE.md criado; 5 regras do modelo; main local por avanço rápido",
+      "pendencia": "smoke_test.py NOT_RUN (usa a conta real e gasta cota)",
+      "verified": "2026-11-22, local: branch e main local conferidas num clone local (docs-check --base main, project-verify OK com docs PASS); sem GitHub, porque não há remoto"
     },
     {
       "repo": "jev",
-      "status": "NOT_RUN",
+      "status": "SKIPPED_BY_OWNER",
       "planta_no_main": null,
-      "local_branch_2026_11_22": "main",
-      "local_dirty_files": 0,
-      "aviso": "sem remoto: só commits locais"
+      "motivo": "dono decidiu pular (22/11)"
+    },
+    {
+      "repo": "engenharia-reversa",
+      "status": "SKIPPED_BY_OWNER",
+      "planta_no_main": null,
+      "motivo": "repositório fora de uso (dono, 22/11)"
+    },
+    {
+      "repo": "agent-environment",
+      "status": "BLOCKED_OPEN_PR",
+      "planta_no_main": null,
+      "motivo": "conteúdo no PR #1 aberto (main com 2 .md); payload de skills vai inteira para o ignore",
+      "proximo": "/setup-harness depois do merge do PR #1"
+    },
+    {
+      "repo": "itiro-negocios-ideias",
+      "status": "BLOCKED_OPEN_PR",
+      "planta_no_main": null,
+      "motivo": "conteúdo no PR #1 aberto (main com 2 .md); a ligação do Harness já entrou na branch do #1 pelo PR #2",
+      "proximo": "depois do merge do #1: project-verify na main; /setup-harness só se ele apontar algo pendente"
+    },
+    {
+      "repo": "frontend-resiplac",
+      "status": "BLOCKED_OPEN_PR",
+      "planta_no_main": null,
+      "motivo": "5 arquivos não salvos na cópia local; PRs #4 (cria AGENTS.md), #5 e #6 abertos",
+      "proximo": "/setup-harness depois dos PRs"
     }
-  ]
+  ],
+  "phase2": "fechada em 22/11/2026",
+  "harness_version_installed": "v1.5.0 (hashes conferidos; descoberta em runtime NOT_RUN)"
 }
