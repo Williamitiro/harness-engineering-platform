@@ -135,9 +135,14 @@ def check_change(policy: dict, rel: str, old: int | None, new: int) -> list[dict
     for role in roles_of(policy, rel):
         limit = policy["limits"][role]
         if new > limit and new > (old or 0):
-            found.append(violation(rel, "orcamento", f"{role} com {new} bytes, teto {limit}"
-                                   + (f" (antes {old}; acima do teto não pode crescer)" if old else ""),
-                                   "corte o texto ou mova o detalhe para a pasta de arquivo"))
+            if old is not None and old > limit:
+                why = f" (já estava acima do teto, com {old}; não pode crescer)"
+                fix = f"não acrescente nada; corte o arquivo até {limit} bytes ou mova o detalhe para a pasta de arquivo"
+            else:
+                why = f" (antes {old})" if old is not None else ""
+                fix = (f"cabem no máximo {limit - (old or 0)} bytes a mais; corte o texto ou mova o detalhe "
+                       "para a pasta de arquivo")
+            found.append(violation(rel, "orcamento", f"{role} ficaria com {new} bytes, teto {limit}{why}", fix))
     return found
 
 

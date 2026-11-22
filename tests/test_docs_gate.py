@@ -82,7 +82,11 @@ class ChecksTests(GateCase):
     def test_orcamento_blocks_crossing_the_limit(self):
         policy = self.with_policy()
         self.write("docs/ESTADO.md", "e" * 150)
-        self.assertEqual(self.rules(d.run_check(self.repo, policy)), [("docs/ESTADO.md", "orcamento")])
+        result = d.run_check(self.repo, policy)
+        self.assertEqual(self.rules(result), [("docs/ESTADO.md", "orcamento")])
+        # Real Claude Code trial (21/11): the file was below the limit, so the message must not say "already above".
+        self.assertNotIn("já estava acima", result["violations"][0]["message"])
+        self.assertIn("no máximo 93 bytes a mais", result["violations"][0]["fix"])  # "estado\n" = 7 bytes
 
     def test_file_already_above_limit_cannot_grow_but_may_shrink(self):
         policy = self.with_policy()
@@ -91,7 +95,9 @@ class ChecksTests(GateCase):
         self.write("docs/ESTADO.md", "e" * 250)
         self.assertEqual(d.run_check(self.repo, policy)["status"], "DOCS_CHECK_PASS")
         self.write("docs/ESTADO.md", "e" * 301)
-        self.assertEqual(self.rules(d.run_check(self.repo, policy)), [("docs/ESTADO.md", "orcamento")])
+        result = d.run_check(self.repo, policy)
+        self.assertEqual(self.rules(result), [("docs/ESTADO.md", "orcamento")])
+        self.assertIn("já estava acima do teto, com 300", result["violations"][0]["message"])
 
     def test_indice_requires_link_for_new_current_document(self):
         policy = self.with_policy()

@@ -1,0 +1,41 @@
+{
+  "id": "HE_DOC_02_ENSAIO_CLAUDE",
+  "date": "2026-11-21",
+  "status": "BEHAVIOR_OBSERVED",
+  "scope": "Claude Code only; Codex is a separate step (NOT_RUN)",
+  "install": {
+    "release": "v1.3.0",
+    "commit": "aba0cbd788c41ac94ad18f15765ab3606861f6d1",
+    "harness_release_status": "INSTALLED; machine_verify FILE_HASHES_OK_RUNTIME_NOT_VERIFIED",
+    "docs_hook_verify": "HOOK_FILES_OK_RUNTIME_NOT_VERIFIED",
+    "config": "~/.claude/settings.json gained only the 'hooks' key (other keys compared equal to the backup in _local/backups/he-doc-02-hook-2026-11-21)",
+    "claude_code": "2.1.268",
+    "python": "C:/Users/itiro/AppData/Local/Programs/Python/Python312/python.exe"
+  },
+  "method": "Running Claude Code session (desktop app) in the harness-engineering worktree, which has .harness/docs-policy.json. The hook was installed mid-session and picked up without restarting. The agent used its own tools; nothing was simulated.",
+  "trials": [
+    {
+      "check": "lugar (PreToolUse, Write)",
+      "action": "Write RELATORIO_ENSAIO.md at the repository root",
+      "observed": "denied by 'PreToolUse:Write hook'; reason names the file, rule 'lugar' and the policy places; file not created",
+      "result": "PASS"
+    },
+    {
+      "check": "orcamento (PreToolUse, Edit)",
+      "action": "Edit docs/ESTADO.md (4035 bytes) adding ~1.3 KB",
+      "observed": "denied: 'state com 5300 bytes, teto 5120'; file unchanged",
+      "result": "PASS",
+      "defect_found": "message said 'acima do teto não pode crescer' although the file was below the limit; fixed in this change (message now tells how many bytes still fit)"
+    },
+    {
+      "check": "Stop",
+      "action": "created NOTAS_SOLTAS.md through the shell (invisible to PreToolUse) and ended the turn",
+      "observed": "'Stop hook feedback' with rule 'lugar' for NOTAS_SOLTAS.md; the session continued once, the file was removed",
+      "result": "PASS"
+    }
+  ],
+  "not_run": [
+    "Codex: /hooks approval and the same three trials",
+    "the corrected budget message reaches the installed hook only with the next tag"
+  ]
+}
