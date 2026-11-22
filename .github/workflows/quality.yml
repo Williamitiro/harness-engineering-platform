@@ -76,7 +76,9 @@ jobs:
       - name: Ensure no live runtime LLM benchmark was executed in CI
         run: echo "CI validates tool code, offline dry-run and historic CSV arithmetic only. Live runtime LLM = NOT_RUN in CI."
 
-  # HE-DOC-02: a action deste repositório (action.yml) roda o docs-check contra a base do PR.
+  # HE-DOC-02: a action deste repositório (action.yml) roda o docs-check contra a base do PR. O checkout fica
+  # raso de propósito (o padrão que os outros repositórios vão usar): a action precisa se virar sozinha.
+  # Repositório público: o fetch da action funciona sem credencial; os privados usam o padrão do checkout.
   docs-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -84,7 +86,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
       - uses: ./
 
   # jev-code (MCP/Node) é legado (SPEC §7): baixar o pacote do npm em todo PR não traz prova nova.

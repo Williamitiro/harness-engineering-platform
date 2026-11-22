@@ -141,7 +141,12 @@ def check_change(policy: dict, rel: str, old: int | None, new: int) -> list[dict
     return found
 
 
+def key(rel: str) -> str:
+    return rel.lower() if NT else rel
+
+
 def index_links(root: Path, index: str, text: str) -> tuple[set[str], list[dict]]:
+    """(link targets, broken links); each broken entry carries `target` (repository-relative, posix)."""
     base = PurePosixPath(index).parent
     targets, broken = set(), []
     for raw in LINK.findall(text):
@@ -149,24 +154,30 @@ def index_links(root: Path, index: str, text: str) -> tuple[set[str], list[dict]
         if not target or re.match(r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE) or target.startswith("/"):
             continue
         rel = os.path.normpath(str(base / target)).replace("\\", "/")
-        targets.add(rel.lower() if NT else rel)
+        targets.add(key(rel))
         if not (root / rel).exists():
-            broken.append(violation(index, "indice", f"link quebrado: {raw}", "corrija o caminho ou tire o link"))
+            broken.append({**violation(index, "indice", f"link quebrado: {raw}", "corrija o caminho ou tire o link"),
+                           "target": rel})
     return targets, broken
 
 
-def check_index(policy: dict, root: Path, new_files: list[str], index_changed: bool) -> list[dict]:
+def check_index(policy: dict, root: Path, new_files: list[str], index_changed: bool,
+                removed: set[str] = frozenset()) -> list[dict]:
+    """Broken links count when the index changed, or when this change removed/moved the file a link points to
+    (HE-DOC-03 moves documents to the archive); a link that was already broken never blocks."""
     index = policy.get("index")
     if not index:
         return []
     path = root / index
     text = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
     targets, broken = index_links(root, index, text)
-    found = broken if index_changed else []
+    gone = {key(r) for r in removed}
+    found = [{k: v for k, v in b.items() if k != "target"} for b in broken
+             if index_changed or key(b["target"]) in gone]
     for rel in new_files:
         kind = kind_of(policy, rel)
         if rel.lower().endswith(".md") and kind in policy["indexed"] and not roles_of(policy, rel) \
-                and (rel.lower() if NT else rel) not in targets:
+                and key(rel) not in targets:
             found.append(violation(rel, "indice", f"documento {kind} novo sem link em {index}",
                                    f"acrescente um link para {rel} em {index}"))
     return found
@@ -183,8 +194,13 @@ def git(root: Path, *args: str) -> str:
 
 
 def repo_root(start: Path) -> Path | None:
+    """Repository that contains `start`, from its nearest existing directory (a file may go in a new folder)."""
+    start = Path(os.path.abspath(start))
+    existing = next((p for p in (start, *start.parents) if p.is_dir()), None)
+    if existing is None:
+        return None
     try:
-        top = git(start if start.is_dir() else start.parent, "rev-parse", "--show-toplevel").strip()
+        top = git(existing, "rev-parse", "--show-toplevel").strip()
     except (PolicyError, OSError, subprocess.SubprocessError):
         return None
     return Path(top) if top else None
@@ -204,7 +220,9 @@ def tree_sizes(root: Path, rev: str) -> dict[str, int]:
     return sizes
 
 
-def run_check(root: Path, policy: dict, base: str | None = None) -> dict:
+def run_check(root: Path, policy: dict, base: str | None = None, since: float | None = None) -> dict:
+    """`since` (Stop hook): only files written at or after this time count, so a stray .md that was already in
+    the working tree before the session does not hold every turn."""
     rev = git(root, "merge-base", base, "HEAD").strip() if base else "HEAD"
     old_sizes = tree_sizes(root, rev)
     changed = set(filter(None, git(root, "ls-files", "--others", "--exclude-standard", "-z").split("\0")))
@@ -212,18 +230,21 @@ def run_check(root: Path, policy: dict, base: str | None = None) -> dict:
         changed |= set(filter(None, git(root, "diff", "--name-only", "--no-renames", "-z", rev).split("\0")))
     else:
         changed |= set(filter(None, git(root, "ls-files", "-z").split("\0")))
-    found, new_files, index_changed = [], [], False
+    found, new_files, removed, index_changed = [], [], set(), False
     for rel in sorted(changed):
         path = root / rel
         if not path.is_file():
-            continue  # deleted
-        old = old_sizes.get(rel.lower() if NT else rel)
+            removed.add(rel)  # deleted, or the old side of a move
+            continue
+        if since is not None and path.stat().st_mtime < since:
+            continue  # untouched in this session
+        old = old_sizes.get(key(rel))
         if old is None:
             new_files.append(rel)
         if same(rel, policy.get("index")):
             index_changed = True
         found += check_change(policy, rel, old, disk_size(path))
-    found += check_index(policy, root, new_files, index_changed)
+    found += check_index(policy, root, new_files, index_changed, removed)
     return {"status": "DOCS_CHECK_FAIL" if found else "DOCS_CHECK_PASS", "base": rev,
             "changed": len(changed), "new_files": len(new_files), "violations": found}
 
@@ -277,9 +298,10 @@ def patch_changes(patch: str, cwd: Path) -> list[tuple[Path, Path | None, int]]:
             out.append({"path": path, "base": path if tag[1] == "update" else None, "kind": tag[1], "delta": 0})
         elif head.startswith("*** Move to: ") and out:
             out[-1]["path"] = cwd / head[len("*** Move to: "):].strip()
-        elif out and line.startswith("+") and not line.startswith("+++"):
+        # apply_patch has no "---"/"+++" file headers: a line "----" is a removed Markdown rule "---".
+        elif out and line.startswith("+"):
             out[-1]["delta"] += utf8_len(line[1:]) + 1
-        elif out and line.startswith("-") and not line.startswith("---") and out[-1]["kind"] == "update":
+        elif out and line.startswith("-") and out[-1]["kind"] == "update":
             out[-1]["delta"] -= utf8_len(line[1:]) + 1
     return [(c["path"], c["base"], c["delta"]) for c in out if c["kind"] != "delete"]
 
@@ -312,20 +334,33 @@ def proposed_writes(event: dict) -> list[tuple[Path, int]]:
 def rel_in(root: Path, path: Path) -> str | None:
     # realpath on both sides: on Windows the tool may send an 8.3 short name (C:\Users\RUNNER~1\...) or a
     # junction while git reports the long, final path; a text-only comparison then calls the file "outside"
-    # and the hook goes silently inert (CI windows-latest, PR #17).
+    # and the hook goes silently inert (CI windows-latest, PR #17). Existing folders come back in their
+    # on-disk case; the file name keeps the case the tool sent.
     full, base = os.path.realpath(path), os.path.realpath(root)
     try:
         check = os.path.relpath(os.path.normcase(full), os.path.normcase(base)).replace("\\", "/")
+        rel = os.path.relpath(full, base).replace("\\", "/")
     except ValueError:
         return None  # other drive
     if check == ".." or check.startswith("../"):
         return None
-    return full[len(base):].lstrip("\\/").replace("\\", "/")  # keeps the caller's case
+    return rel
 
 
 def format_violations(found: list[dict]) -> str:
     return "Harness (organização de documentos):\n" + "\n".join(
         f"- {v['file']}: regra {v['rule']}: {v['message']}. Correção: {v['fix']}." for v in found)
+
+
+def session_start(event: dict) -> float | None:
+    """When the session began: creation time of its transcript (Windows and macOS keep it; Linux has no
+    birth time in os.stat, so there the Stop hook checks every changed file). A file moved with `git mv`
+    keeps its old mtime and is left to the CI check."""
+    transcript = event.get("transcript_path")
+    try:
+        return os.stat(transcript).st_birthtime if transcript else None
+    except (OSError, AttributeError, TypeError):
+        return None
 
 
 def hook(event: dict) -> dict | None:
@@ -336,7 +371,7 @@ def hook(event: dict) -> dict | None:
         found = []
         for path, size in proposed_writes(event):
             path = path if path.is_absolute() else cwd / path
-            root = repo_root(path.parent if path.parent.exists() else cwd)
+            root = repo_root(path.parent)
             policy = load_policy(root) if root else None
             rel = rel_in(root, path) if policy else None
             if rel is None:
@@ -353,7 +388,7 @@ def hook(event: dict) -> dict | None:
         policy = load_policy(root) if root else None
         if policy is None:
             return None
-        result = run_check(root, policy)
+        result = run_check(root, policy, since=session_start(event))
         if result["violations"]:
             return {"decision": "block", "reason": format_violations(result["violations"])
                     + "\nCorrija antes de dizer que terminou (ou explique por que não)."}
@@ -375,17 +410,51 @@ def hook_main() -> int:
 
 # ---------------------------------------------------------------- machine hook entries
 
+def shell_path(path: Path) -> str:
+    """A path every hook shell runs as a command word: Git Bash, PowerShell and cmd on Windows, sh elsewhere.
+
+    A quoted first word ("C:/x/python.exe" ...) is a string expression in PowerShell, not a command, so the
+    hook would fail on every call. Unquoted forward-slash paths work in all three; a Windows path with spaces
+    falls back to its 8.3 short name, and is refused when the volume has none.
+    """
+    text = path.as_posix()
+    if " " not in text:
+        return text
+    if not NT:
+        import shlex
+        return shlex.quote(text)
+    import ctypes
+    buf = ctypes.create_unicode_buffer(1024)
+    if ctypes.windll.kernel32.GetShortPathNameW(str(path), buf, len(buf)) and " " not in buf.value:
+        return Path(buf.value).as_posix()
+    raise PolicyError(f"BLOCKED_PATH_WITH_SPACES: {text} (sem nome curto 8.3 para usar no hook)")
+
+
 def hook_command(python: Path, engine: Path, tool: str) -> str:
-    return f'"{python.as_posix()}" "{engine.as_posix()}" hook --tool {tool} {MARKER}'
+    return f"{shell_path(python)} {shell_path(engine)} hook --tool {tool} {MARKER}"
 
 
 def is_ours(entry) -> bool:
     return isinstance(entry, dict) and MARKER in str(entry.get("command", ""))
 
 
-def read_config(path: Path) -> dict:
-    if path.is_symlink():
-        raise PolicyError(f"BLOCKED_LINK: {path.name} é link")
+def is_link(path: Path) -> bool:
+    """Symlink or Windows reparse point (junction): the same test the machine installer uses."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from harnessctl import is_link as harness_is_link
+    finally:
+        sys.path.pop(0)
+    return harness_is_link(path)
+
+
+def read_config(path: Path, home: Path | None = None) -> dict:
+    """The tool's config, refusing a link on the file or on its folders up to the home (SPEC §9)."""
+    for part in (path, *path.parents):
+        if home is not None and part == home:
+            break
+        if is_link(part):
+            raise PolicyError(f"BLOCKED_LINK: {part.as_posix()} é link ou junction")
     if not path.exists():
         return {}
     try:
@@ -439,6 +508,14 @@ def write_json(path: Path, data: dict) -> None:
     os.replace(tmp, path)
 
 
+def our_entries(config: dict) -> list[tuple[str, str | None, dict]]:
+    """[(event, matcher, entry)] of the Harness entries, wherever they sit among the user's hooks."""
+    return [(event, group.get("matcher"), entry)
+            for event, groups in config.get("hooks", {}).items() if isinstance(groups, list)
+            for group in groups if isinstance(group, dict)
+            for entry in (group.get("hooks") or []) if is_ours(entry)]
+
+
 def hook_state(home: Path, engine: Path, python: Path) -> list[dict]:
     rows = []
     for tool, (detect, rel, matcher) in TOOLS.items():
@@ -446,11 +523,12 @@ def hook_state(home: Path, engine: Path, python: Path) -> list[dict]:
             rows.append({"tool": tool, "status": "NOT_DETECTED"})
             continue
         path = home / rel
-        config = read_config(path)
-        wanted = with_ours(config, matcher, hook_command(python, engine, tool))
-        ours = sum(is_ours(h) for groups in config.get("hooks", {}).values() if isinstance(groups, list)
-                   for g in groups if isinstance(g, dict) for h in (g.get("hooks") or []))
-        status = "INSTALLED" if ours and wanted == config else ("STALE" if ours else "ABSENT")
+        config = read_config(path, home)
+        entry = {"type": "command", "command": hook_command(python, engine, tool), "timeout": 30}
+        ours = our_entries(config)
+        # Order-insensitive: hooks the user adds after ours do not make the installation "stale".
+        exact = sorted(ours, key=lambda o: o[0]) == [("PreToolUse", matcher, entry), ("Stop", None, entry)]
+        status = "INSTALLED" if exact else ("STALE" if ours else "ABSENT")
         rows.append({"tool": tool, "status": status, "config": rel, "exists": path.exists(),
                      "change": None if status == "INSTALLED" else f"PreToolUse ({matcher}) e Stop"})
     return rows
@@ -460,17 +538,31 @@ def default_engine(home: Path) -> Path:
     return home / ".harness-engineering" / "current" / "scripts" / "docs_gate.py"
 
 
-def hook_admin(action: str, home: Path, engine: Path | None, apply: bool) -> dict:
+def hook_python(python: Path | None) -> Path:
+    """The interpreter the hook command pins. A virtual environment disappears with its folder and silently
+    turns the hook off, so it is refused; pass --python to choose another interpreter."""
+    if python is None:
+        if sys.prefix != sys.base_prefix:
+            raise PolicyError("BLOCKED_VENV_PYTHON: rode fora de um ambiente virtual ou passe --python")
+        python = Path(sys.executable)
+    return python.absolute()
+
+
+def hook_admin(action: str, home: Path, engine: Path | None, apply: bool, python: Path | None = None) -> dict:
     home = home.absolute()
     if not home.is_dir():
         raise PolicyError("home precisa ser uma pasta existente")
     engine = (engine or default_engine(home)).absolute()
-    python = Path(sys.executable).absolute()
+    python = hook_python(python)
     record_path = home / RECORD
     record = json.loads(record_path.read_text(encoding="utf-8")) if record_path.is_file() else {"created": []}
+    if not isinstance(record, dict) or not isinstance(record.get("created"), list):
+        raise PolicyError(f"BLOCKED_INVALID_RECORD: {RECORD}")
     if action in ("hook-plan", "hook-install"):
         if not engine.is_file():
             raise PolicyError(f"BLOCKED_ENGINE_MISSING: {engine.as_posix()} não existe (instale a tag nova antes)")
+        if not python.is_file():
+            raise PolicyError(f"BLOCKED_PYTHON_MISSING: {python.as_posix()}")
         rows = hook_state(home, engine, python)
         if action == "hook-plan" or not apply:
             return {"status": "PLANNED_NOT_INSTALLED", "writes": 0, "engine": engine.as_posix(), "tools": rows,
@@ -480,7 +572,7 @@ def hook_admin(action: str, home: Path, engine: Path | None, apply: bool) -> dic
                 path = home / TOOLS[row["tool"]][1]
                 if not path.exists() and row["config"] not in record["created"]:
                     record["created"].append(row["config"])
-                write_json(path, with_ours(read_config(path), TOOLS[row["tool"]][2],
+                write_json(path, with_ours(read_config(path, home), TOOLS[row["tool"]][2],
                                            hook_command(python, engine, row["tool"])))
                 row["status"] = "INSTALLED"
         write_json(record_path, record)
@@ -490,16 +582,19 @@ def hook_admin(action: str, home: Path, engine: Path | None, apply: bool) -> dic
     if action == "hook-verify":
         rows = hook_state(home, engine, python)
         ok = [r for r in rows if r["status"] != "NOT_DETECTED"]
-        status = "HOOK_FILES_OK_RUNTIME_NOT_VERIFIED" if ok and all(r["status"] == "INSTALLED" for r in ok) \
-            else "HOOK_NOT_INSTALLED"
-        return {"status": status, "engine": engine.as_posix(), "engine_exists": engine.is_file(), "tools": rows}
+        installed = ok and all(r["status"] == "INSTALLED" for r in ok)
+        # Installed entries pointing at an interpreter or engine that no longer exists do nothing.
+        status = ("HOOK_FILES_OK_RUNTIME_NOT_VERIFIED" if engine.is_file() and python.is_file() else
+                  "HOOK_BROKEN_MISSING_TARGET") if installed else "HOOK_NOT_INSTALLED"
+        return {"status": status, "engine": engine.as_posix(), "engine_exists": engine.is_file(),
+                "python": python.as_posix(), "python_exists": python.is_file(), "tools": rows}
     # hook-remove: only the Harness entries; other hooks stay as they are
     rows = []
     for tool, (_, rel, _) in TOOLS.items():
         path = home / rel
         if not path.exists():
             continue
-        cleaned, removed = strip_ours(read_config(path))
+        cleaned, removed = strip_ours(read_config(path, home))
         rows.append({"tool": tool, "config": rel, "removed_entries": removed})
         if apply and removed:
             if rel in record["created"] and not cleaned:
@@ -527,11 +622,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", help="check: compare with merge-base(BASE, HEAD) (CI)")
     parser.add_argument("--home", type=Path, default=Path.home())
     parser.add_argument("--engine", type=Path, help="hook: docs_gate.py to call (default ~/.harness-engineering/current)")
+    parser.add_argument("--python", type=Path, help="hook: interpreter the hook runs with (default: this one)")
     parser.add_argument("--apply", action="store_true", help="explicit opt-in for writes")
     args = parser.parse_args(argv)
     try:
         if args.action.startswith("hook-"):
-            result = hook_admin(args.action, args.home, args.engine, args.apply)
+            result = hook_admin(args.action, args.home, args.engine, args.apply, args.python)
         else:
             root = repo_root(args.repo.absolute())
             if root is None:

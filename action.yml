@@ -17,7 +17,11 @@ runs:
       run: |
         args=(check --repo .)
         if [ -n "$BASE" ] && [ "$BASE" != "0000000000000000000000000000000000000000" ]; then
-          git cat-file -e "$BASE^{commit}" 2>/dev/null || git fetch --no-tags --depth=200 origin "$BASE"
+          # The default actions/checkout is shallow (depth 1): merge-base needs the history of both sides.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --quiet --unshallow origin
+          fi
+          git cat-file -e "$BASE^{commit}" 2>/dev/null || git fetch --no-tags --quiet origin "$BASE"
           args+=(--base "$BASE")
         fi
         python3 "$GITHUB_ACTION_PATH/scripts/docs_gate.py" "${args[@]}"

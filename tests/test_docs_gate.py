@@ -3,11 +3,13 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("docs_gate", ROOT / "scripts/docs_gate.py")
@@ -121,6 +123,28 @@ class ChecksTests(GateCase):
         self.write("docs/INDICE.md", "indice\n")
         self.assertEqual(d.run_check(self.repo, policy)["status"], "DOCS_CHECK_PASS")
 
+    def test_moving_a_linked_doc_without_fixing_the_index_is_caught(self):
+        # Review #3: HE-DOC-03 moves documents to the archive; the index must not keep a dead link.
+        policy = self.with_policy()
+        (self.repo / "docs/arquivo").mkdir()
+        git(self.repo, "mv", "docs/SPEC.md", "docs/arquivo/SPEC_2026.md")
+        result = d.run_check(self.repo, policy)
+        self.assertEqual(self.rules(result), [("docs/INDICE.md", "indice")])
+        self.assertIn("SPEC.md", result["violations"][0]["message"])
+        self.assertNotIn("target", result["violations"][0])
+        self.write("docs/INDICE.md", "[spec](arquivo/SPEC_2026.md)\n")
+        self.assertEqual(d.run_check(self.repo, policy)["status"], "DOCS_CHECK_PASS")
+
+    def test_check_since_skips_files_untouched_in_the_session(self):
+        # Review #4: a stray .md that predates the session does not hold every Stop.
+        policy = self.with_policy()
+        old = self.write("ANTIGO.md")
+        os.utime(old, (1_000_000, 1_000_000))
+        self.assertEqual(d.run_check(self.repo, policy, since=2_000_000)["status"], "DOCS_CHECK_PASS")
+        self.write("NOVO.md")
+        self.assertEqual(self.rules(d.run_check(self.repo, policy, since=2_000_000)), [("NOVO.md", "lugar")])
+        self.assertEqual(len(d.run_check(self.repo, policy)["violations"]), 2)  # CI: no time filter
+
     def test_invalid_policy_is_refused(self):
         for bad in ({"schema_version": 2, "places": {"a": ["x"]}}, {"schema_version": 1, "places": {}},
                     {"schema_version": 1, "places": {"a": ["../fora/*.md"]}},
@@ -226,6 +250,40 @@ class HookTests(GateCase):
         delete = "*** Begin Patch\n*** Delete File: docs/SPEC.md\n*** End Patch\n"
         self.assertIsNone(self.pre("apply_patch", {"command": delete}))
 
+    def test_codex_patch_counts_lines_that_start_with_dashes(self):
+        # Review #2: apply_patch has no ---/+++ headers; a removed Markdown rule "---" is the line "----".
+        changes = d.patch_changes("*** Begin Patch\n*** Update File: a.md\n@@\n----\n-texto\n*** End Patch\n",
+                                  self.repo)
+        self.assertEqual(changes[0][2], -4 - 6)
+        self.assertEqual(d.patch_changes("*** Add File: b.md\n+++\n", self.repo)[0][2], 3)
+        self.with_policy()
+        self.write("docs/ESTADO.md", "---\n" + "e" * 120 + "\n")
+        self.commit()  # already above the limit of 100
+        # Removes "---" (4 bytes) and adds "x" (2 bytes): the file shrinks, so it must be allowed.
+        trim = "*** Begin Patch\n*** Update File: docs/ESTADO.md\n@@\n----\n+x\n e" + "e" * 119 + "\n*** End Patch\n"
+        self.assertIsNone(self.pre("apply_patch", {"command": trim}))
+
+    def test_new_folder_in_another_repository_is_checked(self):
+        # Review #6: the file's own repository counts, even when its folder does not exist yet.
+        self.with_policy()
+        with tempfile.TemporaryDirectory() as elsewhere:
+            target = self.repo / "docs/novo/fundo/RELATORIO.md"
+            answer = self.pre("Write", {"file_path": str(target), "content": "x"}, elsewhere)
+            self.assertIsNotNone(answer)
+            self.assertIn("docs/novo/fundo/RELATORIO.md", answer["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_stop_ignores_files_from_before_the_session(self):
+        # Review #4: a stray .md already in the tree does not force a continuation on every Codex turn.
+        self.with_policy()
+        os.utime(self.write("ANTIGO.md"), (1_000_000, 1_000_000))
+        event = {"hook_event_name": "Stop", "cwd": str(self.repo), "stop_hook_active": False}
+        with unittest.mock.patch.object(d, "session_start", return_value=2_000_000):
+            self.assertIsNone(d.hook(event))
+            self.write("NOVO.md")
+            self.assertIn("NOVO.md", d.hook(event)["reason"])
+            self.assertNotIn("ANTIGO.md", d.hook(event)["reason"])
+        self.assertIsNone(d.session_start({"transcript_path": str(self.repo / "nao-existe.jsonl")}))
+
     def test_stop_blocks_once(self):
         self.with_policy()
         self.write("SOLTO.md")
@@ -266,8 +324,78 @@ class HookInstallTests(unittest.TestCase):
         self.claude.write_text(json.dumps(self.user_hook), encoding="utf-8")
         self.codex = self.home / ".codex/hooks.json"
 
-    def admin(self, action, apply=False):
-        return d.hook_admin(action, self.home, None, apply)
+    def admin(self, action, apply=False, python=None):
+        return d.hook_admin(action, self.home, None, apply, python or Path(sys.executable))
+
+    def installed_command(self):
+        return json.loads(self.claude.read_text(encoding="utf-8"))["hooks"]["Stop"][0]["hooks"][0]["command"]
+
+    def test_installed_command_runs_in_the_hook_shells(self):
+        # Review #1: a quoted first word is a string in PowerShell, so the hook failed on every call.
+        engine = ROOT / "scripts/docs_gate.py"
+        d.hook_admin("hook-install", self.home, engine, True, Path(sys.executable))
+        command = self.installed_command()
+        self.assertFalse(command.startswith('"'), command)
+        shells = [["powershell", "-NoProfile", "-NonInteractive", "-Command"], ["cmd", "/c"]] if sys.platform == "win32" \
+            else [["sh", "-c"]]
+        for shell in shells:
+            out = subprocess.run([*shell, command], input=b'{"hook_event_name":"Stop","cwd":"."}',
+                                 capture_output=True, timeout=60)
+            self.assertEqual(out.returncode, 0, (shell[0], out.stderr.decode(errors="replace")))
+
+    def test_path_with_spaces_is_made_safe_or_refused(self):
+        spaced = self.home / "pasta com espaco" / "python.exe"
+        spaced.parent.mkdir()
+        spaced.write_bytes(b"")
+        if sys.platform == "win32":
+            try:
+                word = d.shell_path(spaced)
+            except d.PolicyError as exc:
+                self.assertIn("BLOCKED_PATH_WITH_SPACES", str(exc))
+            else:
+                self.assertNotIn(" ", word)
+        else:
+            self.assertEqual(d.shell_path(spaced), "'" + spaced.as_posix() + "'")
+
+    def test_verify_ignores_order_of_user_hooks_added_later(self):
+        # Review #7: a hook the user appends after ours is not "stale".
+        self.admin("hook-install", apply=True)
+        config = json.loads(self.claude.read_text(encoding="utf-8"))
+        config["hooks"]["PreToolUse"].append({"matcher": "Read", "hooks": [{"type": "command", "command": "x"}]})
+        config["hooks"]["Stop"].insert(0, {"hooks": [{"type": "command", "command": "y"}]})
+        self.claude.write_text(json.dumps(config), encoding="utf-8")
+        self.assertEqual(self.admin("hook-verify")["status"], "HOOK_FILES_OK_RUNTIME_NOT_VERIFIED")
+        self.assertEqual(self.admin("hook-remove", apply=True)["status"], "HOOK_REMOVED")
+        left = json.loads(self.claude.read_text(encoding="utf-8"))["hooks"]
+        self.assertEqual([g["hooks"][0]["command"] for g in left["Stop"]], ["y"])
+
+    def test_virtualenv_python_refused_and_missing_python_reported(self):
+        # Review #8: the hook pins an interpreter; a venv or a removed Python turns it off silently.
+        with unittest.mock.patch.object(d.sys, "prefix", "/venv"), \
+                unittest.mock.patch.object(d.sys, "base_prefix", "/usr"):
+            with self.assertRaisesRegex(d.PolicyError, "BLOCKED_VENV_PYTHON"):
+                d.hook_admin("hook-plan", self.home, None, False)
+        gone = self.home / "python-que-sumiu.exe"
+        with self.assertRaisesRegex(d.PolicyError, "BLOCKED_PYTHON_MISSING"):
+            self.admin("hook-plan", python=gone)
+        gone.write_bytes(b"")
+        self.admin("hook-install", apply=True, python=gone)
+        gone.unlink()
+        self.assertEqual(self.admin("hook-verify", python=gone)["status"], "HOOK_BROKEN_MISSING_TARGET")
+
+    def test_config_folder_that_is_a_link_is_refused(self):
+        # Review #9: same link test as the machine installer (symlink or junction).
+        real = self.home / "codex-real"
+        real.mkdir()
+        (self.home / ".codex").rmdir()
+        if sys.platform == "win32":
+            subprocess.run(["cmd", "/c", "mklink", "/J", str(self.home / ".codex"), str(real)],
+                           check=True, capture_output=True)
+        else:
+            os.symlink(real, self.home / ".codex")
+        with self.assertRaisesRegex(d.PolicyError, "BLOCKED_LINK"):
+            self.admin("hook-install", apply=True)
+        self.assertEqual(list(real.iterdir()), [])
 
     def test_plan_writes_nothing(self):
         before = self.claude.read_bytes()

@@ -22,7 +22,7 @@ desenvolvimento.
 | Plano de métricas | ✅ documento | `metricas/`; `evidence/METRICAS_BASELINE_2026-11-15.json` |
 | Relatório diário | ✅ | 9 testes; MANUAL §4 |
 | CI (Linux + Windows, actions por SHA) | ✅ | `.github/workflows/quality.yml` |
-| **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ código e testes; hook **não instalado** nesta máquina; tag nova e ensaio real `NOT_RUN` | 28 testes offline (entrada simulada das duas ferramentas; home sintética); `docs-check` verde aqui; `scripts/docs_gate.py`, SPEC §11 |
+| **Organização de documentos (HE-DOC-02)**: `docs-plan`, `docs-check` (lugar, orçamento, índice), hook `PreToolUse`+`Stop` para Claude Code e Codex, `docs-hook-plan/install/verify/remove`, `action.yml`; política e limpeza deste repositório | ✅ código e testes; hook **não instalado** nesta máquina; tag nova e ensaio real `NOT_RUN` | 38 testes offline (entrada simulada das duas ferramentas; home sintética; comando do hook executado no PowerShell, no cmd e no sh); revisão do PR #17: 10 achados corrigidos; `scripts/docs_gate.py`, SPEC §11 |
 | JEV via HTTPS | ✅ código; smoke relatado | `scripts/jev_http.py` |
 | Isolamento G1 | ⚠️ só MXC do Codex observado | `evidence/HE_JEV_007A_*.json` |
 | Claude Code em benchmark | ❌ nunca homologado | — |
@@ -47,6 +47,7 @@ desenvolvimento.
 | Problema | Saída |
 |---|---|
 | Hook não vê escrita por comando de shell | `Stop` e CI pegam depois |
+| `Stop` só olha arquivos gravados na sessão (criação do transcript); no Linux, sem essa data, olha tudo; `git mv` mantém a data antiga | o CI pega |
 | Codex no Windows: sandbox já negou o Python do perfil | provar no passo (f) |
 | CLIs atrás do upstream (Claude 2.1.268, Codex 0.166.0) | atualizar só com autorização |
 | Sem corte financeiro independente | antes de qualquer lote pago |
